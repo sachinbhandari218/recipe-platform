@@ -484,6 +484,14 @@ function DiscoverRecipes({ recipes, onSelectRecipe, onEditRecipe, onDeleteRecipe
                         e.target.src = "https://images.unsplash.com/photo-1495521821757-a1efb6729352?auto=format&fit=crop&w=800&q=80";
                       }}
                     />
+                    {recipe.video_url && (
+                      <div className="absolute top-3 left-3 bg-stone-900/90 backdrop-blur-md text-amber-400 px-2.5 py-1 rounded-full text-xs font-bold flex items-center space-x-1 shadow-md border border-amber-400/30">
+                        <svg className="w-3.5 h-3.5 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
+                        </svg>
+                        <span>Video Reel</span>
+                      </div>
+                    )}
                     <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-bold flex items-center space-x-1 shadow-sm text-stone-800">
                       <svg className="w-3.5 h-3.5 text-amber-500 fill-amber-500" viewBox="0 0 20 20">
                         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
@@ -762,6 +770,26 @@ function RecipeDetailModal({ recipeId, onClose, currentUser, isOwner, onEditReci
             </div>
 
             <div className="md:col-span-2 space-y-6">
+              {recipe.video_url && (
+                <div className="bg-stone-950 rounded-2xl overflow-hidden p-3 border border-stone-800 shadow-md">
+                  <div className="flex items-center space-x-2 text-xs font-bold text-amber-400 uppercase tracking-wider mb-2 px-1">
+                    <svg className="w-4 h-4 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
+                    </svg>
+                    <span>Cooking Video Reel</span>
+                  </div>
+                  <video
+                    controls
+                    playsInline
+                    preload="metadata"
+                    poster={photo}
+                    className="w-full rounded-xl max-h-96 bg-black shadow-inner"
+                    src={recipe.video_url}
+                  >
+                    Your browser does not support HTML5 video playback.
+                  </video>
+                </div>
+              )}
               <div>
                 <h4 className="font-serif font-bold text-stone-900 text-lg mb-3">Preparation Instructions</h4>
                 <div className="text-sm text-stone-700 leading-relaxed whitespace-pre-line bg-white p-5 rounded-2xl border border-stone-100 shadow-sm">
@@ -944,7 +972,9 @@ function ShareRecipeForm({ currentUser, editingRecipeId, onComplete, showToast }
   const [ingredientsText, setIngredientsText] = useState("");
   const [instructionsText, setInstructionsText] = useState("");
   const [photoUrl, setPhotoUrl] = useState("");
+  const [videoUrl, setVideoUrl] = useState("");
   const [searchingPhoto, setSearchingPhoto] = useState(false);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -965,6 +995,7 @@ function ShareRecipeForm({ currentUser, editingRecipeId, onComplete, showToast }
         }
         setInstructionsText(rec.instructions || "");
         setPhotoUrl(rec.image_url || (rec.photos && rec.photos[0]) || "");
+        setVideoUrl(rec.video_url || "");
       }
     } else {
       setTitle("");
@@ -973,6 +1004,7 @@ function ShareRecipeForm({ currentUser, editingRecipeId, onComplete, showToast }
       setIngredientsText("");
       setInstructionsText("");
       setPhotoUrl("");
+      setVideoUrl("");
     }
   }, [editingRecipeId, currentUser]);
 
@@ -1045,6 +1077,38 @@ function ShareRecipeForm({ currentUser, editingRecipeId, onComplete, showToast }
     reader.readAsDataURL(file);
   };
 
+  const handleVideoUpload = async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    if (file.size > 50 * 1024 * 1024) {
+      showToast("Video file exceeds the 50MB limit.", "error");
+      return;
+    }
+    setUploadingVideo(true);
+    try {
+      const resp = await fetch("/api/upload?type=video", {
+        method: "POST",
+        headers: { "Content-Type": file.type || "video/mp4" },
+        body: file
+      });
+      if (resp.ok) {
+        const data = await resp.json();
+        if (data && data.url) {
+          setVideoUrl(data.url);
+          showToast("Cooking video uploaded successfully!", "success");
+        } else {
+          showToast("Could not parse video upload response.", "error");
+        }
+      } else {
+        showToast("Video upload failed. Check server connection.", "error");
+      }
+    } catch (err) {
+      showToast("Network error uploading video.", "error");
+    } finally {
+      setUploadingVideo(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!title.trim()) {
@@ -1096,6 +1160,7 @@ function ShareRecipeForm({ currentUser, editingRecipeId, onComplete, showToast }
           instructions,
           image_url: finalPhoto,
           photos: [finalPhoto],
+          video_url: videoUrl || null,
           status: "approved"
         });
         showToast(`Recipe '${title.trim()}' updated successfully!`, "success");
@@ -1110,6 +1175,7 @@ function ShareRecipeForm({ currentUser, editingRecipeId, onComplete, showToast }
           instructions,
           image_url: finalPhoto,
           photos: [finalPhoto],
+          video_url: videoUrl || null,
           status: "approved"
         });
         showToast(`Recipe '${title.trim()}' successfully submitted!`, "success");
@@ -1238,6 +1304,51 @@ function ShareRecipeForm({ currentUser, editingRecipeId, onComplete, showToast }
                   type="button"
                   onClick={() => setPhotoUrl("")}
                   className="absolute top-3 right-3 p-1.5 rounded-full bg-black/60 text-white hover:bg-black"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="p-5 rounded-2xl border border-stone-200 bg-stone-50/70">
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-xs font-bold uppercase tracking-wider text-stone-700">
+                Cooking Video / Reel (Optional — Up to 50MB)
+              </label>
+              {uploadingVideo && (
+                <span className="text-xs text-amber-600 font-bold animate-pulse">Uploading video...</span>
+              )}
+            </div>
+            <p className="text-stone-500 text-xs mb-3">
+              Upload a step-by-step video demonstration or reel in MP4 or WebM format.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 items-center mb-3">
+              <input
+                type="file"
+                accept="video/mp4, video/webm, video/quicktime"
+                onChange={handleVideoUpload}
+                disabled={uploadingVideo}
+                className="w-full text-xs text-stone-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100 cursor-pointer disabled:opacity-50"
+              />
+            </div>
+
+            {videoUrl && (
+              <div className="relative rounded-2xl overflow-hidden bg-black mt-3 border border-stone-800">
+                <video
+                  controls
+                  playsInline
+                  preload="metadata"
+                  src={videoUrl}
+                  className="w-full max-h-64 object-contain mx-auto"
+                />
+                <button
+                  type="button"
+                  onClick={() => setVideoUrl("")}
+                  className="absolute top-3 right-3 p-1.5 rounded-full bg-black/70 text-white hover:bg-rose-600 transition-colors"
+                  title="Remove video"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
@@ -2037,7 +2148,10 @@ function UserDashboard({ recipes, reviews, currentUser, onEditRecipe, onDeleteRe
                               alt={r.title}
                               className="w-10 h-10 rounded-xl object-cover"
                             />
-                            <span className="font-bold text-stone-900">{r.title}</span>
+                            <span className="font-bold text-stone-900 flex items-center space-x-1.5">
+                              <span>{r.title}</span>
+                              {r.video_url && <span className="text-xs text-amber-600 font-semibold" title="Includes Cooking Video">🎬</span>}
+                            </span>
                           </div>
                         </td>
                         <td className="p-4">

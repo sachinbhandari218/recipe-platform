@@ -239,6 +239,43 @@ public class Server {
             }
 
             try {
+                String reqContentType = exchange.getRequestHeaders().getFirst("Content-Type");
+                if (reqContentType == null) reqContentType = "";
+                String query = exchange.getRequestURI().getQuery();
+                boolean isVideo = reqContentType.toLowerCase().contains("video") ||
+                                  (query != null && query.toLowerCase().contains("type=video"));
+
+                File uploadsDir = new File("uploads");
+                if (!uploadsDir.exists()) {
+                    uploadsDir.mkdirs();
+                }
+
+                if (isVideo || reqContentType.toLowerCase().contains("octet-stream")) {
+                    String extension = ".mp4";
+                    if (reqContentType.toLowerCase().contains("webm") || (query != null && query.toLowerCase().contains("webm"))) {
+                        extension = ".webm";
+                    } else if (reqContentType.toLowerCase().contains("quicktime") || (query != null && query.toLowerCase().contains("mov"))) {
+                        extension = ".mov";
+                    }
+
+                    String filename = "video_" + System.currentTimeMillis() + "_" + (int)(Math.random() * 10000) + extension;
+                    File targetFile = new File(uploadsDir, filename);
+
+                    try (InputStream is = exchange.getRequestBody();
+                         OutputStream fos = new java.io.FileOutputStream(targetFile)) {
+                        byte[] buffer = new byte[65536];
+                        int read;
+                        while ((read = is.read(buffer)) != -1) {
+                            fos.write(buffer, 0, read);
+                        }
+                    }
+
+                    String fileUrl = "/uploads/" + filename;
+                    String jsonResponse = "{\"success\":true,\"url\":\"" + fileUrl + "\",\"filename\":\"" + filename + "\",\"type\":\"video\"}";
+                    sendJsonResponse(exchange, 200, jsonResponse);
+                    return;
+                }
+
                 InputStream is = exchange.getRequestBody();
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 byte[] buffer = new byte[8192];
@@ -279,18 +316,15 @@ public class Server {
                     if (prefix.contains("png")) extension = ".png";
                     else if (prefix.contains("webp")) extension = ".webp";
                     else if (prefix.contains("gif")) extension = ".gif";
+                    else if (prefix.contains("mp4")) extension = ".mp4";
+                    else if (prefix.contains("webm")) extension = ".webm";
                     base64Data = base64Data.substring(base64Data.indexOf(",") + 1);
                 }
 
                 base64Data = base64Data.replaceAll("\\s+", "").replace("\\/", "/");
                 byte[] imageBytes = java.util.Base64.getDecoder().decode(base64Data);
 
-                File uploadsDir = new File("uploads");
-                if (!uploadsDir.exists()) {
-                    uploadsDir.mkdirs();
-                }
-
-                String filename = "dish_" + System.currentTimeMillis() + "_" + (int)(Math.random() * 10000) + extension;
+                String filename = (extension.equals(".mp4") || extension.equals(".webm") ? "video_" : "dish_") + System.currentTimeMillis() + "_" + (int)(Math.random() * 10000) + extension;
                 File targetFile = new File(uploadsDir, filename);
                 Files.write(targetFile.toPath(), imageBytes);
 
@@ -335,18 +369,74 @@ public class Server {
             }
 
             String contentType = determineContentType(file.getName());
-            byte[] fileBytes = Files.readAllBytes(file.toPath());
+            long fileLength = file.length();
 
             exchange.getResponseHeaders().set("Content-Type", contentType);
             exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
+            exchange.getResponseHeaders().set("Accept-Ranges", "bytes");
+
             if ("HEAD".equalsIgnoreCase(exchange.getRequestMethod())) {
+                exchange.getResponseHeaders().set("Content-Length", String.valueOf(fileLength));
                 exchange.sendResponseHeaders(200, -1);
                 exchange.close();
                 return;
             }
-            exchange.sendResponseHeaders(200, fileBytes.length);
-            try (OutputStream os = exchange.getResponseBody()) {
-                os.write(fileBytes);
+
+            String rangeHeader = exchange.getRequestHeaders().getFirst("Range");
+            if (rangeHeader != null && rangeHeader.startsWith("bytes=")) {
+                String rangeVal = rangeHeader.substring("bytes=".length()).trim();
+                long start = 0;
+                long end = fileLength - 1;
+
+                if (rangeVal.contains("-")) {
+                    String[] parts = rangeVal.split("-", 2);
+                    if (!parts[0].isEmpty()) {
+                        try { start = Long.parseLong(parts[0].trim()); } catch (NumberFormatException ignored) {}
+                    }
+                    if (parts.length > 1 && !parts[1].isEmpty()) {
+                        try { end = Long.parseLong(parts[1].trim()); } catch (NumberFormatException ignored) {}
+                    }
+                }
+
+                if (start > end || start >= fileLength) {
+                    exchange.getResponseHeaders().set("Content-Range", "bytes *" + "/" + fileLength);
+                    exchange.sendResponseHeaders(416, -1);
+                    exchange.close();
+                    return;
+                }
+
+                if (end >= fileLength) end = fileLength - 1;
+                long contentLength = end - start + 1;
+
+                exchange.getResponseHeaders().set("Content-Range", "bytes " + start + "-" + end + "/" + fileLength);
+                exchange.getResponseHeaders().set("Content-Length", String.valueOf(contentLength));
+                exchange.sendResponseHeaders(206, contentLength);
+
+                try (java.io.RandomAccessFile raf = new java.io.RandomAccessFile(file, "r");
+                     OutputStream os = exchange.getResponseBody()) {
+                    raf.seek(start);
+                    byte[] buffer = new byte[65536];
+                    long remaining = contentLength;
+                    while (remaining > 0) {
+                        int toRead = (int) Math.min(buffer.length, remaining);
+                        int read = raf.read(buffer, 0, toRead);
+                        if (read == -1) break;
+                        os.write(buffer, 0, read);
+                        remaining -= read;
+                    }
+                }
+                return;
+            }
+
+            exchange.getResponseHeaders().set("Content-Length", String.valueOf(fileLength));
+            exchange.sendResponseHeaders(200, fileLength);
+            try (InputStream fis = new FileInputStream(file);
+                 OutputStream os = exchange.getResponseBody()) {
+                byte[] buffer = new byte[65536];
+                int read;
+                while ((read = fis.read(buffer)) != -1) {
+                    os.write(buffer, 0, read);
+                }
             }
         }
     }
@@ -354,7 +444,8 @@ public class Server {
     private static void sendCors(HttpExchange exchange) throws IOException {
         exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
         exchange.getResponseHeaders().set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-        exchange.getResponseHeaders().set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+        exchange.getResponseHeaders().set("Access-Control-Allow-Headers", "Content-Type, Authorization, Range");
+        exchange.getResponseHeaders().set("Access-Control-Expose-Headers", "Content-Range, Accept-Ranges, Content-Length");
         exchange.sendResponseHeaders(204, -1);
     }
 
@@ -383,6 +474,10 @@ public class Server {
         if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
         if (lower.endsWith(".webp")) return "image/webp";
         if (lower.endsWith(".gif")) return "image/gif";
+        if (lower.endsWith(".mp4")) return "video/mp4";
+        if (lower.endsWith(".webm")) return "video/webm";
+        if (lower.endsWith(".mov")) return "video/quicktime";
+        if (lower.endsWith(".m4v")) return "video/x-m4v";
         if (lower.endsWith(".svg")) return "image/svg+xml";
         if (lower.endsWith(".ico")) return "image/x-icon";
         return "application/octet-stream";

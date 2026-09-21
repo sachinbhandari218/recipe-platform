@@ -416,6 +416,7 @@ class RecipeStore {
       instructions: instructions,
       image_url: photoUrl,
       photos: [photoUrl],
+      video_url: recipeData.video_url || null,
       status: recipeData.status || "approved",
       rejection_reason: null,
       average_rating: 5.0,
@@ -468,6 +469,7 @@ class RecipeStore {
     }
     if (partialData.author_uid) recipes[index].author_id = partialData.author_uid;
     if (partialData.author_id) recipes[index].author_uid = partialData.author_id;
+    if (partialData.video_url !== undefined) recipes[index].video_url = partialData.video_url;
 
     safeSetStorage(STORAGE_KEY_RECIPES, JSON.stringify(recipes));
 
