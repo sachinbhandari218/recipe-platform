@@ -17,52 +17,51 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <meta name="author" content="Sachin Bhandari">
-  <title>FoodBite - Ephemeral Food Stories & Sharing - Built by Sachin Bhandari</title>
+  <title>FoodBite - Discover. Share. Crave. - Built by Sachin Bhandari</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
       theme: {
         extend: {
           fontFamily: {
-            serif: ['Playfair Display', 'Georgia', 'serif'],
-            sans: ['Plus Jakarta Sans', '-apple-system', 'BlinkMacSystemFont', 'sans-serif']
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+            serif: ['Playfair Display', 'Georgia', 'serif']
           },
           colors: {
+            charcoal: {
+              DEFAULT: '#121214',
+              50: '#f4f4f5',
+              100: '#e4e4e7',
+              200: '#d4d4d8',
+              800: '#18181b',
+              900: '#121214'
+            },
+            coral: {
+              DEFAULT: '#f05a28',
+              50: '#fff5f0',
+              100: '#ffe8de',
+              200: '#ffd0be',
+              500: '#f05a28',
+              600: '#d94918',
+              700: '#b83b12'
+            },
+            cream: {
+              DEFAULT: '#fbf9f6',
+              50: '#ffffff',
+              100: '#fbf9f6',
+              200: '#f5f2eb',
+              300: '#e8e4dc',
+              400: '#d8d2c6'
+            },
             terracotta: {
               50: '#fff7ed',
               100: '#ffedd5',
-              200: '#fed7aa',
-              300: '#fdba74',
-              400: '#fb923c',
               500: '#f97316',
               600: '#ea580c',
-              700: '#c2410c',
-              800: '#9a3412',
-              900: '#7c2d12'
-            },
-            saffron: {
-              50: '#fffbeb',
-              100: '#fef3c7',
-              200: '#fde68a',
-              300: '#fcd34d',
-              400: '#fbbf24',
-              500: '#f59e0b',
-              600: '#d97706',
-              700: '#b45309',
-              800: '#92400e',
-              900: '#78350f'
-            },
-            sage: {
-              50: '#f2f8f5',
-              100: '#e1efe7',
-              200: '#c2dfcf',
-              300: '#98c7b0',
-              400: '#6ea98f',
-              500: '#488b6f',
-              600: '#366f57',
-              700: '#2b5846',
-              800: '#254739',
-              900: '#203c31'
+              700: '#c2410c'
             }
           }
         }
@@ -73,9 +72,9 @@
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <link rel="stylesheet" href="css/style.css?v=20260921_10">
+  <link rel="stylesheet" href="css/style.css?v=20260921_11">
 </head>
-<body class="min-h-screen flex flex-col bg-stone-50 text-stone-900 selection:bg-orange-600 selection:text-white">
+<body class="min-h-screen flex flex-col bg-[#fbf9f6] text-[#1a1917] font-sans antialiased selection:bg-[#f05a28] selection:text-white">
 
   <div id="root">
     <div class="min-h-screen flex items-center justify-center bg-gradient-to-b from-orange-50/60 via-stone-50 to-amber-50/40 p-4">
@@ -111,7 +110,7 @@
     window.auth = auth;
     window.searchOnlineDishPhoto = searchOnlineDishPhoto;
   </script>
-  <script type="text/babel" src="js/reactApp.js?v=20260921_10"></script>
+  <script type="text/babel" src="js/reactApp.js?v=20260921_11"></script>
   <script>
     setTimeout(function() {
       var fs = document.getElementById('splash-failsafe');
