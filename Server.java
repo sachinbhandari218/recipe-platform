@@ -269,6 +269,46 @@ public class Server {
         return null;
     }
 
+    private static synchronized String findUserByUsername(String username) {
+        if (username == null || username.trim().isEmpty() || globalState == null) return null;
+        try {
+            int usersIdx = globalState.indexOf("\"users\":");
+            if (usersIdx == -1) return null;
+            int startBracket = globalState.indexOf("[", usersIdx);
+            if (startBracket == -1) return null;
+            int bracketCount = 1;
+            int endBracket = -1;
+            for (int i = startBracket + 1; i < globalState.length(); i++) {
+                char c = globalState.charAt(i);
+                if (c == '[') bracketCount++;
+                else if (c == ']') {
+                    bracketCount--;
+                    if (bracketCount == 0) {
+                        endBracket = i;
+                        break;
+                    }
+                }
+            }
+            if (endBracket == -1) return null;
+            String usersArray = globalState.substring(startBracket + 1, endBracket);
+            int idx = 0;
+            String target = username.trim().toLowerCase();
+            while ((idx = usersArray.indexOf("{", idx)) != -1) {
+                int end = usersArray.indexOf("}", idx);
+                if (end == -1) break;
+                String user = usersArray.substring(idx, end + 1);
+                String uName = extractJsonString(user, "username", "").trim().toLowerCase();
+                String dName = extractJsonString(user, "display_name", "").trim().toLowerCase().replace(" ", "");
+                String rName = extractJsonString(user, "name", "").trim().toLowerCase().replace(" ", "");
+                if (uName.equals(target) || dName.equals(target) || rName.equals(target)) {
+                    return user;
+                }
+                idx = end + 1;
+            }
+        } catch (Exception ignored) {}
+        return null;
+    }
+
     private static synchronized String findUserById(String targetId) {
         if (targetId == null || targetId.isEmpty() || globalState == null) return null;
         try {
@@ -888,28 +928,43 @@ public class Server {
                 }
                 String body = baos.toString(StandardCharsets.UTF_8).trim();
 
+                String username = extractJsonString(body, "username", "").trim().toLowerCase();
                 String email = extractJsonString(body, "email", "").trim().toLowerCase();
                 String password = extractJsonString(body, "password", "").trim();
 
-                if (email.isEmpty() || password.isEmpty()) {
-                    sendJsonResponse(exchange, 400, "{\"success\":false,\"message\":\"Email and password are required\"}");
+                if (username.isEmpty() && email.isEmpty()) {
+                    sendJsonResponse(exchange, 400, "{\"success\":false,\"message\":\"Username is required\"}");
                     return;
                 }
 
-                String userJson = findUserByCredentials(email, password);
+                String userJson = null;
+                if (!username.isEmpty()) {
+                    userJson = findUserByUsername(username);
+                    if (userJson == null) {
+                        String userId = "usr-" + System.currentTimeMillis();
+                        String avatar = "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80";
+                        String newUserJson = "{\"uid\":\"" + userId + "\",\"id\":\"" + userId + "\",\"email\":\"" + escapeJson(username) + "@foodbite.app\",\"name\":\"" + escapeJson(username) + "\",\"display_name\":\"" + escapeJson(username) + "\",\"username\":\"" + escapeJson(username) + "\",\"password\":\"\",\"avatar\":\"" + avatar + "\",\"avatar_url\":\"" + avatar + "\",\"role\":\"user\",\"streak\":0,\"created_at\":\"" + System.currentTimeMillis() + "\"}";
+                        saveUserToState(newUserJson);
+                        userJson = newUserJson;
+                    }
+                } else {
+                    userJson = findUserByCredentials(email, password);
+                }
+
                 if (userJson == null) {
-                    sendJsonResponse(exchange, 401, "{\"success\":false,\"message\":\"Invalid email or password\"}");
+                    sendJsonResponse(exchange, 401, "{\"success\":false,\"message\":\"Invalid credentials\"}");
                     return;
                 }
 
                 String userId = extractJsonString(userJson, "id", extractJsonString(userJson, "uid", "usr-1"));
                 String name = extractJsonString(userJson, "name", extractJsonString(userJson, "display_name", "FoodBite User"));
-                String username = extractJsonString(userJson, "username", name.toLowerCase().replace(" ", ""));
+                String uname = extractJsonString(userJson, "username", name.toLowerCase().replace(" ", ""));
+                String uemail = extractJsonString(userJson, "email", uname + "@foodbite.app");
                 String avatar = extractJsonString(userJson, "avatar", extractJsonString(userJson, "avatar_url", "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80"));
 
                 int streak = getStreakCount(userId);
                 String token = "fb_tok_" + System.currentTimeMillis() + "_" + (int)(Math.random() * 10000);
-                String resp = "{\"success\":true,\"token\":\"" + token + "\",\"user\":{\"id\":\"" + userId + "\",\"email\":\"" + escapeJson(email) + "\",\"name\":\"" + escapeJson(name) + "\",\"username\":\"" + escapeJson(username) + "\",\"avatar\":\"" + avatar + "\",\"streak\":" + streak + "}}";
+                String resp = "{\"success\":true,\"token\":\"" + token + "\",\"user\":{\"id\":\"" + userId + "\",\"email\":\"" + escapeJson(uemail) + "\",\"name\":\"" + escapeJson(name) + "\",\"username\":\"" + escapeJson(uname) + "\",\"avatar\":\"" + avatar + "\",\"streak\":" + streak + "}}";
                 sendJsonResponse(exchange, 200, resp);
             } catch (Exception e) {
                 sendJsonResponse(exchange, 500, "{\"success\":false,\"message\":\"" + escapeJson(e.getMessage()) + "\"}");

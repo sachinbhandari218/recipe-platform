@@ -81,27 +81,18 @@ function ToastContainer({ toasts, removeToast }) {
 }
 
 function AuthScreen({ onAuthSuccess, showToast }) {
-  const [mode, setMode] = useState("login");
-  const [signupStep, setSignupStep] = useState(1);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
   const [username, setUsername] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [touched, setTouched] = useState({});
   const [errorMessage, setErrorMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  const isEmailValid = emailRegex.test(email.trim());
-  const isPasswordValid = password.length >= 6;
-  const isNameValid = fullName.trim().length >= 2;
-  const isUsernameValid = /^[a-z0-9_]{3,20}$/.test(username.trim().toLowerCase());
+  const cleanUsername = username.trim().toLowerCase().replace(/[^a-z0-9_]/g, "");
 
-  const handleLoginSubmit = async (e) => {
+  const handleContinue = async (e) => {
     e.preventDefault();
-    setTouched({ email: true, password: true });
-    if (!isEmailValid || !isPasswordValid) return;
+    if (!cleanUsername || cleanUsername.length < 2) {
+      setErrorMessage("Please enter a username (at least 2 characters)");
+      return;
+    }
 
     setIsLoading(true);
     setErrorMessage("");
@@ -109,53 +100,15 @@ function AuthScreen({ onAuthSuccess, showToast }) {
       const resp = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim(), password: password.trim() })
+        body: JSON.stringify({ username: cleanUsername })
       });
       const data = await resp.json();
       if (!resp.ok || !data.success) {
-        throw new Error(data.message || "Invalid email or password");
+        throw new Error(data.message || "Failed to continue with username");
       }
       onAuthSuccess(data.user, data.token);
     } catch (err) {
-      setErrorMessage(err.message || "Login failed. Please check credentials.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleNextSignupStep = (e) => {
-    e.preventDefault();
-    setTouched((prev) => ({ ...prev, email: true, password: true }));
-    if (!isEmailValid || !isPasswordValid) return;
-    setErrorMessage("");
-    setSignupStep(2);
-  };
-
-  const handleSignupSubmit = async (e) => {
-    e.preventDefault();
-    setTouched((prev) => ({ ...prev, fullName: true, username: true }));
-    if (!isNameValid || !isUsernameValid) return;
-
-    setIsLoading(true);
-    setErrorMessage("");
-    try {
-      const resp = await fetch("/api/auth/signup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: email.trim(),
-          password: password.trim(),
-          fullName: fullName.trim(),
-          username: username.trim().toLowerCase()
-        })
-      });
-      const data = await resp.json();
-      if (!resp.ok || !data.success) {
-        throw new Error(data.message || "Registration failed");
-      }
-      onAuthSuccess(data.user, data.token);
-    } catch (err) {
-      setErrorMessage(err.message || "Failed to create account. Please try again.");
+      setErrorMessage(err.message || "Could not access with this username");
     } finally {
       setIsLoading(false);
     }
@@ -183,247 +136,42 @@ function AuthScreen({ onAuthSuccess, showToast }) {
           </div>
         )}
 
-        {mode === "login" ? (
-          <form onSubmit={handleLoginSubmit} className="space-y-4">
-            <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-500 mb-1.5">
-                Email Address
-              </label>
+        <form onSubmit={handleContinue} className="space-y-4">
+          <div>
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-500 mb-1.5">
+              Enter Username
+            </label>
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 font-bold text-xs select-none">
+                @
+              </span>
               <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                onBlur={() => setTouched((prev) => ({ ...prev, email: true }))}
-                placeholder="chef@foodbite.com"
-                className={`w-full px-4 py-3 rounded-2xl bg-stone-50 border text-xs text-stone-900 placeholder-stone-400 focus:bg-white focus:outline-none focus:ring-2 transition-all ${
-                  touched.email && !isEmailValid
-                    ? "border-rose-500 focus:ring-rose-500/30"
-                    : touched.email && isEmailValid
-                    ? "border-emerald-500 focus:ring-emerald-500/30"
-                    : "border-stone-200 focus:ring-orange-500/30 focus:border-orange-500"
-                }`}
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="sachin_chef"
+                autoFocus
+                maxLength={25}
+                className="w-full pl-8 pr-4 py-3.5 rounded-2xl bg-stone-50 border border-stone-200 text-xs font-semibold text-stone-900 placeholder-stone-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500 transition-all"
               />
-              {touched.email && !isEmailValid && (
-                <p className="text-[11px] text-rose-500 mt-1 font-medium">Please enter a valid email address</p>
-              )}
             </div>
-
-            <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-500 mb-1.5">
-                Password
-              </label>
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  onBlur={() => setTouched((prev) => ({ ...prev, password: true }))}
-                  placeholder="Your secure password"
-                  className={`w-full px-4 py-3 pr-10 rounded-2xl bg-stone-50 border text-xs text-stone-900 placeholder-stone-400 focus:bg-white focus:outline-none focus:ring-2 transition-all ${
-                    touched.password && !isPasswordValid
-                      ? "border-rose-500 focus:ring-rose-500/30"
-                      : touched.password && isPasswordValid
-                      ? "border-emerald-500 focus:ring-emerald-500/30"
-                      : "border-stone-200 focus:ring-orange-500/30 focus:border-orange-500"
-                  }`}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 text-xs font-bold cursor-pointer"
-                >
-                  {showPassword ? "Hide" : "Show"}
-                </button>
-              </div>
-              {touched.password && !isPasswordValid && (
-                <p className="text-[11px] text-rose-500 mt-1 font-medium">Password must be at least 6 characters</p>
-              )}
-            </div>
-
-            <button
-              type="submit"
-              disabled={isLoading || !isEmailValid || !isPasswordValid}
-              className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-orange-600/25 active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
-            >
-              {isLoading ? "Signing in..." : "Sign In 🔥"}
-            </button>
-          </form>
-        ) : (
-          <form onSubmit={signupStep === 1 ? handleNextSignupStep : handleSignupSubmit} className="space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-stone-200 text-xs font-bold">
-              <span className={signupStep === 1 ? "text-orange-600" : "text-stone-400"}>Step 1: Security</span>
-              <span className="text-stone-300">→</span>
-              <span className={signupStep === 2 ? "text-orange-600" : "text-stone-400"}>Step 2: Profile Info</span>
-            </div>
-
-            {signupStep === 1 ? (
-              <div className="space-y-4 animate-fade-in">
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-500 mb-1.5">
-                    Email Address
-                  </label>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    onBlur={() => setTouched((prev) => ({ ...prev, email: true }))}
-                    placeholder="name@domain.com"
-                    className={`w-full px-4 py-3 rounded-2xl bg-stone-50 border text-xs text-stone-900 placeholder-stone-400 focus:bg-white focus:outline-none focus:ring-2 transition-all ${
-                      touched.email && !isEmailValid
-                        ? "border-rose-500 focus:ring-rose-500/30"
-                        : touched.email && isEmailValid
-                        ? "border-emerald-500 focus:ring-emerald-500/30"
-                        : "border-stone-200 focus:ring-orange-500/30 focus:border-orange-500"
-                    }`}
-                  />
-                  {touched.email && !isEmailValid && (
-                    <p className="text-[11px] text-rose-500 mt-1 font-medium">Valid email address required</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-500 mb-1.5">
-                    Create Password
-                  </label>
-                  <div className="relative">
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      onBlur={() => setTouched((prev) => ({ ...prev, password: true }))}
-                      placeholder="Minimum 6 characters"
-                      className={`w-full px-4 py-3 pr-10 rounded-2xl bg-stone-50 border text-xs text-stone-900 placeholder-stone-400 focus:bg-white focus:outline-none focus:ring-2 transition-all ${
-                        touched.password && !isPasswordValid
-                          ? "border-rose-500 focus:ring-rose-500/30"
-                          : touched.password && isPasswordValid
-                          ? "border-emerald-500 focus:ring-emerald-500/30"
-                          : "border-stone-200 focus:ring-orange-500/30 focus:border-orange-500"
-                      }`}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700 text-xs font-bold cursor-pointer"
-                    >
-                      {showPassword ? "Hide" : "Show"}
-                    </button>
-                  </div>
-                  {touched.password && !isPasswordValid && (
-                    <p className="text-[11px] text-rose-500 mt-1 font-medium">Must be at least 6 characters</p>
-                  )}
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={!isEmailValid || !isPasswordValid}
-                  className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-orange-600/25 active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
-                >
-                  Continue: Profile Info →
-                </button>
-              </div>
-            ) : (
-              <div className="space-y-4 animate-fade-in">
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-500 mb-1.5">
-                    Full Name
-                  </label>
-                  <input
-                    type="text"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    onBlur={() => setTouched((prev) => ({ ...prev, fullName: true }))}
-                    placeholder="Sachin Bhandari"
-                    className={`w-full px-4 py-3 rounded-2xl bg-stone-50 border text-xs text-stone-900 placeholder-stone-400 focus:bg-white focus:outline-none focus:ring-2 transition-all ${
-                      touched.fullName && !isNameValid
-                        ? "border-rose-500 focus:ring-rose-500/30"
-                        : touched.fullName && isNameValid
-                        ? "border-emerald-500 focus:ring-emerald-500/30"
-                        : "border-stone-200 focus:ring-orange-500/30 focus:border-orange-500"
-                    }`}
-                  />
-                  {touched.fullName && !isNameValid && (
-                    <p className="text-[11px] text-rose-500 mt-1 font-medium">Please enter your name</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-stone-500 mb-1.5">
-                    Choose Username
-                  </label>
-                  <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 text-xs font-bold">@</span>
-                    <input
-                      type="text"
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/\s+/g, "_"))}
-                      onBlur={() => setTouched((prev) => ({ ...prev, username: true }))}
-                      placeholder="sachin_chef"
-                      className={`w-full pl-8 pr-4 py-3 rounded-2xl bg-stone-50 border text-xs text-stone-900 placeholder-stone-400 focus:bg-white focus:outline-none focus:ring-2 transition-all ${
-                        touched.username && !isUsernameValid
-                          ? "border-rose-500 focus:ring-rose-500/30"
-                          : touched.username && isUsernameValid
-                          ? "border-emerald-500 focus:ring-emerald-500/30"
-                          : "border-stone-200 focus:ring-orange-500/30 focus:border-orange-500"
-                      }`}
-                    />
-                  </div>
-                  {touched.username && !isUsernameValid && (
-                    <p className="text-[11px] text-rose-500 mt-1 font-medium">3-20 lowercase characters, numbers or underscores</p>
-                  )}
-                </div>
-
-                <div className="flex space-x-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setSignupStep(1)}
-                    className="w-1/3 py-3 rounded-2xl bg-stone-100 hover:bg-stone-200 border border-stone-200 text-stone-700 font-bold text-xs transition-colors cursor-pointer"
-                  >
-                    ← Back
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isLoading || !isNameValid || !isUsernameValid}
-                    className="w-2/3 py-3 rounded-2xl bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-orange-600/25 active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
-                  >
-                    {isLoading ? "Creating..." : "Create Profile 🔥"}
-                  </button>
-                </div>
-              </div>
-            )}
-          </form>
-        )}
-
-        <div className="text-center pt-2">
-          {mode === "login" ? (
-            <p className="text-xs text-stone-500">
-              New to FoodBite?{" "}
-              <button
-                type="button"
-                onClick={() => {
-                  setMode("signup");
-                  setSignupStep(1);
-                  setErrorMessage("");
-                }}
-                className="font-bold text-orange-600 hover:underline cursor-pointer"
-              >
-                Create new profile
-              </button>
+            <p className="text-[10px] text-stone-400 mt-1.5 ml-1">
+              Enter your username to instantly access your food feed.
             </p>
-          ) : (
-            <p className="text-xs text-stone-500">
-              Already have an account?{" "}
-              <button
-                type="button"
-                onClick={() => {
-                  setMode("login");
-                  setErrorMessage("");
-                }}
-                className="font-bold text-orange-600 hover:underline cursor-pointer"
-              >
-                Sign in
-              </button>
-            </p>
-          )}
+          </div>
+
+          <button
+            type="submit"
+            disabled={isLoading || !cleanUsername}
+            className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-orange-600/25 active:scale-95 transition-all disabled:opacity-50 cursor-pointer flex items-center justify-center space-x-2"
+          >
+            <span>{isLoading ? "Entering FoodBite..." : "Continue"}</span>
+            <span>→</span>
+          </button>
+        </form>
+
+        <div className="pt-2 text-center text-[11px] text-stone-400 border-t border-stone-100">
+          Instant username access • 24-hour daily stories
         </div>
       </div>
     </div>
