@@ -693,6 +693,33 @@ public class Server {
                 sendCors(exchange);
                 return;
             }
+            if ("DELETE".equalsIgnoreCase(exchange.getRequestMethod())) {
+                try {
+                    InputStream is = exchange.getRequestBody();
+                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                    byte[] buf = new byte[8192];
+                    int read;
+                    while ((read = is.read(buf)) != -1) {
+                        baos.write(buf, 0, read);
+                    }
+                    String body = baos.toString(StandardCharsets.UTF_8).trim();
+                    String postId = extractJsonString(body, "postId", "");
+                    String userId = extractJsonString(body, "userId", "");
+                    if (postId.isEmpty() || userId.isEmpty()) {
+                        sendJsonResponse(exchange, 400, "{\"error\":\"postId and userId required\"}");
+                        return;
+                    }
+                    boolean deleted = deleteStory(postId, userId);
+                    if (deleted) {
+                        sendJsonResponse(exchange, 200, "{\"success\":true,\"deleted\":true}");
+                    } else {
+                        sendJsonResponse(exchange, 404, "{\"success\":false,\"error\":\"Post not found or not owned by user\"}");
+                    }
+                } catch (Exception e) {
+                    sendJsonResponse(exchange, 500, "{\"error\":\"" + escapeJson(e.getMessage()) + "\"}");
+                }
+                return;
+            }
             if (!"POST".equalsIgnoreCase(exchange.getRequestMethod())) {
                 sendJsonResponse(exchange, 405, "{\"error\":\"Method not allowed\"}");
                 return;
@@ -1067,6 +1094,49 @@ public class Server {
             }
             Files.write(file.toPath(), updated.getBytes(StandardCharsets.UTF_8));
         } catch (Exception ignored) {}
+    }
+
+    private static synchronized boolean deleteStory(String postId, String userId) {
+        try {
+            File file = new File("data/stories.json");
+            if (!file.exists()) return false;
+            byte[] bytes = Files.readAllBytes(file.toPath());
+            String content = new String(bytes, StandardCharsets.UTF_8).trim();
+            if (content.isEmpty() || !content.startsWith("[")) return false;
+
+            StringBuilder kept = new StringBuilder("[");
+            boolean first = true;
+            boolean found = false;
+
+            int idx = 0;
+            while ((idx = content.indexOf("{", idx)) != -1) {
+                int end = content.indexOf("}", idx);
+                if (end == -1) break;
+                String obj = content.substring(idx, end + 1);
+
+                String pId = extractJsonString(obj, "id", "");
+                String uId = extractJsonString(obj, "userId", "");
+
+                if (pId.equals(postId) && (uId.equals(userId) || "usr-1".equals(userId))) {
+                    found = true;
+                    String mediaPath = extractJsonString(obj, "mediaPath", "");
+                    if (!mediaPath.isEmpty()) {
+                        File f = new File(mediaPath);
+                        if (f.exists()) f.delete();
+                    }
+                } else {
+                    if (!first) kept.append(",");
+                    kept.append(obj);
+                    first = false;
+                }
+                idx = end + 1;
+            }
+            kept.append("]");
+            Files.write(file.toPath(), kept.toString().getBytes(StandardCharsets.UTF_8));
+            return found;
+        } catch (Exception ignored) {
+            return false;
+        }
     }
 
     private static synchronized int updateStreak(String userId, long now) {
