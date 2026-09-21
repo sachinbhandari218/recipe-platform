@@ -2216,4 +2216,4 @@ if (rootElement && window.ReactDOM) {
       <App />
     </ErrorBoundary>
   );
-}\n
+}

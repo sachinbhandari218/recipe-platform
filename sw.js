@@ -1,4 +1,4 @@
-const CACHE_NAME = 'foodbite-pwa-v6';
+const CACHE_NAME = 'foodbite-pwa-v7';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
