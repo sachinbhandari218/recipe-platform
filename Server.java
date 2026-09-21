@@ -39,6 +39,8 @@ public class Server {
             server.createContext("/api/feed", new FeedHandler());
             server.createContext("/api/posts", new PostsHandler());
             server.createContext("/api/profile", new ProfileHandler());
+            server.createContext("/api/auth/signup", new AuthSignupHandler());
+            server.createContext("/api/auth/login", new AuthLoginHandler());
             server.createContext("/", new StaticFileHandler());
 
             java.util.concurrent.ScheduledExecutorService cleanupExecutor = Executors.newSingleThreadScheduledExecutor();
@@ -61,6 +63,8 @@ public class Server {
                     server8080.createContext("/api/feed", new FeedHandler());
                     server8080.createContext("/api/posts", new PostsHandler());
                     server8080.createContext("/api/profile", new ProfileHandler());
+                    server8080.createContext("/api/auth/signup", new AuthSignupHandler());
+                    server8080.createContext("/api/auth/login", new AuthLoginHandler());
                     server8080.createContext("/", new StaticFileHandler());
                     server8080.start();
                 } catch (Exception ignored) {}
@@ -146,6 +150,154 @@ public class Server {
                 }
             }
         } catch (Exception e) {}
+    }
+
+    private static synchronized void saveUserToState(String newUserJson) {
+        if (newUserJson == null || globalState == null) return;
+        try {
+            int usersIdx = globalState.indexOf("\"users\":");
+            if (usersIdx != -1) {
+                int startBracket = globalState.indexOf("[", usersIdx);
+                if (startBracket != -1) {
+                    int bracketCount = 1;
+                    int endBracket = -1;
+                    for (int i = startBracket + 1; i < globalState.length(); i++) {
+                        char c = globalState.charAt(i);
+                        if (c == '[') bracketCount++;
+                        else if (c == ']') {
+                            bracketCount--;
+                            if (bracketCount == 0) {
+                                endBracket = i;
+                                break;
+                            }
+                        }
+                    }
+                    if (endBracket != -1) {
+                        String arrayContent = globalState.substring(startBracket + 1, endBracket).trim();
+                        String updatedUsers;
+                        if (arrayContent.isEmpty()) {
+                            updatedUsers = newUserJson;
+                        } else {
+                            updatedUsers = arrayContent + "," + newUserJson;
+                        }
+                        globalState = globalState.substring(0, startBracket + 1) + updatedUsers + globalState.substring(endBracket);
+                        savePersistedState(globalState);
+                    }
+                }
+            }
+        } catch (Exception ignored) {}
+    }
+
+    private static synchronized String findUserByEmail(String email) {
+        if (email == null || email.isEmpty() || globalState == null) return null;
+        try {
+            int usersIdx = globalState.indexOf("\"users\":");
+            if (usersIdx == -1) return null;
+            int startBracket = globalState.indexOf("[", usersIdx);
+            if (startBracket == -1) return null;
+            int bracketCount = 1;
+            int endBracket = -1;
+            for (int i = startBracket + 1; i < globalState.length(); i++) {
+                char c = globalState.charAt(i);
+                if (c == '[') bracketCount++;
+                else if (c == ']') {
+                    bracketCount--;
+                    if (bracketCount == 0) {
+                        endBracket = i;
+                        break;
+                    }
+                }
+            }
+            if (endBracket == -1) return null;
+            String usersArray = globalState.substring(startBracket + 1, endBracket);
+            int idx = 0;
+            while ((idx = usersArray.indexOf("{", idx)) != -1) {
+                int end = usersArray.indexOf("}", idx);
+                if (end == -1) break;
+                String user = usersArray.substring(idx, end + 1);
+                String uEmail = extractJsonString(user, "email", "").trim().toLowerCase();
+                if (uEmail.equalsIgnoreCase(email)) {
+                    return user;
+                }
+                idx = end + 1;
+            }
+        } catch (Exception ignored) {}
+        return null;
+    }
+
+    private static synchronized String findUserByCredentials(String email, String password) {
+        if (email == null || password == null || globalState == null) return null;
+        try {
+            int usersIdx = globalState.indexOf("\"users\":");
+            if (usersIdx == -1) return null;
+            int startBracket = globalState.indexOf("[", usersIdx);
+            if (startBracket == -1) return null;
+            int bracketCount = 1;
+            int endBracket = -1;
+            for (int i = startBracket + 1; i < globalState.length(); i++) {
+                char c = globalState.charAt(i);
+                if (c == '[') bracketCount++;
+                else if (c == ']') {
+                    bracketCount--;
+                    if (bracketCount == 0) {
+                        endBracket = i;
+                        break;
+                    }
+                }
+            }
+            if (endBracket == -1) return null;
+            String usersArray = globalState.substring(startBracket + 1, endBracket);
+            int idx = 0;
+            while ((idx = usersArray.indexOf("{", idx)) != -1) {
+                int end = usersArray.indexOf("}", idx);
+                if (end == -1) break;
+                String user = usersArray.substring(idx, end + 1);
+                String uEmail = extractJsonString(user, "email", "").trim().toLowerCase();
+                String uPass = extractJsonString(user, "password", "").trim();
+                if (uEmail.equalsIgnoreCase(email) && uPass.equals(password)) {
+                    return user;
+                }
+                idx = end + 1;
+            }
+        } catch (Exception ignored) {}
+        return null;
+    }
+
+    private static synchronized String findUserById(String targetId) {
+        if (targetId == null || targetId.isEmpty() || globalState == null) return null;
+        try {
+            int usersIdx = globalState.indexOf("\"users\":");
+            if (usersIdx == -1) return null;
+            int startBracket = globalState.indexOf("[", usersIdx);
+            if (startBracket == -1) return null;
+            int bracketCount = 1;
+            int endBracket = -1;
+            for (int i = startBracket + 1; i < globalState.length(); i++) {
+                char c = globalState.charAt(i);
+                if (c == '[') bracketCount++;
+                else if (c == ']') {
+                    bracketCount--;
+                    if (bracketCount == 0) {
+                        endBracket = i;
+                        break;
+                    }
+                }
+            }
+            if (endBracket == -1) return null;
+            String usersArray = globalState.substring(startBracket + 1, endBracket);
+            int idx = 0;
+            while ((idx = usersArray.indexOf("{", idx)) != -1) {
+                int end = usersArray.indexOf("}", idx);
+                if (end == -1) break;
+                String user = usersArray.substring(idx, end + 1);
+                String uId = extractJsonString(user, "id", extractJsonString(user, "uid", ""));
+                if (uId.equals(targetId)) {
+                    return user;
+                }
+                idx = end + 1;
+            }
+        } catch (Exception ignored) {}
+        return null;
     }
 
     static class HealthHandler implements HttpHandler {
@@ -589,21 +741,144 @@ public class Server {
                 return;
             }
             try {
+                String query = exchange.getRequestURI().getQuery();
+                String targetUid = "usr-1";
+                if (query != null && query.contains("userId=")) {
+                    for (String part : query.split("&")) {
+                        if (part.startsWith("userId=")) {
+                            targetUid = part.substring("userId=".length()).trim();
+                        }
+                    }
+                }
+
                 long now = System.currentTimeMillis();
-                long lastUpload = getLastUploadTime("usr-1");
-                int totalStreak = getStreakCount("usr-1");
+                long lastUpload = getLastUploadTime(targetUid);
+                int totalStreak = getStreakCount(targetUid);
                 long diff = now - lastUpload;
 
                 int activeStreak = (lastUpload > 0 && diff <= 86400000L) ? totalStreak : 0;
                 double hoursRemaining = (lastUpload > 0 && diff <= 86400000L) ? ((86400000L - diff) / 3600000.0) : 0.0;
                 hoursRemaining = Math.round(hoursRemaining * 10.0) / 10.0;
 
-                String activePosts = getActiveUserStories("usr-1", now);
+                String activePosts = getActiveUserStories(targetUid, now);
 
-                String resp = "{\"success\":true,\"user\":{\"id\":\"usr-1\",\"username\":\"Sachin Bhandari\",\"email\":\"sachin.bhandari@recipes.com\",\"avatarUrl\":\"https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80\",\"streak\":" + activeStreak + ",\"hoursRemaining\":" + hoursRemaining + "},\"activePosts\":" + activePosts + "}";
+                String username = "Sachin Bhandari";
+                String email = "sachin.bhandari@recipes.com";
+                String avatarUrl = "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80";
+
+                String userJson = findUserById(targetUid);
+                if (userJson != null) {
+                    username = extractJsonString(userJson, "name", extractJsonString(userJson, "display_name", extractJsonString(userJson, "username", username)));
+                    email = extractJsonString(userJson, "email", email);
+                    avatarUrl = extractJsonString(userJson, "avatar", extractJsonString(userJson, "avatar_url", avatarUrl));
+                }
+
+                String resp = "{\"success\":true,\"user\":{\"id\":\"" + targetUid + "\",\"username\":\"" + escapeJson(username) + "\",\"email\":\"" + escapeJson(email) + "\",\"avatarUrl\":\"" + avatarUrl + "\",\"streak\":" + activeStreak + ",\"hoursRemaining\":" + hoursRemaining + "},\"activePosts\":" + activePosts + "}";
                 sendJsonResponse(exchange, 200, resp);
             } catch (Exception e) {
                 sendJsonResponse(exchange, 500, "{\"error\":\"" + escapeJson(e.getMessage()) + "\"}");
+            }
+        }
+    }
+
+    static class AuthSignupHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
+                sendCors(exchange);
+                return;
+            }
+            if (!"POST".equalsIgnoreCase(exchange.getRequestMethod())) {
+                sendJsonResponse(exchange, 405, "{\"error\":\"Method not allowed\"}");
+                return;
+            }
+            try {
+                InputStream is = exchange.getRequestBody();
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                byte[] buf = new byte[8192];
+                int read;
+                while ((read = is.read(buf)) != -1) {
+                    baos.write(buf, 0, read);
+                }
+                String body = baos.toString(StandardCharsets.UTF_8).trim();
+
+                String email = extractJsonString(body, "email", "").trim().toLowerCase();
+                String password = extractJsonString(body, "password", "").trim();
+                String fullName = extractJsonString(body, "fullName", "").trim();
+                String username = extractJsonString(body, "username", "").trim().toLowerCase();
+
+                if (email.isEmpty() || password.isEmpty() || fullName.isEmpty() || username.isEmpty()) {
+                    sendJsonResponse(exchange, 400, "{\"success\":false,\"message\":\"All fields are required\"}");
+                    return;
+                }
+
+                if (findUserByEmail(email) != null) {
+                    sendJsonResponse(exchange, 400, "{\"success\":false,\"message\":\"Email address already registered\"}");
+                    return;
+                }
+
+                String userId = "usr-" + System.currentTimeMillis();
+                String avatar = "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80";
+
+                String newUserJson = "{\"uid\":\"" + userId + "\",\"id\":\"" + userId + "\",\"email\":\"" + escapeJson(email) + "\",\"name\":\"" + escapeJson(fullName) + "\",\"display_name\":\"" + escapeJson(fullName) + "\",\"username\":\"" + escapeJson(username) + "\",\"password\":\"" + escapeJson(password) + "\",\"avatar\":\"" + avatar + "\",\"avatar_url\":\"" + avatar + "\",\"role\":\"user\",\"streak\":0,\"created_at\":\"" + System.currentTimeMillis() + "\"}";
+
+                saveUserToState(newUserJson);
+
+                String token = "fb_tok_" + System.currentTimeMillis() + "_" + (int)(Math.random() * 10000);
+                String resp = "{\"success\":true,\"token\":\"" + token + "\",\"user\":{\"id\":\"" + userId + "\",\"email\":\"" + escapeJson(email) + "\",\"name\":\"" + escapeJson(fullName) + "\",\"username\":\"" + escapeJson(username) + "\",\"avatar\":\"" + avatar + "\",\"streak\":0}}";
+                sendJsonResponse(exchange, 201, resp);
+            } catch (Exception e) {
+                sendJsonResponse(exchange, 500, "{\"success\":false,\"message\":\"" + escapeJson(e.getMessage()) + "\"}");
+            }
+        }
+    }
+
+    static class AuthLoginHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
+                sendCors(exchange);
+                return;
+            }
+            if (!"POST".equalsIgnoreCase(exchange.getRequestMethod())) {
+                sendJsonResponse(exchange, 405, "{\"error\":\"Method not allowed\"}");
+                return;
+            }
+            try {
+                InputStream is = exchange.getRequestBody();
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                byte[] buf = new byte[8192];
+                int read;
+                while ((read = is.read(buf)) != -1) {
+                    baos.write(buf, 0, read);
+                }
+                String body = baos.toString(StandardCharsets.UTF_8).trim();
+
+                String email = extractJsonString(body, "email", "").trim().toLowerCase();
+                String password = extractJsonString(body, "password", "").trim();
+
+                if (email.isEmpty() || password.isEmpty()) {
+                    sendJsonResponse(exchange, 400, "{\"success\":false,\"message\":\"Email and password are required\"}");
+                    return;
+                }
+
+                String userJson = findUserByCredentials(email, password);
+                if (userJson == null) {
+                    sendJsonResponse(exchange, 401, "{\"success\":false,\"message\":\"Invalid email or password\"}");
+                    return;
+                }
+
+                String userId = extractJsonString(userJson, "id", extractJsonString(userJson, "uid", "usr-1"));
+                String name = extractJsonString(userJson, "name", extractJsonString(userJson, "display_name", "FoodBite User"));
+                String username = extractJsonString(userJson, "username", name.toLowerCase().replace(" ", ""));
+                String avatar = extractJsonString(userJson, "avatar", extractJsonString(userJson, "avatar_url", "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80"));
+
+                int streak = getStreakCount(userId);
+                String token = "fb_tok_" + System.currentTimeMillis() + "_" + (int)(Math.random() * 10000);
+                String resp = "{\"success\":true,\"token\":\"" + token + "\",\"user\":{\"id\":\"" + userId + "\",\"email\":\"" + escapeJson(email) + "\",\"name\":\"" + escapeJson(name) + "\",\"username\":\"" + escapeJson(username) + "\",\"avatar\":\"" + avatar + "\",\"streak\":" + streak + "}}";
+                sendJsonResponse(exchange, 200, resp);
+            } catch (Exception e) {
+                sendJsonResponse(exchange, 500, "{\"success\":false,\"message\":\"" + escapeJson(e.getMessage()) + "\"}");
             }
         }
     }
