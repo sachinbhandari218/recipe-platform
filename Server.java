@@ -537,8 +537,16 @@ public class Server {
                     base64Data = base64Data.substring(base64Data.indexOf(",") + 1);
                 }
 
-                base64Data = base64Data.replaceAll("\\s+", "").replace("\\/", "/");
-                byte[] imageBytes = java.util.Base64.getDecoder().decode(base64Data);
+                base64Data = base64Data.replaceAll("\\s+", "").replace("\\/", "/").replace("-", "+").replace("_", "/");
+                while (base64Data.length() % 4 != 0) {
+                    base64Data += "=";
+                }
+                byte[] imageBytes = java.util.Base64.getMimeDecoder().decode(base64Data);
+
+                if (imageBytes == null || imageBytes.length == 0) {
+                    sendJsonResponse(exchange, 400, "{\"error\":\"Uploaded image data is empty or invalid\"}");
+                    return;
+                }
 
                 String filename = (extension.equals(".mp4") || extension.equals(".webm") ? "video_" : "dish_") + System.currentTimeMillis() + "_" + (int)(Math.random() * 10000) + extension;
                 File targetFile = new File(uploadsDir, filename);

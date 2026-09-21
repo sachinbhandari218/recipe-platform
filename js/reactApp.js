@@ -33,6 +33,95 @@ function formatTimeAgo(timestamp) {
   const days = Math.floor(hours / 24);
   return days + "d ago";
 }
+function compressImageFile(file, maxWidth = 1600, quality = 0.85) {
+  return new Promise((resolve, reject) => {
+    if (!file) {
+      reject(new Error("No file provided"));
+      return;
+    }
+    const fileType = file.type || "";
+    if (fileType.indexOf("image/") !== 0) {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error("Unable to read image file"));
+      reader.readAsDataURL(file);
+      return;
+    }
+    if (fileType === "image/gif" || fileType === "image/svg+xml") {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error("Unable to read image file"));
+      reader.readAsDataURL(file);
+      return;
+    }
+    const processBlob = (srcUrl, isBlobUrl) => {
+      const img = new Image();
+      img.onload = () => {
+        if (isBlobUrl) {
+          try {
+            URL.revokeObjectURL(srcUrl);
+          } catch (e) {}
+        }
+        try {
+          let width = img.naturalWidth || img.width;
+          let height = img.naturalHeight || img.height;
+          if (!width || !height) {
+            resolve(srcUrl);
+            return;
+          }
+          if (width > maxWidth || height > maxWidth) {
+            if (width >= height) {
+              height = Math.round(height * maxWidth / width);
+              width = maxWidth;
+            } else {
+              width = Math.round(width * maxWidth / height);
+              height = maxWidth;
+            }
+          }
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            resolve(srcUrl);
+            return;
+          }
+          ctx.drawImage(img, 0, 0, width, height);
+          const dataUrl = canvas.toDataURL("image/jpeg", quality);
+          resolve(dataUrl);
+        } catch (err) {
+          resolve(srcUrl);
+        }
+      };
+      img.onerror = () => {
+        if (isBlobUrl) {
+          try {
+            URL.revokeObjectURL(srcUrl);
+          } catch (e) {}
+        }
+        const fallbackReader = new FileReader();
+        fallbackReader.onload = () => resolve(fallbackReader.result);
+        fallbackReader.onerror = () => reject(new Error("Failed to load image file"));
+        fallbackReader.readAsDataURL(file);
+      };
+      img.src = srcUrl;
+    };
+    let objUrl = "";
+    try {
+      objUrl = URL.createObjectURL(file);
+    } catch (e) {
+      objUrl = "";
+    }
+    if (objUrl) {
+      processBlob(objUrl, true);
+    } else {
+      const reader = new FileReader();
+      reader.onload = ev => processBlob(ev.target.result, false);
+      reader.onerror = () => reject(new Error("Unable to read image file"));
+      reader.readAsDataURL(file);
+    }
+  });
+}
 const CATEGORIES = [{
   id: "all",
   label: "All Bites",
@@ -871,17 +960,24 @@ function ShareFoodModal({
           },
           body: selectedFile
         });
-        if (!resp.ok) throw new Error("Video upload failed");
+        if (!resp.ok) {
+          let serverMsg = "Video upload failed";
+          try {
+            const errJson = await resp.json();
+            if (errJson && errJson.error) serverMsg = errJson.error;
+          } catch (e) {}
+          throw new Error(serverMsg);
+        }
         const data = await resp.json();
         uploadedUrl = data.url;
         uploadedPath = "uploads/" + data.filename;
       } else {
-        const reader = new FileReader();
-        const base64 = await new Promise((resolve, reject) => {
-          reader.onload = () => resolve(reader.result);
-          reader.onerror = reject;
-          reader.readAsDataURL(selectedFile);
-        });
+        let base64 = "";
+        try {
+          base64 = await compressImageFile(selectedFile, 1600, 0.85);
+        } catch (readErr) {
+          throw new Error(readErr && readErr.message ? readErr.message : "Failed to process photo from your device");
+        }
         const resp = await fetch("/api/upload", {
           method: "POST",
           headers: {
@@ -891,7 +987,14 @@ function ShareFoodModal({
             image: base64
           })
         });
-        if (!resp.ok) throw new Error("Photo upload failed");
+        if (!resp.ok) {
+          let serverMsg = "Photo upload failed";
+          try {
+            const errJson = await resp.json();
+            if (errJson && errJson.error) serverMsg = errJson.error;
+          } catch (e) {}
+          throw new Error(serverMsg);
+        }
         const data = await resp.json();
         uploadedUrl = data.url;
         uploadedPath = "uploads/" + data.filename;
@@ -928,14 +1031,22 @@ function ShareFoodModal({
           duration: duration
         })
       });
-      if (!postResp.ok) throw new Error("Failed to save story record");
+      if (!postResp.ok) {
+        let postErrMsg = "Failed to save story record";
+        try {
+          const errJson = await postResp.json();
+          if (errJson && errJson.error) postErrMsg = errJson.error;
+        } catch (e) {}
+        throw new Error(postErrMsg);
+      }
       const postData = await postResp.json();
       showToast("🔥 Food story posted! Active streak: " + postData.currentStreak + " days!", "success");
       resetForm();
       onStoryUploaded && onStoryUploaded(postData);
       onClose();
     } catch (err) {
-      setErrorMessage(err.message || "Failed to post story");
+      const displayMsg = err && err.message ? err.message : typeof err === "string" ? err : "Failed to post story. Please check your image and connection.";
+      setErrorMessage(displayMsg);
     } finally {
       setIsSubmitting(false);
     }
