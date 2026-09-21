@@ -649,12 +649,11 @@ function UploadStoryModal({ isOpen, onClose, currentUser, onStoryUploaded, showT
   );
 }
 
-function ImmersiveFeed({ posts, currentUser, followingList, onToggleFollow, onTriggerUpload, showToast }) {
+function HomeFeed({ posts, currentUser, followingList, onToggleFollow, onTriggerUpload, showToast }) {
   const [likes, setLikes] = useState({});
   const [comments, setComments] = useState({});
   const [activeCommentPostId, setActiveCommentPostId] = useState(null);
   const [commentInput, setCommentInput] = useState("");
-  const [isMuted, setIsMuted] = useState(true);
 
   const currentUserId = currentUser ? (currentUser.id || currentUser.uid) : "usr-1";
 
@@ -677,8 +676,8 @@ function ImmersiveFeed({ posts, currentUser, followingList, onToggleFollow, onTr
   const handleShare = (post) => {
     if (navigator.share) {
       navigator.share({
-        title: "FoodBite Story by " + post.username,
-        text: post.caption || "Check out this food story on FoodBite!",
+        title: "FoodBite Post by " + post.username,
+        text: post.caption || "Check out this food post on FoodBite!",
         url: window.location.href
       }).catch(() => {});
     } else {
@@ -696,174 +695,204 @@ function ImmersiveFeed({ posts, currentUser, followingList, onToggleFollow, onTr
           </div>
           <div className="absolute -inset-1 rounded-3xl border border-orange-500/20 animate-spin"></div>
         </div>
-        <h3 className="text-xl font-black text-white">No Stories in Feed</h3>
+        <h3 className="text-xl font-black text-white">No Posts Yet</h3>
         <p className="text-xs text-zinc-400 mt-2 max-w-xs leading-relaxed">
-          Daily stories expire after 24 hours. Be the first to share today's culinary creation!
+          The feed is empty. Be the first to share a food post!
         </p>
         <button
           type="button"
           onClick={onTriggerUpload}
           className="mt-6 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white text-xs font-black uppercase tracking-wider shadow-xl shadow-orange-600/30 active:scale-95 transition-all cursor-pointer"
         >
-          🔥 Post Food Story
+          🔥 Create Post
         </button>
       </div>
     );
   }
 
   return (
-    <div className="w-full h-full overflow-y-scroll snap-y snap-mandatory scrollbar-none bg-black relative select-none">
-      <div className="fixed top-0 inset-x-0 z-30 flex items-center justify-between p-4 pointer-events-none max-w-sm mx-auto">
-        <div className="flex items-center space-x-2 pointer-events-auto">
-          <span className="text-xl animate-pulse">🔥</span>
-          <span className="font-serif font-black text-base text-white tracking-tight drop-shadow-md">FoodBite</span>
+    <div className="w-full h-full overflow-y-auto scrollbar-none bg-black select-none">
+      <div className="sticky top-0 z-30 w-full max-w-lg mx-auto bg-black/80 backdrop-blur-xl border-b border-zinc-800/80">
+        <div className="flex items-center justify-between px-4 py-3">
+          <div className="flex items-center space-x-2">
+            <span className="text-xl">🔥</span>
+            <span className="font-serif font-black text-lg text-white tracking-tight">FoodBite</span>
+          </div>
+          <button
+            type="button"
+            onClick={onTriggerUpload}
+            className="w-9 h-9 rounded-full bg-gradient-to-tr from-orange-600 to-amber-500 text-white flex items-center justify-center shadow-lg active:scale-95 transition-transform cursor-pointer"
+            title="New Post"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
+            </svg>
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={() => setIsMuted(!isMuted)}
-          className="pointer-events-auto w-9 h-9 rounded-full bg-black/50 border border-white/10 backdrop-blur-md text-white flex items-center justify-center text-xs shadow-lg"
-          title={isMuted ? "Unmute Audio" : "Mute Audio"}
-        >
-          {isMuted ? "🔇" : "🔊"}
-        </button>
       </div>
 
-      {posts.map((post) => {
-        const isLiked = likes[post.id];
-        const isFollowing = followingList && followingList.includes(post.userId);
-        const isAuthorSelf = post.userId === currentUserId;
-        const postComments = comments[post.id] || [];
+      <div className="max-w-lg mx-auto pb-28">
+        {posts.map((post) => {
+          const isLiked = likes[post.id];
+          const isFollowing = followingList && followingList.includes(post.userId);
+          const isAuthorSelf = post.userId === currentUserId;
+          const postComments = comments[post.id] || [];
 
-        return (
-          <div
-            key={post.id}
-            className="relative w-full h-full min-w-0 snap-start snap-always overflow-hidden bg-black flex-shrink-0"
-          >
-            {post.mediaType === "video" ? (
-              <video
-                src={post.mediaUrl}
-                playsInline
-                loop
-                autoPlay
-                muted={isMuted}
-                className="absolute inset-0 w-full h-full object-cover"
-              />
-            ) : (
-              <img
-                src={post.mediaUrl}
-                alt={post.caption || "Food story"}
-                className="absolute inset-0 w-full h-full object-cover"
-              />
-            )}
+          return (
+            <article
+              key={post.id}
+              className="border-b border-zinc-800/70"
+            >
+              <div className="px-4 pt-3 pb-2.5">
+                <div className="flex items-start space-x-3">
+                  <img
+                    src={post.userAvatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80"}
+                    alt={post.username}
+                    className="w-10 h-10 rounded-full border border-zinc-700 object-cover flex-shrink-0"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-1.5 min-w-0">
+                        <span className="text-sm font-bold text-white truncate">
+                          {post.name || post.username}
+                        </span>
+                        <span className="text-sm text-zinc-500 truncate">
+                          @{post.username}
+                        </span>
+                        <span className="text-zinc-600 text-xs flex-shrink-0">·</span>
+                        <span className="text-xs text-zinc-500 flex-shrink-0">
+                          {formatTimeAgo(post.createdAt)}
+                        </span>
+                      </div>
+                      <div className="flex items-center space-x-2 flex-shrink-0 ml-2">
+                        {!isAuthorSelf && (
+                          <button
+                            type="button"
+                            onClick={() => onToggleFollow(post.userId, post.username)}
+                            className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all active:scale-95 cursor-pointer ${
+                              isFollowing
+                                ? "bg-transparent border border-zinc-600 text-zinc-300 hover:border-rose-900 hover:text-rose-400"
+                                : "bg-white text-black hover:bg-zinc-200"
+                            }`}
+                          >
+                            {isFollowing ? "Following" : "Follow"}
+                          </button>
+                        )}
+                      </div>
+                    </div>
 
-            <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/20 to-transparent pointer-events-none"></div>
-            <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/60 to-transparent pointer-events-none"></div>
+                    {post.caption && (
+                      <p className="text-sm text-zinc-100 leading-relaxed mt-1.5 whitespace-pre-wrap break-words">
+                        {decodeUnicode(post.caption)}
+                      </p>
+                    )}
 
-            <div className="absolute bottom-24 left-4 right-20 z-20 space-y-2.5 pointer-events-none">
-              <div className="flex items-center space-x-2.5 pointer-events-auto">
-                <img
-                  src={post.userAvatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80"}
-                  alt={post.username}
-                  className="w-10 h-10 rounded-full border-2 border-orange-500 object-cover shadow-lg"
-                />
-                <div className="flex items-center space-x-2">
-                  <span className="text-xs font-black text-white drop-shadow-md">
-                    @{post.username}
-                  </span>
-                  {!isAuthorSelf && (
-                    <button
-                      type="button"
-                      onClick={() => onToggleFollow(post.userId, post.username)}
-                      className={`px-3 py-1 rounded-full text-[11px] font-black tracking-wide transition-all shadow-md active:scale-95 cursor-pointer ${
-                        isFollowing
-                          ? "bg-zinc-800/80 hover:bg-zinc-700/80 text-zinc-300 border border-white/20 backdrop-blur-md"
-                          : "bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-white shadow-orange-500/30"
-                      }`}
-                    >
-                      {isFollowing ? "✓ Following" : "+ Follow"}
-                    </button>
-                  )}
-                  {isAuthorSelf && (
-                    <span className="px-2 py-0.5 rounded-full bg-white/10 text-[10px] text-zinc-400 font-bold border border-white/10">
-                      You
-                    </span>
-                  )}
+                    <div className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full bg-orange-950/50 border border-orange-500/30 text-[10px] font-bold text-orange-400 mt-2">
+                      <span>⏳</span>
+                      <span>{formatHoursLeft(post.expiresAt)}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-orange-950/70 border border-orange-500/40 text-[11px] font-bold text-orange-300 backdrop-blur-md pointer-events-auto">
-                <span>⏳</span>
-                <span>{formatHoursLeft(post.expiresAt)}</span>
-              </div>
-
-              {post.caption && (
-                <p className="text-xs text-white/95 leading-relaxed font-medium drop-shadow-md line-clamp-3 pointer-events-auto pr-2">
-                  {decodeUnicode(post.caption)}
-                </p>
+              {post.mediaUrl && (
+                <div className="px-4 pb-2">
+                  <div className="ml-[52px]">
+                    {post.mediaType === "video" ? (
+                      <video
+                        src={post.mediaUrl}
+                        controls
+                        playsInline
+                        preload="metadata"
+                        className="w-full rounded-2xl border border-zinc-800 object-cover max-h-[480px]"
+                      />
+                    ) : (
+                      <img
+                        src={post.mediaUrl}
+                        alt={post.caption || "Food post"}
+                        className="w-full rounded-2xl border border-zinc-800 object-cover max-h-[480px]"
+                      />
+                    )}
+                  </div>
+                </div>
               )}
-            </div>
 
-            <div className="absolute right-3.5 bottom-24 z-20 flex flex-col items-center space-y-4 pointer-events-auto">
-              <button
-                type="button"
-                onClick={() => toggleLike(post.id)}
-                className="flex flex-col items-center space-y-1 transition-transform active:scale-125 cursor-pointer"
-              >
-                <div className={`w-11 h-11 rounded-full flex items-center justify-center backdrop-blur-md border shadow-lg ${
-                  isLiked
-                    ? "bg-rose-600/90 border-rose-500 text-white"
-                    : "bg-black/50 border-white/15 text-white hover:text-rose-400"
-                }`}>
-                  <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
-                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
-                  </svg>
-                </div>
-                <span className="text-[10px] font-bold text-white drop-shadow">
-                  {isLiked ? 1 : 0}
-                </span>
-              </button>
+              <div className="px-4 pb-3">
+                <div className="ml-[52px] flex items-center justify-between max-w-[320px]">
+                  <button
+                    type="button"
+                    onClick={() => setActiveCommentPostId(post.id)}
+                    className="group flex items-center space-x-1.5 transition-colors cursor-pointer"
+                  >
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center group-hover:bg-sky-500/10 transition-colors">
+                      <svg className="w-[18px] h-[18px] text-zinc-500 group-hover:text-sky-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                      </svg>
+                    </div>
+                    <span className={`text-xs ${postComments.length > 0 ? "text-zinc-400" : "text-zinc-600"} group-hover:text-sky-400 transition-colors`}>
+                      {postComments.length > 0 ? postComments.length : ""}
+                    </span>
+                  </button>
 
-              <button
-                type="button"
-                onClick={() => setActiveCommentPostId(post.id)}
-                className="flex flex-col items-center space-y-1 transition-transform active:scale-110 cursor-pointer"
-              >
-                <div className="w-11 h-11 rounded-full bg-black/50 border border-white/15 backdrop-blur-md text-white flex items-center justify-center shadow-lg hover:text-orange-400">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                  </svg>
-                </div>
-                <span className="text-[10px] font-bold text-white drop-shadow">
-                  {postComments.length}
-                </span>
-              </button>
+                  <button
+                    type="button"
+                    onClick={() => toggleLike(post.id)}
+                    className="group flex items-center space-x-1.5 transition-colors cursor-pointer"
+                  >
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center group-hover:bg-rose-500/10 transition-colors">
+                      {isLiked ? (
+                        <svg className="w-[18px] h-[18px] text-rose-500 fill-current" viewBox="0 0 24 24">
+                          <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+                        </svg>
+                      ) : (
+                        <svg className="w-[18px] h-[18px] text-zinc-500 group-hover:text-rose-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                        </svg>
+                      )}
+                    </div>
+                    <span className={`text-xs ${isLiked ? "text-rose-500" : "text-zinc-600"} group-hover:text-rose-400 transition-colors`}>
+                      {isLiked ? "1" : ""}
+                    </span>
+                  </button>
 
-              <button
-                type="button"
-                onClick={() => handleShare(post)}
-                className="flex flex-col items-center space-y-1 transition-transform active:scale-110 cursor-pointer"
-              >
-                <div className="w-11 h-11 rounded-full bg-black/50 border border-white/15 backdrop-blur-md text-white flex items-center justify-center shadow-lg hover:text-orange-400">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                  </svg>
+                  <button
+                    type="button"
+                    onClick={() => handleShare(post)}
+                    className="group flex items-center space-x-1.5 transition-colors cursor-pointer"
+                  >
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center group-hover:bg-emerald-500/10 transition-colors">
+                      <svg className="w-[18px] h-[18px] text-zinc-500 group-hover:text-emerald-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                      </svg>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    className="group flex items-center space-x-1.5 transition-colors cursor-pointer"
+                  >
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center group-hover:bg-orange-500/10 transition-colors">
+                      <svg className="w-[18px] h-[18px] text-zinc-500 group-hover:text-orange-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                      </svg>
+                    </div>
+                  </button>
                 </div>
-                <span className="text-[10px] font-bold text-white drop-shadow">Share</span>
-              </button>
-            </div>
-          </div>
-        );
-      })}
+              </div>
+            </article>
+          );
+        })}
+      </div>
 
       {activeCommentPostId && (
         <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/70 backdrop-blur-sm animate-fade-in">
-          <div className="w-full max-w-sm mx-auto bg-zinc-950 border-t border-zinc-800 rounded-t-3xl p-4 space-y-3 shadow-2xl max-h-[60vh] flex flex-col">
+          <div className="w-full max-w-lg mx-auto bg-zinc-950 border-t border-zinc-800 rounded-t-3xl p-4 space-y-3 shadow-2xl max-h-[60vh] flex flex-col">
             <div className="flex items-center justify-between pb-2 border-b border-zinc-900">
               <span className="text-xs font-black uppercase tracking-wider text-white">Comments</span>
               <button
                 type="button"
                 onClick={() => setActiveCommentPostId(null)}
-                className="text-zinc-400 hover:text-white text-xs font-bold"
+                className="text-zinc-400 hover:text-white text-xs font-bold cursor-pointer"
               >
                 ✕
               </button>
@@ -871,12 +900,17 @@ function ImmersiveFeed({ posts, currentUser, followingList, onToggleFollow, onTr
 
             <div className="flex-1 overflow-y-auto space-y-2.5 py-2">
               {(comments[activeCommentPostId] || []).length === 0 ? (
-                <p className="text-xs text-zinc-500 text-center py-6">No comments yet. Say something nice!</p>
+                <p className="text-xs text-zinc-500 text-center py-6">No comments yet. Be the first to reply!</p>
               ) : (
                 (comments[activeCommentPostId] || []).map((c) => (
-                  <div key={c.id} className="p-2.5 rounded-xl bg-zinc-900/60 text-xs">
-                    <span className="font-bold text-orange-400 mr-2">@{c.author}</span>
-                    <span className="text-zinc-200">{c.text}</span>
+                  <div key={c.id} className="flex items-start space-x-2.5 py-2">
+                    <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center text-xs text-orange-400 font-bold flex-shrink-0">
+                      {c.author.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-xs font-bold text-white mr-1.5">@{c.author}</span>
+                      <span className="text-xs text-zinc-300">{c.text}</span>
+                    </div>
                   </div>
                 ))
               )}
@@ -890,16 +924,16 @@ function ImmersiveFeed({ posts, currentUser, followingList, onToggleFollow, onTr
                 onKeyDown={(e) => {
                   if (e.key === "Enter") handleSendComment(activeCommentPostId);
                 }}
-                placeholder="Add a culinary comment..."
-                className="flex-1 px-4 py-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
+                placeholder="Post your reply..."
+                className="flex-1 px-4 py-2.5 rounded-full bg-zinc-900 border border-zinc-800 text-xs text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
               />
               <button
                 type="button"
                 onClick={() => handleSendComment(activeCommentPostId)}
                 disabled={!commentInput.trim()}
-                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-orange-600 to-amber-600 text-white text-xs font-bold disabled:opacity-30 cursor-pointer"
+                className="px-4 py-2.5 rounded-full bg-sky-500 hover:bg-sky-400 text-white text-xs font-bold disabled:opacity-30 cursor-pointer transition-colors"
               >
-                Post
+                Reply
               </button>
             </div>
           </div>
@@ -1341,7 +1375,7 @@ function App() {
     <div className="h-full w-full flex flex-col bg-black text-white selection:bg-orange-600 selection:text-white overflow-hidden relative">
       <main className="flex-1 h-full w-full overflow-hidden">
         {activeTab === "home" && (
-          <ImmersiveFeed
+          <HomeFeed
             posts={stories}
             currentUser={currentUser}
             followingList={followingList}
