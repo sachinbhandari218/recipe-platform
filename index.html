@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <meta name="theme-color" content="#09090b">
+  <meta name="theme-color" content="#ffffff">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="FoodBite">
   <meta name="application-name" content="FoodBite">
-  <meta name="msapplication-TileColor" content="#09090b">
+  <meta name="msapplication-TileColor" content="#ffffff">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
   <link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192.png">
@@ -58,11 +58,11 @@
               200: '#c2dfcf',
               300: '#98c7b0',
               400: '#6ea98f',
-              500: '#488c71',
-              600: '#2d7256',
-              700: '#047857',
-              800: '#065f46',
-              900: '#064e3b'
+              500: '#488b6f',
+              600: '#366f57',
+              700: '#2b5846',
+              800: '#254739',
+              900: '#203c31'
             }
           }
         }
@@ -73,12 +73,12 @@
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <link rel="stylesheet" href="css/style.css?v=20260921_06">
+  <link rel="stylesheet" href="css/style.css?v=20260921_07">
 </head>
-<body class="min-h-screen flex flex-col bg-zinc-950 text-white selection:bg-orange-600 selection:text-white">
+<body class="min-h-screen flex flex-col bg-stone-50 text-stone-900 selection:bg-orange-600 selection:text-white">
 
   <div id="root">
-    <div class="min-h-screen flex items-center justify-center bg-zinc-950 p-4">
+    <div class="min-h-screen flex items-center justify-center bg-gradient-to-b from-orange-50/60 via-stone-50 to-amber-50/40 p-4">
       <div class="text-center max-w-sm mx-auto p-6">
         <div class="relative w-16 h-16 mx-auto mb-5">
           <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-orange-600 to-amber-500 flex items-center justify-center text-white font-serif font-black text-2xl shadow-xl shadow-orange-600/30 animate-pulse">
@@ -86,12 +86,12 @@
           </div>
           <div class="absolute -inset-1.5 rounded-3xl border-2 border-orange-500/30 border-t-orange-600 animate-spin"></div>
         </div>
-        <h2 class="text-2xl font-black text-white tracking-tight">FoodBite</h2>
-        <p class="text-xs text-orange-400 font-bold uppercase tracking-widest mt-1">Ephemeral Food Stories</p>
-        <div class="w-48 h-1.5 bg-zinc-800 rounded-full mx-auto my-4 overflow-hidden">
+        <h2 class="text-2xl font-black text-stone-900 tracking-tight font-serif">FoodBite</h2>
+        <p class="text-xs text-orange-600 font-bold uppercase tracking-widest mt-1">Ephemeral Food Stories</p>
+        <div class="w-48 h-1.5 bg-stone-200 rounded-full mx-auto my-4 overflow-hidden">
           <div class="w-full h-full bg-gradient-to-r from-orange-500 via-amber-400 to-orange-600 rounded-full animate-pulse"></div>
         </div>
-        <div class="inline-flex items-center space-x-2 px-3 py-1.5 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-300 text-xs shadow-sm">
+        <div class="inline-flex items-center space-x-2 px-3 py-1.5 rounded-xl bg-white border border-stone-200 text-stone-600 text-xs shadow-sm">
           <span class="text-[11px] font-medium">Launching ephemeral food platform...</span>
         </div>
         <div id="splash-failsafe" class="mt-4 hidden">
