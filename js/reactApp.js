@@ -207,6 +207,16 @@ function Navbar({ currentUser, activeRoute, navigateTo, openAuth, onLogout, isOw
           <div className="flex md:hidden items-center space-x-2">
             <button
               type="button"
+              onClick={() => navigateTo("#share-recipe")}
+              className="px-3 py-1.5 rounded-xl font-bold text-xs bg-orange-600 text-white hover:bg-orange-700 transition-all flex items-center space-x-1 shadow-sm"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
+              </svg>
+              <span>Share</span>
+            </button>
+            <button
+              type="button"
               onClick={() => setMobileOpen(true)}
               className="p-2 rounded-xl text-stone-600 hover:text-stone-900 hover:bg-stone-100 transition-colors"
             >
@@ -324,7 +334,7 @@ function Navbar({ currentUser, activeRoute, navigateTo, openAuth, onLogout, isOw
   );
 }
 
-function DiscoverRecipes({ recipes, onSelectRecipe, onEditRecipe, onDeleteRecipe, currentUser, isOwner }) {
+function DiscoverRecipes({ recipes, onSelectRecipe, onEditRecipe, onDeleteRecipe, currentUser, isOwner, navigateTo }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterPrepTime, setFilterPrepTime] = useState("all");
@@ -376,7 +386,7 @@ function DiscoverRecipes({ recipes, onSelectRecipe, onEditRecipe, onDeleteRecipe
   return (
     <div className="py-8 sm:py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-3xl mx-auto mb-10">
+        <div className="text-center max-w-3xl mx-auto mb-8 sm:mb-10">
           <div className="inline-flex items-center space-x-2 px-3.5 py-1 rounded-full bg-orange-100/70 border border-orange-200 text-orange-800 text-xs font-bold uppercase tracking-wider mb-4">
             <span className="w-2 h-2 rounded-full bg-orange-600"></span>
             <span>FlavorCraft Culinary Community</span>
@@ -384,9 +394,22 @@ function DiscoverRecipes({ recipes, onSelectRecipe, onEditRecipe, onDeleteRecipe
           <h1 className="text-3xl sm:text-5xl font-serif font-black text-stone-900 tracking-tight mb-4 leading-tight">
             Discover Authentic Flavors & Heritage Dishes
           </h1>
-          <p className="text-stone-600 text-sm sm:text-base leading-relaxed">
+          <p className="text-stone-600 text-sm sm:text-base leading-relaxed mb-6">
             Explore chef-tested recipes, secret spice measurements, and dining favorites crafted by home cooks and passionate foodies across the nation.
           </p>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <button
+              type="button"
+              onClick={() => navigateTo("#share-recipe")}
+              className="w-full sm:w-auto px-7 py-3.5 rounded-2xl font-bold text-sm sm:text-base bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white shadow-lg hover:shadow-orange-600/30 transition-all flex items-center justify-center space-x-2 active:scale-95 cursor-pointer"
+            >
+              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
+              </svg>
+              <span>+ Share Your Recipe or Video</span>
+            </button>
+          </div>
         </div>
 
         <div className="glass-card rounded-3xl p-4 sm:p-6 mb-10 shadow-md border border-stone-200/80">
@@ -590,6 +613,19 @@ function DiscoverRecipes({ recipes, onSelectRecipe, onEditRecipe, onDeleteRecipe
             })}
           </div>
         )}
+      </div>
+
+      <div className="md:hidden fixed bottom-6 right-5 z-40">
+        <button
+          type="button"
+          onClick={() => navigateTo("#share-recipe")}
+          className="px-4 py-3 rounded-full font-bold text-xs bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-xl shadow-orange-600/40 hover:from-orange-700 hover:to-amber-700 active:scale-95 transition-all flex items-center space-x-2 border border-orange-400/40"
+        >
+          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
+          </svg>
+          <span>Share Recipe</span>
+        </button>
       </div>
     </div>
   );
@@ -2658,6 +2694,7 @@ function App() {
             onDeleteRecipe={handleDeleteRecipe}
             currentUser={currentUser}
             isOwner={isOwner}
+            navigateTo={navigateTo}
           />
         )}
       </main>
