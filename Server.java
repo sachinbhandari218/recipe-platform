@@ -790,8 +790,8 @@ public class Server {
                 int totalStreak = getStreakCount(targetUid);
                 long diff = now - lastUpload;
 
-                int activeStreak = (lastUpload > 0 && diff <= 86400000L) ? totalStreak : 0;
-                double hoursRemaining = (lastUpload > 0 && diff <= 86400000L) ? ((86400000L - diff) / 3600000.0) : 0.0;
+                int activeStreak = (lastUpload > 0 && diff <= 48 * 3600000L) ? totalStreak : 0;
+                double hoursRemaining = (lastUpload > 0 && diff <= 48 * 3600000L) ? ((48 * 3600000L - diff) / 3600000.0) : 0.0;
                 hoursRemaining = Math.round(hoursRemaining * 10.0) / 10.0;
 
                 String activePosts = getActiveUserStories(targetUid, now);
@@ -1139,19 +1139,73 @@ public class Server {
         }
     }
 
+    private static synchronized String readStreaksFile() {
+        try {
+            File file = new File("data/streaks.json");
+            if (!file.exists()) return "{}";
+            byte[] bytes = Files.readAllBytes(file.toPath());
+            String s = new String(bytes, StandardCharsets.UTF_8).trim();
+            return (s.startsWith("{") && s.endsWith("}")) ? s : "{}";
+        } catch (Exception ignored) {
+            return "{}";
+        }
+    }
+
     private static synchronized int updateStreak(String userId, long now) {
+        if (userId == null || userId.trim().isEmpty()) return 1;
         try {
             long last = getLastUploadTime(userId);
             int currentStreak = getStreakCount(userId);
             int newStreak = 1;
-            if (last > 0 && (now - last) <= 86400000L) {
-                newStreak = currentStreak + 1;
+
+            if (last > 0) {
+                long diff = now - last;
+                if (diff < 12 * 3600000L) {
+                    newStreak = Math.max(1, currentStreak);
+                } else if (diff <= 48 * 3600000L) {
+                    newStreak = currentStreak + 1;
+                } else {
+                    newStreak = 1;
+                }
+            } else {
+                newStreak = 1;
             }
+
             File dir = new File("data");
             if (!dir.exists()) dir.mkdirs();
             File file = new File(dir, "streaks.json");
-            String json = "{\"streakCount\":" + newStreak + ",\"lastUploadAt\":" + now + "}";
-            Files.write(file.toPath(), json.getBytes(StandardCharsets.UTF_8));
+
+            java.util.Map<String, String> userMap = new java.util.LinkedHashMap<>();
+            String s = readStreaksFile();
+            if (s.length() > 2) {
+                int p = 1;
+                while (p < s.length()) {
+                    int kStart = s.indexOf("\"", p);
+                    if (kStart == -1) break;
+                    int kEnd = s.indexOf("\"", kStart + 1);
+                    if (kEnd == -1) break;
+                    String k = s.substring(kStart + 1, kEnd);
+                    int bStart = s.indexOf("{", kEnd);
+                    if (bStart == -1) break;
+                    int bEnd = s.indexOf("}", bStart);
+                    if (bEnd == -1) break;
+                    userMap.put(k, s.substring(bStart, bEnd + 1));
+                    p = bEnd + 1;
+                }
+            }
+
+            userMap.put(userId, "{\"streakCount\":" + newStreak + ",\"lastUploadAt\":" + now + "}");
+
+            StringBuilder sb = new StringBuilder("{");
+            boolean first = true;
+            for (java.util.Map.Entry<String, String> entry : userMap.entrySet()) {
+                if (!first) sb.append(",");
+                sb.append("\"").append(entry.getKey()).append("\":").append(entry.getValue());
+                first = false;
+            }
+            sb.append("}");
+
+            Files.write(file.toPath(), sb.toString().getBytes(StandardCharsets.UTF_8));
             return newStreak;
         } catch (Exception ignored) {
             return 1;
@@ -1159,38 +1213,50 @@ public class Server {
     }
 
     private static synchronized long getLastUploadTime(String userId) {
+        if (userId == null || userId.trim().isEmpty()) return 0;
         try {
-            File file = new File("data/streaks.json");
-            if (!file.exists()) return 0;
-            byte[] bytes = Files.readAllBytes(file.toPath());
-            String s = new String(bytes, StandardCharsets.UTF_8);
-            int idx = s.indexOf("\"lastUploadAt\":");
+            String s = readStreaksFile();
+            String key = "\"" + userId + "\"";
+            int uIdx = s.indexOf(key);
+            if (uIdx == -1) return 0;
+            int blockStart = s.indexOf("{", uIdx);
+            if (blockStart == -1) return 0;
+            int blockEnd = s.indexOf("}", blockStart);
+            if (blockEnd == -1) return 0;
+            String userBlock = s.substring(blockStart, blockEnd + 1);
+            int idx = userBlock.indexOf("\"lastUploadAt\":");
             if (idx == -1) return 0;
             int numStart = idx + 15;
-            while (numStart < s.length() && (s.charAt(numStart) == ' ' || s.charAt(numStart) == ':')) numStart++;
+            while (numStart < userBlock.length() && (userBlock.charAt(numStart) == ' ' || userBlock.charAt(numStart) == ':')) numStart++;
             int numEnd = numStart;
-            while (numEnd < s.length() && Character.isDigit(s.charAt(numEnd))) numEnd++;
+            while (numEnd < userBlock.length() && Character.isDigit(userBlock.charAt(numEnd))) numEnd++;
             if (numEnd > numStart) {
-                return Long.parseLong(s.substring(numStart, numEnd));
+                return Long.parseLong(userBlock.substring(numStart, numEnd));
             }
         } catch (Exception ignored) {}
         return 0;
     }
 
     private static synchronized int getStreakCount(String userId) {
+        if (userId == null || userId.trim().isEmpty()) return 0;
         try {
-            File file = new File("data/streaks.json");
-            if (!file.exists()) return 0;
-            byte[] bytes = Files.readAllBytes(file.toPath());
-            String s = new String(bytes, StandardCharsets.UTF_8);
-            int idx = s.indexOf("\"streakCount\":");
+            String s = readStreaksFile();
+            String key = "\"" + userId + "\"";
+            int uIdx = s.indexOf(key);
+            if (uIdx == -1) return 0;
+            int blockStart = s.indexOf("{", uIdx);
+            if (blockStart == -1) return 0;
+            int blockEnd = s.indexOf("}", blockStart);
+            if (blockEnd == -1) return 0;
+            String userBlock = s.substring(blockStart, blockEnd + 1);
+            int idx = userBlock.indexOf("\"streakCount\":");
             if (idx == -1) return 0;
             int numStart = idx + 14;
-            while (numStart < s.length() && (s.charAt(numStart) == ' ' || numStart < s.length() && s.charAt(numStart) == ':')) numStart++;
+            while (numStart < userBlock.length() && (userBlock.charAt(numStart) == ' ' || numStart < userBlock.length() && userBlock.charAt(numStart) == ':')) numStart++;
             int numEnd = numStart;
-            while (numEnd < s.length() && Character.isDigit(s.charAt(numEnd))) numEnd++;
+            while (numEnd < userBlock.length() && Character.isDigit(userBlock.charAt(numEnd))) numEnd++;
             if (numEnd > numStart) {
-                return Integer.parseInt(s.substring(numStart, numEnd));
+                return Integer.parseInt(userBlock.substring(numStart, numEnd));
             }
         } catch (Exception ignored) {}
         return 0;

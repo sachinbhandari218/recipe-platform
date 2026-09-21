@@ -689,421 +689,559 @@ function UploadStoryModal({ isOpen, onClose, currentUser, onStoryUploaded, showT
   );
 }
 
-function ImmersiveFeed({ posts, currentUser, followingList, onToggleFollow, onTriggerUpload, onTriggerInstall, onDeletePost, showToast }) {
-  const [likes, setLikes] = useState({});
-  const [likeCounts, setLikeCounts] = useState({});
-  const [comments, setComments] = useState({});
-  const [activeCommentPostId, setActiveCommentPostId] = useState(null);
-  const [commentInput, setCommentInput] = useState("");
-  const [isMuted, setIsMuted] = useState(true);
-  const [heartBursts, setHeartBursts] = useState({});
-  const [activeIndex, setActiveIndex] = useState(0);
+function StoryViewerModal({ isOpen, story, stories, onClose, onDeletePost, currentUser }) {
+  if (!isOpen || !story) return null;
+
+  const [currentIndex, setCurrentIndex] = useState(() => {
+    if (!stories || stories.length === 0) return 0;
+    const idx = stories.findIndex((s) => s.id === story.id);
+    return idx >= 0 ? idx : 0;
+  });
   const [progress, setProgress] = useState(0);
 
-  const containerRef = useRef(null);
-  const postRefs = useRef({});
-  const lastTapRef = useRef({});
-
-  const currentUserId = currentUser ? (currentUser.id || currentUser.uid) : "usr-1";
+  const activeStory = (stories && stories[currentIndex]) || story;
+  const isOwner = currentUser && (
+    (currentUser.id && currentUser.id === activeStory.userId) ||
+    (currentUser.uid && currentUser.uid === activeStory.userId)
+  );
 
   useEffect(() => {
-    if (!posts || posts.length === 0) return;
     setProgress(0);
     const duration = 10000;
     const intervalTime = 100;
     const step = (intervalTime / duration) * 100;
+
     const interval = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 100) {
           clearInterval(interval);
-          if (activeIndex < posts.length - 1) {
-            const nextIdx = activeIndex + 1;
-            const targetEl = postRefs.current[nextIdx];
-            if (targetEl) {
-              targetEl.scrollIntoView({ behavior: "smooth" });
-            }
+          if (stories && currentIndex < stories.length - 1) {
+            setCurrentIndex((i) => i + 1);
+            return 0;
+          } else {
+            onClose();
+            return 100;
           }
-          return 100;
         }
         return Math.min(100, prev + step);
       });
     }, intervalTime);
 
     return () => clearInterval(interval);
-  }, [activeIndex, posts ? posts.length : 0]);
+  }, [currentIndex, stories]);
 
-  const handleScroll = () => {
-    if (!containerRef.current || !posts || posts.length === 0) return;
-    const scrollTop = containerRef.current.scrollTop;
-    const height = containerRef.current.clientHeight;
-    if (height <= 0) return;
-    const idx = Math.round(scrollTop / height);
-    if (idx !== activeIndex && idx >= 0 && idx < posts.length) {
-      setActiveIndex(idx);
+  const handlePrev = (e) => {
+    e.stopPropagation();
+    if (currentIndex > 0) {
+      setCurrentIndex((i) => i - 1);
     }
   };
 
-  const handleDoubleTap = (postId) => {
-    setLikes((prev) => ({ ...prev, [postId]: true }));
+  const handleNext = (e) => {
+    e.stopPropagation();
+    if (stories && currentIndex < stories.length - 1) {
+      setCurrentIndex((i) => i + 1);
+    } else {
+      onClose();
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-xl flex flex-col items-center justify-center p-0 select-none animate-fade-in">
+      <div className="relative w-full max-w-md h-full flex flex-col justify-between overflow-hidden">
+        <div className="absolute top-0 inset-x-0 z-30 p-4 space-y-3 bg-gradient-to-b from-black/80 via-black/40 to-transparent">
+          <div className="w-full h-1 bg-white/20 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-orange-500 via-amber-400 to-rose-500 transition-all duration-100 ease-linear rounded-full"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+
+          <div className="flex items-center justify-between text-white">
+            <div className="flex items-center space-x-3">
+              <div className="p-[2px] rounded-full bg-gradient-to-tr from-amber-500 to-orange-600">
+                <img
+                  src={activeStory.userAvatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80"}
+                  alt={activeStory.username}
+                  className="w-8 h-8 rounded-full object-cover border border-black"
+                />
+              </div>
+              <div>
+                <p className="text-xs font-black tracking-tight text-white">{activeStory.username}</p>
+                <p className="text-[10px] text-orange-300 font-semibold">
+                  ⏳ {formatHoursLeft(activeStory.expiresAt)}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              {isOwner && onDeletePost && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (window.confirm("Delete this food story?")) {
+                      onDeletePost(activeStory.id);
+                      onClose();
+                    }
+                  }}
+                  className="p-1.5 rounded-full bg-black/50 hover:bg-rose-950/80 text-rose-400 hover:text-rose-300 text-xs transition-colors cursor-pointer"
+                  title="Delete Story"
+                >
+                  🗑️
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={onClose}
+                className="w-8 h-8 rounded-full bg-black/50 hover:bg-black/80 text-white flex items-center justify-center text-sm font-bold transition-colors cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="relative flex-1 w-full h-full flex items-center justify-center overflow-hidden">
+          {activeStory.mediaType === "video" ? (
+            <div className="relative w-full h-full flex items-center justify-center">
+              <video
+                src={activeStory.mediaUrl}
+                autoPlay
+                loop
+                playsInline
+                className="relative z-10 max-h-full max-w-full object-contain"
+              />
+            </div>
+          ) : (
+            <div className="relative w-full h-full flex items-center justify-center">
+              <div
+                className="absolute inset-0 bg-cover bg-center scale-125 blur-3xl opacity-40 pointer-events-none"
+                style={{ backgroundImage: `url(${activeStory.mediaUrl})` }}
+              />
+              <img
+                src={activeStory.mediaUrl}
+                alt={activeStory.caption || "Food story"}
+                className="relative z-10 max-h-full max-w-full object-contain"
+              />
+            </div>
+          )}
+
+          <div
+            className="absolute left-0 top-16 bottom-20 w-1/3 z-20 cursor-pointer"
+            onClick={handlePrev}
+          />
+          <div
+            className="absolute right-0 top-16 bottom-20 w-1/3 z-20 cursor-pointer"
+            onClick={handleNext}
+          />
+        </div>
+
+        {activeStory.caption && (
+          <div className="absolute bottom-0 inset-x-0 z-30 p-5 bg-gradient-to-t from-black/90 via-black/50 to-transparent text-white">
+            <p className="text-xs text-stone-200 leading-relaxed drop-shadow">
+              <strong className="text-white font-bold mr-2">{activeStory.username}</strong>
+              {decodeUnicode(activeStory.caption)}
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function InstagramHomeFeed({
+  stories,
+  currentUser,
+  followingList,
+  onToggleFollow,
+  onTriggerUpload,
+  onTriggerInstall,
+  onViewStory,
+  onDeletePost,
+  showToast
+}) {
+  const [likes, setLikes] = useState({});
+  const [likeCounts, setLikeCounts] = useState({});
+  const [comments, setComments] = useState({});
+  const [commentInputs, setCommentInputs] = useState({});
+  const [savedPosts, setSavedPosts] = useState({});
+  const [heartBursts, setHeartBursts] = useState({});
+  const [openComments, setOpenComments] = useState({});
+
+  const lastTapRef = useRef({});
+  const currentUserId = currentUser ? (currentUser.id || currentUser.uid) : "usr-1";
+
+  const distinctCreators = useMemo(() => {
+    if (!stories || stories.length === 0) return [];
+    const map = new Map();
+    stories.forEach((s) => {
+      if (!map.has(s.userId)) {
+        map.set(s.userId, s);
+      }
+    });
+    return Array.from(map.values());
+  }, [stories]);
+
+  const toggleLike = (postId) => {
+    const isLiked = !!likes[postId];
+    const curCount = likeCounts[postId] !== undefined ? likeCounts[postId] : 12;
+    setLikes((prev) => ({ ...prev, [postId]: !isLiked }));
     setLikeCounts((prev) => ({
       ...prev,
-      [postId]: (prev[postId] || 0) + (likes[postId] ? 0 : 1)
+      [postId]: isLiked ? Math.max(0, curCount - 1) : curCount + 1
     }));
+  };
 
+  const handleDoubleTap = (post) => {
+    const postId = post.id;
     if (navigator.vibrate) {
       try {
         navigator.vibrate([50]);
       } catch (e) {}
     }
-
     setHeartBursts((prev) => ({ ...prev, [postId]: true }));
     setTimeout(() => {
       setHeartBursts((prev) => ({ ...prev, [postId]: false }));
     }, 800);
-  };
 
-  const handleTouchEnd = (postId) => {
-    const now = Date.now();
-    const last = lastTapRef.current[postId] || 0;
-    if (now - last < 300) {
-      handleDoubleTap(postId);
-      lastTapRef.current[postId] = 0;
-    } else {
-      lastTapRef.current[postId] = now;
+    if (!likes[postId]) {
+      const curCount = likeCounts[postId] !== undefined ? likeCounts[postId] : 12;
+      setLikes((prev) => ({ ...prev, [postId]: true }));
+      setLikeCounts((prev) => ({ ...prev, [postId]: curCount + 1 }));
     }
   };
 
-  const toggleLike = (postId) => {
-    const nextState = !likes[postId];
-    setLikes((prev) => ({ ...prev, [postId]: nextState }));
-    setLikeCounts((prev) => ({
-      ...prev,
-      [postId]: Math.max(0, (prev[postId] || 0) + (nextState ? 1 : -1))
-    }));
+  const handleTouchEnd = (post) => {
+    const now = Date.now();
+    const lastTap = lastTapRef.current[post.id] || 0;
+    if (now - lastTap < 300) {
+      handleDoubleTap(post);
+    }
+    lastTapRef.current[post.id] = now;
   };
 
-  const handleSendComment = (postId) => {
-    const text = commentInput.trim();
-    if (!text) return;
-    const author = currentUser ? (currentUser.username || currentUser.name) : "foodie";
+  const handleAddComment = (postId) => {
+    const input = (commentInputs[postId] || "").trim();
+    if (!input) return;
+    const author = currentUser ? (currentUser.username || currentUser.name || "foodie") : "foodie";
+    const newComment = { id: Date.now(), author, text: input };
     setComments((prev) => ({
       ...prev,
-      [postId]: [...(prev[postId] || []), { id: Date.now(), author, text }]
+      [postId]: [...(prev[postId] || []), newComment]
     }));
-    setCommentInput("");
-    showToast("Comment posted!", "success");
+    setCommentInputs((prev) => ({ ...prev, [postId]: "" }));
+    showToast("Comment posted! 💬", "success");
   };
 
-  const handleShare = (post) => {
+  const handleSharePost = (post) => {
     if (navigator.share) {
       navigator.share({
         title: "FoodBite Story by " + post.username,
-        text: post.caption || "Check out this food story on FoodBite!",
+        text: post.caption,
         url: window.location.href
       }).catch(() => {});
     } else {
-      navigator.clipboard.writeText(window.location.href);
-      showToast("Link copied to clipboard!", "success");
+      try {
+        navigator.clipboard.writeText(window.location.href);
+        showToast("Story link copied to clipboard! 🔗", "info");
+      } catch (e) {
+        showToast("Link: " + window.location.href, "info");
+      }
     }
   };
 
-  if (!posts || posts.length === 0) {
-    return (
-      <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center bg-stone-50 select-none">
-        <div className="relative w-20 h-20 mb-4">
-          <div className="w-20 h-20 rounded-3xl bg-white border border-stone-200 flex items-center justify-center text-4xl shadow-xl animate-pulse">
-            🌮
-          </div>
-          <div className="absolute -inset-1 rounded-3xl border border-orange-500/30 animate-spin"></div>
-        </div>
-        <h3 className="text-xl font-black text-stone-900">No Stories in Feed</h3>
-        <p className="text-xs text-stone-500 mt-2 max-w-xs leading-relaxed">
-          Daily stories expire after 24 hours. Be the first to share today's culinary creation!
-        </p>
-        <button
-          type="button"
-          onClick={onTriggerUpload}
-          className="mt-6 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white text-xs font-black uppercase tracking-wider shadow-xl shadow-orange-600/25 active:scale-95 transition-all cursor-pointer"
-        >
-          🔥 Post Food Story
-        </button>
-      </div>
-    );
-  }
+  const toggleSave = (postId) => {
+    const nextSaved = !savedPosts[postId];
+    setSavedPosts((prev) => ({ ...prev, [postId]: nextSaved }));
+    showToast(nextSaved ? "Saved to your collection! 🔖" : "Removed from saved posts", "info");
+  };
 
   return (
-    <div
-      ref={containerRef}
-      onScroll={handleScroll}
-      className="w-full h-full overflow-y-scroll snap-y snap-mandatory scrollbar-none bg-stone-950 relative select-none"
-    >
-      <div className="fixed top-0 inset-x-0 h-[2px] z-50 pointer-events-none bg-white/20">
-        <div
-          className="h-full bg-gradient-to-r from-orange-500 via-amber-400 to-rose-500 transition-[width] duration-100 ease-linear"
-          style={{ width: progress + "%" }}
-        />
-      </div>
-
-      <div className="fixed top-3 inset-x-4 z-30 flex items-center justify-between p-2 px-3.5 pointer-events-none max-w-sm mx-auto bg-white/85 backdrop-blur-xl border border-white/70 rounded-full shadow-lg shadow-stone-900/10">
-        <div className="flex items-center space-x-2 pointer-events-auto">
-          <span className="text-lg">🔥</span>
-          <span className="font-serif font-black text-sm text-stone-900 tracking-tight">FoodBite</span>
-        </div>
-        <div className="flex items-center space-x-2 pointer-events-auto">
-          <button
-            type="button"
-            onClick={onTriggerInstall}
-            className="px-2.5 py-1 rounded-full bg-orange-50 hover:bg-orange-100 border border-orange-200 text-orange-700 text-[11px] font-bold flex items-center space-x-1 shadow-sm transition-colors cursor-pointer"
-            title="Install FoodBite as App"
-          >
-            <span>📱</span>
-            <span>App</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setIsMuted(!isMuted)}
-            className="w-8 h-8 rounded-full bg-stone-100 hover:bg-stone-200 border border-stone-200 text-stone-700 flex items-center justify-center text-xs shadow-sm transition-colors cursor-pointer"
-            title={isMuted ? "Unmute Audio" : "Mute Audio"}
-          >
-            {isMuted ? "🔇" : "🔊"}
-          </button>
-        </div>
-      </div>
-
-      {posts.map((post, idx) => {
-        const isLiked = !!likes[post.id];
-        const likeCount = (likeCounts[post.id] || 0) + (isLiked && likeCounts[post.id] === undefined ? 1 : 0);
-        const isFollowing = followingList && followingList.includes(post.userId);
-        const isAuthorSelf = post.userId === currentUserId;
-        const postComments = comments[post.id] || [];
-
-        return (
+    <div className="w-full flex flex-col animate-fade-in">
+      <div className="w-full bg-white border-b border-stone-200 sticky top-0 z-20 shadow-xs">
+        <div className="max-w-md mx-auto flex items-center space-x-4 overflow-x-auto p-3.5 scrollbar-none">
           <div
-            key={post.id}
-            ref={(el) => { postRefs.current[idx] = el; }}
-            className="relative w-full h-full min-w-0 snap-start snap-always overflow-hidden bg-stone-950 flex-shrink-0 flex items-center justify-center"
+            className="flex flex-col items-center space-y-1.5 flex-shrink-0 cursor-pointer group"
+            onClick={onTriggerUpload}
           >
-            <div
-              className="absolute inset-0 w-full h-full overflow-hidden cursor-pointer"
-              onDoubleClick={() => handleDoubleTap(post.id)}
-              onTouchEnd={() => handleTouchEnd(post.id)}
-            >
-              {post.mediaType === "video" ? (
-                <>
-                  <video
-                    src={post.mediaUrl}
-                    playsInline
-                    loop
-                    autoPlay
-                    muted
-                    className="absolute inset-0 w-full h-full object-cover scale-125 blur-3xl opacity-50 pointer-events-none"
-                  />
-                  <div className="absolute inset-0 bg-white/10 backdrop-blur-3xl pointer-events-none" />
-                  <video
-                    src={post.mediaUrl}
-                    playsInline
-                    loop
-                    autoPlay
-                    muted={isMuted}
-                    className="relative z-10 w-full h-full object-contain pointer-events-auto"
-                  />
-                </>
-              ) : (
-                <>
-                  <img
-                    src={post.mediaUrl}
-                    alt=""
-                    aria-hidden="true"
-                    className="absolute inset-0 w-full h-full object-cover scale-125 blur-3xl opacity-50 pointer-events-none"
-                  />
-                  <div className="absolute inset-0 bg-white/10 backdrop-blur-3xl pointer-events-none" />
-                  <img
-                    src={post.mediaUrl}
-                    alt={post.caption || "Food story"}
-                    className="relative z-10 w-full h-full object-contain pointer-events-auto"
-                  />
-                </>
-              )}
-            </div>
-
-            <div className="absolute inset-0 z-10 bg-gradient-to-t from-stone-950/90 via-transparent to-transparent pointer-events-none" />
-            <div className="absolute inset-x-0 top-0 h-24 z-10 bg-gradient-to-b from-stone-900/40 to-transparent pointer-events-none" />
-
-            {heartBursts[post.id] && (
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 pointer-events-none animate-heart-burst">
-                <svg className="w-24 h-24 text-rose-500 fill-current drop-shadow-[0_0_24px_rgba(244,63,94,0.85)]" viewBox="0 0 24 24">
-                  <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
-                </svg>
+            <div className="relative">
+              <div className="w-16 h-16 rounded-full p-[2px] border-2 border-dashed border-orange-500 flex items-center justify-center bg-stone-50 group-hover:scale-105 transition-transform">
+                <img
+                  src={currentUser && (currentUser.avatar || currentUser.avatarUrl) ? (currentUser.avatar || currentUser.avatarUrl) : "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80"}
+                  alt="Your Story"
+                  className="w-14 h-14 rounded-full object-cover"
+                />
               </div>
-            )}
+              <div className="absolute bottom-0 right-0 w-5 h-5 rounded-full bg-gradient-to-tr from-orange-600 to-amber-600 text-white flex items-center justify-center text-xs font-black shadow-md border-2 border-white">
+                +
+              </div>
+            </div>
+            <span className="text-[11px] font-bold text-stone-700">Your Story</span>
+          </div>
 
-            <div className="absolute bottom-24 left-3.5 right-20 z-20 pointer-events-none">
-              <div className="p-3.5 rounded-3xl bg-white/85 border border-white/80 backdrop-blur-xl shadow-2xl shadow-stone-950/15 space-y-2 pointer-events-auto">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2.5 min-w-0">
-                    <img
-                      src={post.userAvatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80"}
-                      alt={post.username}
-                      className="w-9 h-9 rounded-full border-2 border-orange-500 object-cover shadow-sm flex-shrink-0"
-                    />
-                    <div className="min-w-0">
-                      <span className="text-xs font-black text-stone-900 truncate block">
-                        @{post.username}
-                      </span>
-                      <div className="inline-flex items-center space-x-1 px-2 py-0.2 rounded-full bg-orange-100/90 border border-orange-200 text-[10px] font-bold text-orange-800">
-                        <span>⏳</span>
-                        <span>{formatHoursLeft(post.expiresAt)}</span>
+          {distinctCreators && distinctCreators.map((creatorStory, idx) => (
+            <div
+              key={creatorStory.id || idx}
+              onClick={() => onViewStory(creatorStory)}
+              className="flex flex-col items-center space-y-1.5 flex-shrink-0 cursor-pointer group"
+            >
+              <div className="p-[2.5px] rounded-full bg-gradient-to-tr from-amber-500 via-orange-500 to-rose-600 shadow-xs group-hover:scale-105 transition-transform">
+                <div className="p-[2px] bg-white rounded-full">
+                  <img
+                    src={creatorStory.userAvatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80"}
+                    alt={creatorStory.username}
+                    className="w-14 h-14 rounded-full object-cover"
+                  />
+                </div>
+              </div>
+              <span className="text-[11px] font-medium text-stone-700 max-w-[68px] truncate text-center">
+                {creatorStory.username}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {!stories || stories.length === 0 ? (
+        <div className="max-w-md mx-auto my-12 p-8 text-center bg-white border border-stone-200 rounded-3xl shadow-sm space-y-4 mx-4">
+          <div className="w-16 h-16 rounded-2xl bg-orange-50 border border-orange-200 text-orange-600 text-3xl flex items-center justify-center mx-auto shadow-xs">
+            🍽️
+          </div>
+          <h3 className="text-lg font-black text-stone-900 tracking-tight">Your Feed is Ready</h3>
+          <p className="text-xs text-stone-500 leading-relaxed max-w-xs mx-auto">
+            FoodBite stories and creations purge after 24 hours to keep everything fresh. Be the first to share today&apos;s kitchen creation!
+          </p>
+          <button
+            type="button"
+            onClick={onTriggerUpload}
+            className="px-6 py-3 rounded-2xl bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white font-black text-xs uppercase tracking-wider shadow-md shadow-orange-600/25 active:scale-95 transition-all cursor-pointer inline-flex items-center space-x-2"
+          >
+            <span>🔥</span>
+            <span>Share First Story</span>
+          </button>
+        </div>
+      ) : (
+        <div className="max-w-md mx-auto w-full px-3 sm:px-0 py-4 space-y-6 pb-28">
+          {stories.map((post, idx) => {
+            const isLiked = !!likes[post.id];
+            const count = likeCounts[post.id] !== undefined ? likeCounts[post.id] : 12;
+            const postComments = comments[post.id] || [];
+            const isSaved = !!savedPosts[post.id];
+            const isOwner = post.userId === currentUserId;
+            const isFollowing = followingList && followingList.includes(post.userId);
+            const showCommentsSection = !!openComments[post.id];
+
+            return (
+              <article
+                key={post.id || idx}
+                className="bg-white border border-stone-200 rounded-3xl shadow-xs overflow-hidden transition-shadow hover:shadow-md"
+              >
+                <div className="p-3.5 flex items-center justify-between border-b border-stone-100">
+                  <div
+                    className="flex items-center space-x-3 cursor-pointer group"
+                    onClick={() => onViewStory(post)}
+                  >
+                    <div className="p-[2px] rounded-full bg-gradient-to-tr from-amber-500 to-orange-600">
+                      <img
+                        src={post.userAvatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80"}
+                        alt={post.username}
+                        className="w-9 h-9 rounded-full object-cover border border-white"
+                      />
+                    </div>
+                    <div>
+                      <div className="flex items-center space-x-1.5">
+                        <h4 className="text-xs font-black text-stone-900 group-hover:text-orange-600 transition-colors">
+                          {post.username}
+                        </h4>
+                        {!isOwner && onToggleFollow && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onToggleFollow(post.userId, post.username);
+                            }}
+                            className={`text-[11px] font-bold px-2 py-0.5 rounded-full transition-colors cursor-pointer ${
+                              isFollowing
+                                ? "bg-stone-100 text-stone-600 hover:bg-stone-200"
+                                : "bg-orange-50 text-orange-600 hover:bg-orange-100"
+                            }`}
+                          >
+                            {isFollowing ? "Following" : "Follow"}
+                          </button>
+                        )}
                       </div>
+                      <span className="text-[10px] text-stone-400 block font-medium">
+                        Food Creator • {formatTimeAgo(post.createdAt)}
+                      </span>
                     </div>
                   </div>
 
-                  {!isAuthorSelf ? (
-                    <button
-                      type="button"
-                      onClick={() => onToggleFollow(post.userId, post.username)}
-                      className={`ml-2 px-3 py-1 rounded-full text-[11px] font-black tracking-wide transition-all shadow-sm active:scale-95 cursor-pointer flex-shrink-0 ${
-                        isFollowing
-                          ? "bg-stone-100 hover:bg-stone-200 text-stone-700 border border-stone-300"
-                          : "bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-white shadow-orange-500/20"
-                      }`}
-                    >
-                      {isFollowing ? "✓ Following" : "+ Follow"}
-                    </button>
-                  ) : (
-                    <span className="ml-2 px-2 py-0.5 rounded-full bg-stone-100 text-[10px] text-stone-500 font-bold border border-stone-200 flex-shrink-0">
-                      You
+                  <div className="flex items-center space-x-2">
+                    <span className="text-[10px] font-bold text-orange-600 px-2.5 py-1 rounded-full bg-orange-50 border border-orange-200 shadow-2xs">
+                      ⏳ {formatHoursLeft(post.expiresAt)}
                     </span>
+
+                    {isOwner && onDeletePost && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (window.confirm("Delete this food story?")) {
+                            onDeletePost(post.id);
+                          }
+                        }}
+                        className="p-1 rounded-lg text-stone-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                        title="Delete Story"
+                      >
+                        🗑️
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div
+                  className="relative w-full aspect-square sm:aspect-[4/5] bg-stone-100 overflow-hidden select-none cursor-pointer flex items-center justify-center"
+                  onDoubleClick={() => handleDoubleTap(post)}
+                  onTouchEnd={() => handleTouchEnd(post)}
+                >
+                  <div
+                    className="absolute inset-0 bg-cover bg-center scale-125 blur-3xl opacity-20 pointer-events-none"
+                    style={{ backgroundImage: `url(${post.mediaUrl})` }}
+                  />
+
+                  {post.mediaType === "video" ? (
+                    <video
+                      src={post.mediaUrl}
+                      loop
+                      muted
+                      playsInline
+                      autoPlay
+                      className="relative z-10 w-full h-full object-contain"
+                    />
+                  ) : (
+                    <img
+                      src={post.mediaUrl}
+                      alt={post.caption || "Food story"}
+                      className="relative z-10 w-full h-full object-contain"
+                      loading="lazy"
+                    />
+                  )}
+
+                  {heartBursts[post.id] && (
+                    <div className="absolute inset-0 z-30 flex items-center justify-center pointer-events-none animate-heart-burst">
+                      <span className="text-7xl filter drop-shadow-2xl">❤️</span>
+                    </div>
                   )}
                 </div>
 
+                <div className="px-4 pt-3 pb-1 flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <button
+                      type="button"
+                      onClick={() => toggleLike(post.id)}
+                      className={`text-xl transition-transform active:scale-125 cursor-pointer ${
+                        isLiked ? "text-rose-600 scale-110" : "text-stone-700 hover:text-stone-900"
+                      }`}
+                      title={isLiked ? "Unlike" : "Like"}
+                    >
+                      {isLiked ? "❤️" : "🤍"}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setOpenComments((prev) => ({ ...prev, [post.id]: !prev[post.id] }))}
+                      className="text-xl text-stone-700 hover:text-stone-900 transition-transform active:scale-110 cursor-pointer flex items-center space-x-1"
+                      title="Comments"
+                    >
+                      <span>💬</span>
+                      {postComments.length > 0 && (
+                        <span className="text-xs font-bold text-stone-600">{postComments.length}</span>
+                      )}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleSharePost(post)}
+                      className="text-xl text-stone-700 hover:text-stone-900 transition-transform active:scale-110 cursor-pointer"
+                      title="Share Story"
+                    >
+                      🔗
+                    </button>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => toggleSave(post.id)}
+                    className={`text-xl transition-transform active:scale-110 cursor-pointer ${
+                      isSaved ? "text-amber-500" : "text-stone-400 hover:text-stone-700"
+                    }`}
+                    title={isSaved ? "Saved" : "Save Story"}
+                  >
+                    {isSaved ? "🔖" : "🏷️"}
+                  </button>
+                </div>
+
+                <div className="px-4 py-1 text-xs font-black text-stone-900">
+                  {count} {count === 1 ? "like" : "likes"}
+                </div>
+
                 {post.caption && (
-                  <p className="text-xs text-stone-800 leading-relaxed font-medium line-clamp-3 pr-1">
-                    {decodeUnicode(post.caption)}
-                  </p>
+                  <div className="px-4 py-1 text-xs text-stone-800 leading-relaxed">
+                    <strong className="font-bold text-stone-900 mr-2">{post.username}</strong>
+                    <span>{decodeUnicode(post.caption)}</span>
+                  </div>
                 )}
-              </div>
-            </div>
 
-            <div className="absolute right-3.5 bottom-24 z-20 flex flex-col items-center space-y-3.5 pointer-events-auto">
-              <button
-                type="button"
-                onClick={() => toggleLike(post.id)}
-                className="flex flex-col items-center space-y-1 transition-transform active:scale-125 cursor-pointer"
-              >
-                <div className={`w-11 h-11 rounded-full flex items-center justify-center backdrop-blur-xl border shadow-xl ${
-                  isLiked
-                    ? "bg-rose-500 border-rose-400 text-white shadow-rose-500/30"
-                    : "bg-white/90 border-stone-200/90 text-stone-700 hover:text-rose-500"
-                }`}>
-                  <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
-                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
-                  </svg>
-                </div>
-                <span className="text-[10px] font-bold text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]">
-                  {likeCount}
-                </span>
-              </button>
+                {postComments.length > 0 && !showCommentsSection && (
+                  <button
+                    type="button"
+                    onClick={() => setOpenComments((prev) => ({ ...prev, [post.id]: true }))}
+                    className="px-4 py-0.5 text-xs text-stone-400 hover:text-stone-600 block text-left font-medium cursor-pointer"
+                  >
+                    View all {postComments.length} comments
+                  </button>
+                )}
 
-              <button
-                type="button"
-                onClick={() => setActiveCommentPostId(post.id)}
-                className="flex flex-col items-center space-y-1 transition-transform active:scale-110 cursor-pointer"
-              >
-                <div className="w-11 h-11 rounded-full bg-white/90 border border-stone-200/90 backdrop-blur-xl text-stone-700 flex items-center justify-center shadow-xl hover:text-orange-600">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                  </svg>
-                </div>
-                <span className="text-[10px] font-bold text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]">
-                  {postComments.length}
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleShare(post)}
-                className="flex flex-col items-center space-y-1 transition-transform active:scale-110 cursor-pointer"
-              >
-                <div className="w-11 h-11 rounded-full bg-white/90 border border-stone-200/90 backdrop-blur-xl text-stone-700 flex items-center justify-center shadow-xl hover:text-orange-600">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                  </svg>
-                </div>
-                <span className="text-[10px] font-bold text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]">Share</span>
-              </button>
-
-              {isAuthorSelf && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (window.confirm("Are you sure you want to delete this food story?")) {
-                      onDeletePost && onDeletePost(post.id);
-                    }
-                  }}
-                  className="flex flex-col items-center space-y-1 transition-transform active:scale-110 cursor-pointer group"
-                  title="Delete Story"
-                >
-                  <div className="w-11 h-11 rounded-full bg-white/90 border border-stone-200/90 backdrop-blur-xl text-stone-500 group-hover:text-rose-600 flex items-center justify-center shadow-xl transition-colors">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
+                {showCommentsSection && postComments.length > 0 && (
+                  <div className="px-4 pt-1 pb-2 space-y-1 max-h-36 overflow-y-auto">
+                    {postComments.map((c) => (
+                      <div key={c.id} className="text-xs text-stone-700 leading-tight">
+                        <strong className="font-bold text-stone-900 mr-1.5">@{c.author}</strong>
+                        <span>{c.text}</span>
+                      </div>
+                    ))}
                   </div>
-                  <span className="text-[10px] font-bold text-white group-hover:text-rose-300 drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]">Delete</span>
-                </button>
-              )}
-            </div>
-          </div>
-        );
-      })}
+                )}
 
-      {activeCommentPostId && (
-        <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/40 backdrop-blur-sm animate-fade-in">
-          <div className="w-full max-w-sm mx-auto bg-white border-t border-stone-200 rounded-t-3xl p-4 space-y-3 shadow-2xl max-h-[60vh] flex flex-col">
-            <div className="flex items-center justify-between pb-2 border-b border-stone-200">
-              <span className="text-xs font-black uppercase tracking-wider text-stone-900">Comments</span>
-              <button
-                type="button"
-                onClick={() => setActiveCommentPostId(null)}
-                className="text-stone-400 hover:text-stone-700 text-xs font-bold cursor-pointer"
-              >
-                ✕
-              </button>
-            </div>
+                <div className="px-4 pt-2 pb-3 border-t border-stone-100 flex items-center space-x-2">
+                  <input
+                    type="text"
+                    value={commentInputs[post.id] || ""}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setCommentInputs((prev) => ({ ...prev, [post.id]: val }));
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleAddComment(post.id);
+                    }}
+                    placeholder="Add a comment..."
+                    className="flex-1 px-3.5 py-1.5 rounded-full bg-stone-50 border border-stone-200 text-xs text-stone-900 placeholder:text-stone-400 focus:outline-none focus:border-orange-500 focus:bg-white transition-colors"
+                  />
+                  <button
+                    type="button"
+                    disabled={!(commentInputs[post.id] || "").trim()}
+                    onClick={() => handleAddComment(post.id)}
+                    className="text-xs font-bold text-orange-600 hover:text-orange-700 disabled:opacity-30 transition-colors px-2 py-1 cursor-pointer"
+                  >
+                    Post
+                  </button>
+                </div>
 
-            <div className="flex-1 overflow-y-auto space-y-2.5 py-2">
-              {(comments[activeCommentPostId] || []).length === 0 ? (
-                <p className="text-xs text-stone-500 text-center py-6">No comments yet. Say something nice!</p>
-              ) : (
-                (comments[activeCommentPostId] || []).map((c) => (
-                  <div key={c.id} className="p-2.5 rounded-2xl bg-stone-100 text-xs">
-                    <span className="font-bold text-orange-600 mr-2">@{c.author}</span>
-                    <span className="text-stone-800">{c.text}</span>
-                  </div>
-                ))
-              )}
-            </div>
-
-            <div className="flex items-center space-x-2 pt-2 border-t border-stone-200">
-              <input
-                type="text"
-                value={commentInput}
-                onChange={(e) => setCommentInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleSendComment(activeCommentPostId);
-                }}
-                placeholder="Add a culinary comment..."
-                className="flex-1 px-4 py-2.5 rounded-xl bg-stone-100 border border-stone-200 text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:ring-1 focus:ring-orange-500"
-              />
-              <button
-                type="button"
-                onClick={() => handleSendComment(activeCommentPostId)}
-                disabled={!commentInput.trim()}
-                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-orange-600 to-amber-600 text-white text-xs font-bold disabled:opacity-30 cursor-pointer"
-              >
-                Post
-              </button>
-            </div>
-          </div>
+                <div className="px-4 pb-3 text-[10px] uppercase tracking-wider text-stone-400 font-semibold">
+                  {formatTimeAgo(post.createdAt)}
+                </div>
+              </article>
+            );
+          })}
         </div>
       )}
     </div>
@@ -1493,7 +1631,7 @@ function App() {
           username: "sachin_b",
           email: "feed_test@foodbite.com",
           avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80",
-          streak: 5
+          streak: 0
         };
       }
       const saved = localStorage.getItem("foodbite_session");
@@ -1517,6 +1655,7 @@ function App() {
   const [notifications, setNotifications] = useState([]);
   const [userProfile, setUserProfile] = useState(null);
   const [storyModalOpen, setStoryModalOpen] = useState(false);
+  const [viewingStory, setViewingStory] = useState(null);
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [showInstallModal, setShowInstallModal] = useState(false);
   const [toasts, setToasts] = useState([]);
@@ -1689,15 +1828,62 @@ function App() {
 
   return (
     <div className="h-full w-full flex flex-col bg-stone-50 text-stone-900 selection:bg-orange-600 selection:text-white overflow-hidden relative">
-      <main className="flex-1 h-full w-full overflow-hidden">
+      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-stone-200 px-4 py-3 flex items-center justify-between max-w-md w-full mx-auto shadow-2xs">
+        <div className="flex items-center space-x-2 cursor-pointer" onClick={() => setActiveTab("home")}>
+          <span className="text-2xl animate-pulse">🔥</span>
+          <div>
+            <h1 className="text-lg font-black tracking-tight text-stone-900 font-serif leading-none">FoodBite</h1>
+            <span className="text-[10px] text-orange-600 font-bold uppercase tracking-widest block mt-0.5">
+              Food Stories
+            </span>
+          </div>
+        </div>
+
+        <div className="flex items-center space-x-2">
+          {userProfile && userProfile.user && (
+            <button
+              type="button"
+              onClick={() => setActiveTab("profile")}
+              className="flex items-center space-x-1 px-2.5 py-1 rounded-full bg-orange-50 hover:bg-orange-100 border border-orange-200 text-xs font-black text-orange-700 shadow-2xs transition-colors cursor-pointer"
+              title="Daily Active Streak"
+            >
+              <span>🔥</span>
+              <span>{userProfile.user.streak || 0}d</span>
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setShowInstallModal(true)}
+            className="px-2.5 py-1 rounded-full bg-stone-100 hover:bg-stone-200 border border-stone-200 text-[11px] font-bold text-stone-700 transition-colors cursor-pointer"
+            title="Install FoodBite as App"
+          >
+            📱 App
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setStoryModalOpen(true)}
+            className="w-8 h-8 rounded-full bg-gradient-to-tr from-orange-600 to-amber-600 text-white flex items-center justify-center shadow-md shadow-orange-600/25 hover:opacity-95 active:scale-95 transition-all cursor-pointer"
+            title="Share Food Story"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <main className="flex-1 overflow-y-auto w-full">
         {activeTab === "home" && (
-          <ImmersiveFeed
-            posts={stories}
+          <InstagramHomeFeed
+            stories={stories}
             currentUser={currentUser}
             followingList={followingList}
             onToggleFollow={handleToggleFollow}
             onTriggerUpload={() => setStoryModalOpen(true)}
             onTriggerInstall={() => setShowInstallModal(true)}
+            onViewStory={(story) => setViewingStory(story)}
             onDeletePost={handleDeletePost}
             showToast={showToast}
           />
@@ -1745,6 +1931,15 @@ function App() {
           setActiveTab("home");
         }}
         showToast={showToast}
+      />
+
+      <StoryViewerModal
+        isOpen={!!viewingStory}
+        story={viewingStory}
+        stories={stories}
+        onClose={() => setViewingStory(null)}
+        onDeletePost={handleDeletePost}
+        currentUser={currentUser}
       />
 
       <InstallAppModal
