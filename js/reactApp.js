@@ -212,7 +212,7 @@ function LikesModal({
     }, React.createElement("div", {
       className: "flex items-center space-x-2.5"
     }, React.createElement("img", {
-      src: u.userAvatar || u.avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80",
+      src: u.userAvatar || u.avatar || "/uploads/avatars/sachin.svg",
       alt: u.username,
       className: "w-8 h-8 rounded-full object-cover border border-[#e8e4dc]"
     }), React.createElement("div", null, React.createElement("span", {
@@ -371,7 +371,7 @@ function AuthScreen({
     className: "pt-2 text-center border-t border-[#f0ece4]"
   }, React.createElement("p", {
     className: "text-[10px] text-[#a6a198]"
-  }, "\xA9 2026 Online Recipe Sharing Platform. Built & Engineered by Sachin Bhandari."))));
+  }, "© 2026 Online Recipe Sharing Platform. Built & Engineered by Sachin Bhandari."))));
 }
 function HomeHeroSection({
   onExplore,
@@ -404,28 +404,28 @@ function HomeHeroSection({
   }, React.createElement("div", {
     className: "w-48 rounded-2xl overflow-hidden shadow-md border border-[#e8e4dc] bg-white -rotate-2 hover:rotate-0 transition-transform duration-300"
   }, React.createElement("img", {
-    src: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80",
-    alt: "Fresh bowl",
-    className: "w-full h-36 object-cover"
+    src: "/uploads/dish_1790010828136_7926.jpg",
+    alt: "Harsh the iron man",
+    className: "w-full h-36 object-cover object-top"
   }), React.createElement("div", {
     className: "p-2.5 text-left"
   }, React.createElement("span", {
     className: "text-[10px] text-[#f05a28] font-bold block"
-  }, "SALAD BOWL"), React.createElement("span", {
+  }, "STREET FOOD"), React.createElement("span", {
     className: "text-xs font-semibold text-[#121214] truncate block"
-  }, "Avocado Green Crunch"))), React.createElement("div", {
+  }, "Harsh the iron man"))), React.createElement("div", {
     className: "w-48 rounded-2xl overflow-hidden shadow-md border border-[#e8e4dc] bg-white rotate-3 hover:rotate-0 transition-transform duration-300 mt-6"
   }, React.createElement("img", {
-    src: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=400&q=80",
-    alt: "Pizza",
+    src: "/uploads/dish_1790002198781_7454.jpg",
+    alt: "EatClub Pizza",
     className: "w-full h-36 object-cover"
   }), React.createElement("div", {
     className: "p-2.5 text-left"
   }, React.createElement("span", {
     className: "text-[10px] text-[#f05a28] font-bold block"
-  }, "PIZZA"), React.createElement("span", {
+  }, "PIZZA & PASTA"), React.createElement("span", {
     className: "text-xs font-semibold text-[#121214] truncate block"
-  }, "Sourdough Margherita"))))));
+  }, "Pizza • Crust & Co"))))));
 }
 function StoriesTray({
   stories,
@@ -454,7 +454,7 @@ function StoriesTray({
   }, React.createElement("div", {
     className: "relative w-14 h-14 rounded-full p-[2px] border-2 border-dashed border-[#f05a28] group-hover:border-[#121214] transition-colors flex items-center justify-center bg-[#fff5f0]"
   }, React.createElement("img", {
-    src: currentUser && (currentUser.avatar || currentUser.avatarUrl) || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80",
+    src: currentUser && (currentUser.avatar || currentUser.avatarUrl) || "/uploads/avatars/sachin.svg",
     alt: "Your story",
     className: "w-full h-full rounded-full object-cover"
   }), React.createElement("span", {
@@ -472,7 +472,7 @@ function StoriesTray({
     }, React.createElement("div", {
       className: "w-full h-full rounded-full p-[1.5px] bg-white"
     }, React.createElement("img", {
-      src: story.userAvatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80",
+      src: story.userAvatar || ("/uploads/avatars/" + (story.username || "sachin") + ".svg"),
       alt: story.username,
       className: "w-full h-full rounded-full object-cover"
     }))), React.createElement("span", {
@@ -510,7 +510,7 @@ function TrendingNowShelf({
   }) : React.createElement("img", {
     src: story.mediaUrl,
     alt: story.caption || "Food item",
-    className: "w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+    className: "w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300"
   }), React.createElement("span", {
     className: "absolute top-2 right-2 px-2 py-0.5 rounded-full bg-black/60 backdrop-blur-sm text-white text-[10px] font-medium"
   }, "\u23F3 ", formatHoursLeft(story.expiresAt))), React.createElement("div", {
@@ -607,7 +607,7 @@ function FoodCard({
   }, React.createElement("div", {
     className: "p-[1.5px] rounded-full bg-gradient-to-tr from-[#f05a28] to-amber-500"
   }, React.createElement("img", {
-    src: post.userAvatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80",
+    src: post.userAvatar || ("/uploads/avatars/" + (post.username || "sachin") + ".svg"),
     alt: post.username,
     className: "w-8 h-8 rounded-full object-cover border border-white"
   })), React.createElement("div", null, React.createElement("div", {
@@ -654,7 +654,7 @@ function FoodCard({
   }) : React.createElement("img", {
     src: post.mediaUrl,
     alt: post.caption || "Food photo",
-    className: "relative z-10 w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300",
+    className: "relative z-10 w-full h-full object-cover object-top group-hover:scale-[1.02] transition-transform duration-300",
     loading: "lazy"
   }), heartBurst && React.createElement("div", {
     className: "absolute inset-0 z-30 flex items-center justify-center pointer-events-none animate-heart-burst"
@@ -732,7 +732,16 @@ function AnnouncementModal({
   isOpen,
   onClose
 }) {
-  if (!isOpen || !announcement || !announcement.enabled) return null;
+  const dismissedTs = typeof window !== 'undefined' && window.sessionStorage ? window.sessionStorage.getItem('dismissed_announcement_ts') : null;
+  if (!isOpen || !announcement || !announcement.enabled || (dismissedTs && String(announcement.updatedAt) === dismissedTs)) return null;
+  const handleDismiss = () => {
+    try {
+      if (typeof window !== 'undefined' && window.sessionStorage && announcement && announcement.updatedAt) {
+        window.sessionStorage.setItem('dismissed_announcement_ts', String(announcement.updatedAt));
+      }
+    } catch (e) {}
+    onClose && onClose();
+  };
   const isMaintenance = announcement.type === "maintenance" || announcement.title && announcement.title.toLowerCase().includes("maintain");
   return React.createElement("div", {
     className: "fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/65 backdrop-blur-md animate-fadeIn"
@@ -752,7 +761,7 @@ function AnnouncementModal({
     className: "flex flex-col sm:flex-row items-center justify-center gap-2.5"
   }, React.createElement("button", {
     type: "button",
-    onClick: onClose,
+    onClick: handleDismiss,
     className: "w-full sm:w-auto flex-1 px-5 py-2.5 rounded-xl bg-[#f05a28] hover:bg-[#e04818] text-white text-xs font-bold tracking-wide shadow hover:shadow-md active:scale-95 transition-all cursor-pointer"
   }, "I Understand & Continue"), React.createElement("button", {
     type: "button",
@@ -969,7 +978,7 @@ function DesktopNavBar({
   announcement
 }) {
   const streak = userProfile && userProfile.user ? userProfile.user.streak || 0 : 0;
-  const avatarUrl = currentUser && (currentUser.avatar || currentUser.avatarUrl) || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80";
+  const avatarUrl = currentUser && (currentUser.avatar || currentUser.avatarUrl) || "/uploads/avatars/sachin.svg";
   return React.createElement("header", {
     className: "hidden md:block sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#e8e4dc]"
   }, React.createElement("div", {
@@ -1247,7 +1256,7 @@ function ShareFoodModal({
       }
       const uid = currentUser ? currentUser.id || currentUser.uid : "usr-1";
       const uname = currentUser ? currentUser.username || currentUser.name : "Sachin Bhandari";
-      const uavatar = currentUser ? currentUser.avatar || currentUser.avatarUrl : "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80";
+      const uavatar = currentUser ? currentUser.avatar || currentUser.avatarUrl : "/uploads/avatars/sachin.svg";
       let compositeCaption = "";
       if (foodTitle.trim()) {
         compositeCaption += foodTitle.trim();
@@ -1440,7 +1449,7 @@ function StoryViewerModal({
   }, React.createElement("div", {
     className: "flex items-center space-x-2.5"
   }, React.createElement("img", {
-    src: story.userAvatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80",
+    src: story.userAvatar || ("/uploads/avatars/" + (story.username || "sachin") + ".svg"),
     alt: story.username,
     className: "w-8 h-8 rounded-full object-cover border border-white/20"
   }), React.createElement("div", null, React.createElement("span", {
@@ -1549,7 +1558,7 @@ function ActivityView({
     key: n.id,
     className: "p-3.5 rounded-xl bg-white border border-[#e8e4dc] flex items-center space-x-3 shadow-2xs hover:border-[#f05a28]/40 transition-colors"
   }, React.createElement("img", {
-    src: n.senderAvatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80",
+    src: n.senderAvatar || "/uploads/avatars/sachin.svg",
     alt: n.senderName,
     className: "w-9 h-9 rounded-full object-cover border border-[#e8e4dc]"
   }), React.createElement("div", {
@@ -1579,7 +1588,7 @@ function ProfileView({
   }, React.createElement("div", {
     className: "p-6 rounded-2xl bg-white border border-[#e8e4dc] shadow-2xs flex flex-col sm:flex-row items-center sm:items-start space-y-4 sm:space-y-0 sm:space-x-5"
   }, React.createElement("img", {
-    src: user.avatar || user.avatarUrl || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80",
+    src: user.avatar || user.avatarUrl || "/uploads/avatars/sachin.svg",
     alt: user.username || "Profile",
     className: "w-20 h-20 rounded-full object-cover border-2 border-white shadow-md ring-2 ring-[#e8e4dc]"
   }), React.createElement("div", {
@@ -1653,7 +1662,7 @@ function ProfileView({
   }) : React.createElement("img", {
     src: story.mediaUrl,
     alt: story.caption,
-    className: "w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+    className: "w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-300"
   }), React.createElement("div", {
     className: "absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-2 text-white text-[10px]"
   }, React.createElement("span", {
@@ -1671,7 +1680,7 @@ function App() {
           name: "Sachin Chef",
           username: "sachin_b",
           email: "feed_test@foodbite.com",
-          avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80",
+          avatar: "/uploads/avatars/sachin.svg",
           streak: 0
         };
       }
@@ -1713,7 +1722,13 @@ function App() {
   const [announcement, setAnnouncement] = useState(null);
   const [showAnnouncementModal, setShowAnnouncementModal] = useState(false);
   const [showBroadcastModal, setShowBroadcastModal] = useState(false);
-  const [dismissedAnnouncement, setDismissedAnnouncement] = useState(false);
+  const [dismissedAnnouncement, setDismissedAnnouncement] = useState(() => {
+    try {
+      return Boolean(typeof window !== 'undefined' && window.sessionStorage && window.sessionStorage.getItem('dismissed_announcement_ts'));
+    } catch (e) {
+      return false;
+    }
+  });
   const showToast = (message, type = "info") => {
     const id = Date.now().toString(36) + Math.random().toString(36).substring(2, 5);
     setToasts(prev => [...prev, {
@@ -1819,6 +1834,16 @@ function App() {
   };
   useEffect(() => {
     window.showToast = showToast;
+    const fetchAnn = async () => {
+      try {
+        const aRes = await fetch("/api/announcement?_t=" + Date.now(), { cache: "no-store" });
+        const aData = await aRes.json();
+        if (aData && aData.success && aData.announcement) {
+          setAnnouncement(aData.announcement);
+        }
+      } catch (e) {}
+    };
+    fetchAnn();
     const handleOpenStoryEvent = e => {
       if (e && e.detail) setViewingStory(e.detail);
     };
@@ -1923,7 +1948,7 @@ function App() {
     }
     const uid = currentUser.id || currentUser.uid;
     const uname = currentUser.username || currentUser.name || "foodie";
-    const uavatar = currentUser.avatar || currentUser.avatarUrl || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80";
+    const uavatar = currentUser.avatar || currentUser.avatarUrl || "/uploads/avatars/sachin.svg";
     const isLiked = !!likes[postId];
     const curCount = likeCounts[postId] || 0;
     const nextLiked = !isLiked;
@@ -2119,7 +2144,14 @@ function App() {
     }), React.createElement(AnnouncementModal, {
       announcement: announcement,
       isOpen: Boolean(announcement && announcement.enabled && !dismissedAnnouncement),
-      onClose: () => setDismissedAnnouncement(true)
+      onClose: () => {
+        setDismissedAnnouncement(true);
+        try {
+          if (typeof window !== "undefined" && window.sessionStorage && announcement && announcement.updatedAt) {
+            window.sessionStorage.setItem("dismissed_announcement_ts", String(announcement.updatedAt));
+          }
+        } catch (e) {}
+      }
     }), React.createElement(AdminBroadcastModal, {
       isOpen: showBroadcastModal,
       onClose: () => setShowBroadcastModal(false),
@@ -2127,6 +2159,11 @@ function App() {
       onSaveAnnouncement: updated => {
         setAnnouncement(updated);
         if (updated && updated.enabled) {
+          try {
+            if (typeof window !== "undefined" && window.sessionStorage) {
+              window.sessionStorage.removeItem("dismissed_announcement_ts");
+            }
+          } catch (e) {}
           setDismissedAnnouncement(false);
           setShowAnnouncementModal(true);
         }
@@ -2244,7 +2281,9 @@ function App() {
     onTriggerUpload: () => setStoryModalOpen(true),
     onTriggerBroadcast: () => setShowBroadcastModal(true),
     announcement: announcement
-  })), React.createElement(MobileBottomNav, {
+  })), React.createElement("footer", {
+    className: "w-full py-5 text-center border-t border-[#e8e4dc] bg-white text-xs text-[#736f68] mt-auto hidden md:block"
+  }, React.createElement("p", null, "© 2026 Online Recipe Sharing Platform. Built & Engineered by Sachin Bhandari.")), React.createElement(MobileBottomNav, {
     activeTab: activeTab,
     setActiveTab: setActiveTab,
     onTriggerUpload: () => setStoryModalOpen(true),

@@ -9,8 +9,8 @@
       "username": "sachin",
       "password": "admin",
       "role": "admin",
-      "avatar_url": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80",
-      "avatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80",
+      "avatar_url": "/uploads/avatars/sachin.svg",
+      "avatar": "/uploads/avatars/sachin.svg",
       "created_at": "2026-09-01T08:00:00Z",
       "streak": 4
     },
@@ -23,8 +23,8 @@
       "email": "anant123@gmail.com",
       "password": "ananT12345@",
       "role": "user",
-      "avatar_url": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80",
-      "avatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80",
+      "avatar_url": "/uploads/avatars/anant.svg",
+      "avatar": "/uploads/avatars/anant.svg",
       "created_at": "2026-09-20T21:49:23.668Z",
       "streak": 2
     },
@@ -37,8 +37,8 @@
       "email": "adi@foodbite.app",
       "password": "",
       "role": "user",
-      "avatar_url": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80",
-      "avatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80",
+      "avatar_url": "/uploads/avatars/adi.svg",
+      "avatar": "/uploads/avatars/adi.svg",
       "created_at": "2026-09-21T06:00:00.000Z",
       "streak": 2
     },
@@ -51,8 +51,8 @@
       "email": "anish_cooks@foodbite.app",
       "password": "",
       "role": "user",
-      "avatar_url": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80",
-      "avatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80",
+      "avatar_url": "/uploads/avatars/anish_cooks.svg",
+      "avatar": "/uploads/avatars/anish_cooks.svg",
       "created_at": "2026-09-21T05:30:00.000Z",
       "streak": 3
     },
@@ -65,8 +65,8 @@
       "email": "a1@foodbite.app",
       "password": "",
       "role": "user",
-      "avatar_url": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80",
-      "avatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80",
+      "avatar_url": "/uploads/avatars/a1.svg",
+      "avatar": "/uploads/avatars/a1.svg",
       "created_at": "2026-09-21T04:00:00.000Z",
       "streak": 3
     },
@@ -79,8 +79,8 @@
       "email": "harsh@foodbite.app",
       "password": "",
       "role": "user",
-      "avatar_url": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80",
-      "avatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80",
+      "avatar_url": "/uploads/avatars/harsh.svg",
+      "avatar": "/uploads/avatars/harsh.svg",
       "created_at": "2026-09-21T07:00:00.000Z",
       "streak": 1
     },
@@ -93,8 +93,8 @@
       "email": "hhuvui@foodbite.app",
       "password": "",
       "role": "user",
-      "avatar_url": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80",
-      "avatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80",
+      "avatar_url": "/uploads/avatars/hhuvui.svg",
+      "avatar": "/uploads/avatars/hhuvui.svg",
       "created_at": "2026-09-21T03:30:00.000Z",
       "streak": 1
     },
@@ -107,8 +107,8 @@
       "email": "prakashh2411@gmail.com",
       "password": "Sahoo@0811",
       "role": "user",
-      "avatar_url": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80",
-      "avatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80",
+      "avatar_url": "/uploads/avatars/prakash.svg",
+      "avatar": "/uploads/avatars/prakash.svg",
       "created_at": "2026-09-20T22:21:11.077Z",
       "streak": 2
     },
@@ -121,8 +121,8 @@
       "email": "sachin.bhandari@gmail.com",
       "password": "google_oauth_session",
       "role": "admin",
-      "avatar_url": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80",
-      "avatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80",
+      "avatar_url": "/uploads/avatars/sachin.svg",
+      "avatar": "/uploads/avatars/sachin.svg",
       "created_at": "2026-09-21T06:44:26.241Z",
       "streak": 4
     }
@@ -189,7 +189,10 @@
       "rejection_reason": null,
       "average_rating": 5,
       "review_count": 0,
-      "created_at": "2026-09-20T22:33:51.751Z"
+      "created_at": "2026-09-20T22:33:51.751Z",
+      "images": [
+        "/uploads/chillinoodles_1789972478_0.jpg"
+      ]
     },
     {
       "recipe_id": "rec-muadi785d07",
@@ -210,7 +213,10 @@
       "rejection_reason": null,
       "average_rating": 5,
       "review_count": 0,
-      "created_at": "2026-09-20T22:13:46.134Z"
+      "created_at": "2026-09-20T22:13:46.134Z",
+      "images": [
+        "/uploads/pizza_1789972478_1.jpg"
+      ]
     },
     {
       "id": "rec-mua1bth5rwe",
@@ -225,7 +231,10 @@
       ],
       "status": "pending",
       "created_at": "2026-09-20T16:32:52.985Z",
-      "image_url": "https://images.unsplash.com/photo-1517256064527-09c73fc73e38?auto=format&fit=crop&w=1200&q=80"
+      "image_url": "/uploads/dish_hhuvui_starbucks.jpg",
+      "images": [
+        "/uploads/dish_hhuvui_starbucks.jpg"
+      ]
     },
     {
       "id": "rec-7",
@@ -528,7 +537,7 @@
     "rec-muacoukhkb5"
   ],
   "announcement": {
-    "enabled": true,
+    "enabled": false,
     "title": "Site Maintenance Notice",
     "message": "Sorry, our site is currently undergoing scheduled maintenance and updates. All features will be fully available shortly. Thank you for your patience!",
     "type": "maintenance",
