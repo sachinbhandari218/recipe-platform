@@ -334,9 +334,77 @@ function Navbar({ currentUser, activeRoute, navigateTo, openAuth, onLogout, isOw
   );
 }
 
+function parseTimePhraseToSeconds(str) {
+  if (!str) return 600;
+  const match = str.match(/(\d+(?:\.\d+)?)\s*(hours?|hrs?|minutes?|mins?|seconds?|secs?)/i);
+  if (!match) return 600;
+  const num = parseFloat(match[1]);
+  const unit = match[2].toLowerCase();
+  if (unit.startsWith("h")) return Math.round(num * 3600);
+  if (unit.startsWith("m")) return Math.round(num * 60);
+  if (unit.startsWith("s")) return Math.round(num);
+  return 600;
+}
+
+function formatTimerClock(seconds) {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+}
+
+function playCookingChime() {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(880, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.8);
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.8);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.8);
+  } catch (e) {}
+}
+
+function scaleIngredientAmount(ingStr, multiplier, unitSystem) {
+  if (!ingStr || typeof ingStr !== "string") return String(ingStr || "");
+  let text = ingStr;
+  text = text.replace(/(\d+(?:\.\d+)?|\d+\/\d+)/, (m) => {
+    let val = 0;
+    if (m.includes("/")) {
+      const parts = m.split("/");
+      val = parseFloat(parts[0]) / parseFloat(parts[1]);
+    } else {
+      val = parseFloat(m);
+    }
+    const scaled = val * (multiplier || 1);
+    if (unitSystem === "imperial" && ingStr.toLowerCase().includes("g") && !ingStr.toLowerCase().includes("tbsp") && !ingStr.toLowerCase().includes("egg")) {
+      const oz = scaled / 28.35;
+      const ozStr = oz < 1 ? oz.toFixed(1) : Math.round(oz);
+      return `${scaled === Math.round(scaled) ? scaled : scaled.toFixed(1)} (~${ozStr} oz)`;
+    }
+    if (unitSystem === "imperial" && ingStr.toLowerCase().includes("ml")) {
+      const cups = scaled / 240;
+      const cupStr = cups.toFixed(1);
+      return `${scaled === Math.round(scaled) ? scaled : scaled.toFixed(1)} (~${cupStr} cups)`;
+    }
+    if (scaled === Math.round(scaled)) return String(scaled);
+    return scaled.toFixed(1).replace(/\.0$/, "");
+  });
+  return text;
+}
+
 function DiscoverRecipes({ recipes, onSelectRecipe, onEditRecipe, onDeleteRecipe, currentUser, isOwner, navigateTo }) {
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterCategory, setFilterCategory] = useState("all");
+  const [searchMode, setSearchMode] = useState("all");
+  const [fridgeInput, setFridgeInput] = useState("");
+  const [filterDietary, setFilterDietary] = useState("all");
+  const [filterMealType, setFilterMealType] = useState("all");
   const [filterPrepTime, setFilterPrepTime] = useState("all");
   const [sortOrder, setSortOrder] = useState("newest");
 
@@ -344,10 +412,34 @@ function DiscoverRecipes({ recipes, onSelectRecipe, onEditRecipe, onDeleteRecipe
     return recipes.filter((r) => r.status === "approved" || !r.status);
   }, [recipes]);
 
-  const filtered = useMemo(() => {
-    let list = [...approvedRecipes];
+  const fridgeIngredients = useMemo(() => {
+    return fridgeInput
+      .split(/[,;\n]+/)
+      .map((s) => s.trim().toLowerCase())
+      .filter(Boolean);
+  }, [fridgeInput]);
 
-    if (searchTerm.trim()) {
+  const filtered = useMemo(() => {
+    let list = approvedRecipes.map((r) => {
+      const ings = Array.isArray(r.ingredients)
+        ? r.ingredients.map((i) => (typeof i === "object" ? i.name || "" : String(i))).join(" ").toLowerCase()
+        : "";
+      let fridgeMatches = 0;
+      if (fridgeIngredients.length > 0) {
+        for (const item of fridgeIngredients) {
+          if (ings.includes(item) || (r.title || "").toLowerCase().includes(item)) {
+            fridgeMatches++;
+          }
+        }
+      }
+      return { ...r, _fridgeMatches: fridgeMatches };
+    });
+
+    if (searchMode === "fridge" && fridgeIngredients.length > 0) {
+      list = list.filter((r) => r._fridgeMatches > 0);
+    }
+
+    if (searchTerm.trim() && searchMode !== "fridge") {
       const q = searchTerm.toLowerCase().trim();
       list = list.filter((r) => {
         const title = (r.title || "").toLowerCase();
@@ -357,6 +449,25 @@ function DiscoverRecipes({ recipes, onSelectRecipe, onEditRecipe, onDeleteRecipe
           ? r.ingredients.map((i) => (typeof i === "object" ? i.name || "" : String(i))).join(" ").toLowerCase()
           : "";
         return title.includes(q) || desc.includes(q) || author.includes(q) || ings.includes(q);
+      });
+    }
+
+    if (filterDietary !== "all") {
+      list = list.filter((r) => {
+        const d = Array.isArray(r.dietary) ? r.dietary.map((x) => x.toLowerCase()) : [];
+        const title = (r.title || "").toLowerCase();
+        const desc = (r.description || "").toLowerCase();
+        const q = filterDietary.toLowerCase();
+        return d.includes(q) || title.includes(q) || desc.includes(q);
+      });
+    }
+
+    if (filterMealType !== "all") {
+      list = list.filter((r) => {
+        const m = (r.meal_type || "").toLowerCase();
+        const title = (r.title || "").toLowerCase();
+        const q = filterMealType.toLowerCase();
+        return m === q || title.includes(q);
       });
     }
 
@@ -370,7 +481,9 @@ function DiscoverRecipes({ recipes, onSelectRecipe, onEditRecipe, onDeleteRecipe
       });
     }
 
-    if (sortOrder === "newest") {
+    if (searchMode === "fridge" && fridgeIngredients.length > 0) {
+      list.sort((a, b) => (b._fridgeMatches || 0) - (a._fridgeMatches || 0));
+    } else if (sortOrder === "newest") {
       list.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
     } else if (sortOrder === "rating") {
       list.sort((a, b) => (b.average_rating || 0) - (a.average_rating || 0));
@@ -381,7 +494,9 @@ function DiscoverRecipes({ recipes, onSelectRecipe, onEditRecipe, onDeleteRecipe
     }
 
     return list;
-  }, [approvedRecipes, searchTerm, filterCategory, filterPrepTime, sortOrder]);
+  }, [approvedRecipes, searchTerm, searchMode, fridgeIngredients, filterDietary, filterMealType, filterPrepTime, sortOrder]);
+
+  const commonPantryItems = ["Bread", "Cheese", "Potato", "Tomato", "Milk", "Noodles", "Coffee", "Chilli", "Egg", "Rice", "Onion"];
 
   return (
     <div className="py-8 sm:py-12">
@@ -413,46 +528,158 @@ function DiscoverRecipes({ recipes, onSelectRecipe, onEditRecipe, onDeleteRecipe
         </div>
 
         <div className="glass-card rounded-3xl p-4 sm:p-6 mb-10 shadow-md border border-stone-200/80">
-          <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 sm:gap-4">
-            <div className="sm:col-span-5 relative">
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search recipe title, ingredients, or chef..."
-                className="w-full pl-11 pr-4 py-3 rounded-2xl border border-stone-200 bg-white text-stone-800 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all shadow-sm"
-              />
-              <svg className="w-5 h-5 text-stone-400 absolute left-3.5 top-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </div>
-
-            <div className="sm:col-span-3">
-              <select
-                value={filterPrepTime}
-                onChange={(e) => setFilterPrepTime(e.target.value)}
-                className="w-full px-4 py-3 rounded-2xl border border-stone-200 bg-white text-stone-800 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all shadow-sm cursor-pointer"
-              >
-                <option value="all">All Prep Times</option>
-                <option value="quick">Quick (&le; 20 mins)</option>
-                <option value="medium">Medium (20-40 mins)</option>
-                <option value="elaborate">Elaborate (&gt; 40 mins)</option>
-              </select>
-            </div>
-
-            <div className="sm:col-span-4">
-              <select
-                value={sortOrder}
-                onChange={(e) => setSortOrder(e.target.value)}
-                className="w-full px-4 py-3 rounded-2xl border border-stone-200 bg-white text-stone-800 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all shadow-sm cursor-pointer"
-              >
-                <option value="newest">Sort by: Newest Additions</option>
-                <option value="rating">Sort by: Highest Rated</option>
-                <option value="reviews">Sort by: Most Reviewed</option>
-                <option value="quickest">Sort by: Quickest Prep Time</option>
-              </select>
-            </div>
+          <div className="flex items-center space-x-2 pb-4 mb-4 border-b border-stone-100">
+            <button
+              type="button"
+              onClick={() => setSearchMode("all")}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                searchMode === "all" ? "bg-orange-600 text-white shadow-sm" : "bg-stone-100 text-stone-600 hover:bg-stone-200"
+              }`}
+            >
+              🔎 Search & Filter
+            </button>
+            <button
+              type="button"
+              onClick={() => setSearchMode("fridge")}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 ${
+                searchMode === "fridge" ? "bg-emerald-600 text-white shadow-sm" : "bg-stone-100 text-stone-600 hover:bg-stone-200"
+              }`}
+            >
+              <span>🥗 Search by Ingredients in Fridge</span>
+            </button>
           </div>
+
+          {searchMode === "fridge" ? (
+            <div className="space-y-4">
+              <div className="relative">
+                <input
+                  type="text"
+                  value={fridgeInput}
+                  onChange={(e) => setFridgeInput(e.target.value)}
+                  placeholder="Enter ingredients you have (e.g. potato, tomato, bread, cheese, milk)..."
+                  className="w-full pl-11 pr-4 py-3.5 rounded-2xl border border-emerald-300 bg-emerald-50/40 text-stone-800 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition-all shadow-sm"
+                />
+                <span className="absolute left-3.5 top-3.5 text-lg">🥗</span>
+              </div>
+              <div>
+                <div className="text-[11px] font-bold text-stone-500 uppercase tracking-wider mb-2">
+                  Quick-add from pantry:
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {commonPantryItems.map((item) => {
+                    const isAdded = fridgeIngredients.includes(item.toLowerCase());
+                    return (
+                      <button
+                        key={item}
+                        type="button"
+                        onClick={() => {
+                          if (isAdded) {
+                            const next = fridgeIngredients.filter((x) => x !== item.toLowerCase()).join(", ");
+                            setFridgeInput(next);
+                          } else {
+                            const next = fridgeInput ? `${fridgeInput}, ${item}` : item;
+                            setFridgeInput(next);
+                          }
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                          isAdded
+                            ? "bg-emerald-600 text-white shadow-sm"
+                            : "bg-stone-100 text-stone-700 hover:bg-emerald-100 hover:text-emerald-800"
+                        }`}
+                      >
+                        {isAdded ? `✓ ${item}` : `+ ${item}`}
+                      </button>
+                    );
+                  })}
+                  {fridgeInput && (
+                    <button
+                      type="button"
+                      onClick={() => setFridgeInput("")}
+                      className="px-3 py-1.5 rounded-xl text-xs font-bold bg-rose-50 text-rose-700 hover:bg-rose-100"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="relative">
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Search recipe title, ingredients, or chef..."
+                  className="w-full pl-11 pr-4 py-3 rounded-2xl border border-stone-200 bg-white text-stone-800 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all shadow-sm"
+                />
+                <svg className="w-5 h-5 text-stone-400 absolute left-3.5 top-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-stone-600 uppercase tracking-wider mb-1">Dietary</label>
+                  <select
+                    value={filterDietary}
+                    onChange={(e) => setFilterDietary(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-xl border border-stone-200 bg-white text-stone-800 text-xs focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all shadow-sm cursor-pointer"
+                  >
+                    <option value="all">All Diets</option>
+                    <option value="Vegetarian">Vegetarian</option>
+                    <option value="Vegan">Vegan</option>
+                    <option value="Gluten-Free">Gluten-Free</option>
+                    <option value="Keto">Keto</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-stone-600 uppercase tracking-wider mb-1">Meal Type</label>
+                  <select
+                    value={filterMealType}
+                    onChange={(e) => setFilterMealType(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-xl border border-stone-200 bg-white text-stone-800 text-xs focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all shadow-sm cursor-pointer"
+                  >
+                    <option value="all">All Meals</option>
+                    <option value="Breakfast">Breakfast</option>
+                    <option value="Lunch">Lunch</option>
+                    <option value="Dinner">Dinner</option>
+                    <option value="Snack">Snack</option>
+                    <option value="Dessert">Dessert</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-stone-600 uppercase tracking-wider mb-1">Prep Time</label>
+                  <select
+                    value={filterPrepTime}
+                    onChange={(e) => setFilterPrepTime(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-xl border border-stone-200 bg-white text-stone-800 text-xs focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all shadow-sm cursor-pointer"
+                  >
+                    <option value="all">All Prep Times</option>
+                    <option value="quick">Quick (&le; 20 mins)</option>
+                    <option value="medium">Medium (20-40 mins)</option>
+                    <option value="elaborate">Elaborate (&gt; 40 mins)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-stone-600 uppercase tracking-wider mb-1">Sort By</label>
+                  <select
+                    value={sortOrder}
+                    onChange={(e) => setSortOrder(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-xl border border-stone-200 bg-white text-stone-800 text-xs focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all shadow-sm cursor-pointer"
+                  >
+                    <option value="newest">Newest Additions</option>
+                    <option value="rating">Highest Rated</option>
+                    <option value="reviews">Most Reviewed</option>
+                    <option value="quickest">Quickest Prep Time</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {filtered.length === 0 ? (
@@ -503,8 +730,13 @@ function DiscoverRecipes({ recipes, onSelectRecipe, onEditRecipe, onDeleteRecipe
                       alt={recipe.title}
                       className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                       loading="lazy"
+                      decoding="async"
                       onError={(e) => {
-                        e.target.src = "https://images.unsplash.com/photo-1495521821757-a1efb6729352?auto=format&fit=crop&w=800&q=80";
+                        if (recipe.backup_image && e.target.src !== recipe.backup_image) {
+                          e.target.src = recipe.backup_image;
+                        } else {
+                          e.target.src = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80";
+                        }
                       }}
                     />
                     {recipe.video_url && (
@@ -513,6 +745,11 @@ function DiscoverRecipes({ recipes, onSelectRecipe, onEditRecipe, onDeleteRecipe
                           <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
                         </svg>
                         <span>Video Reel</span>
+                      </div>
+                    )}
+                    {searchMode === "fridge" && recipe._fridgeMatches > 0 && (
+                      <div className="absolute bottom-3 right-3 bg-emerald-600 text-white px-2.5 py-0.5 rounded-lg text-[11px] font-bold flex items-center space-x-1 shadow-md">
+                        <span>🥗 {recipe._fridgeMatches} matched</span>
                       </div>
                     )}
                     <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-bold flex items-center space-x-1 shadow-sm text-stone-800">
@@ -532,10 +769,20 @@ function DiscoverRecipes({ recipes, onSelectRecipe, onEditRecipe, onDeleteRecipe
 
                   <div className="p-5 flex-1 flex flex-col justify-between">
                     <div>
-                      <div className="flex items-center space-x-2 text-xs text-slate-500 mb-2">
+                      <div className="flex items-center justify-between text-xs text-slate-500 mb-2">
                         <span className="font-semibold text-slate-700 truncate">{recipe.author_name || "Community Chef"}</span>
-                        <span>•</span>
-                        <span>{new Date(recipe.created_at || Date.now()).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
+                        <div className="flex items-center space-x-1.5 shrink-0">
+                          {recipe.meal_type && (
+                            <span className="px-2 py-0.5 rounded-md bg-stone-100 text-stone-600 text-[10px] font-bold uppercase">
+                              {recipe.meal_type}
+                            </span>
+                          )}
+                          {recipe.dietary && Array.isArray(recipe.dietary) && recipe.dietary[0] && (
+                            <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 text-[10px] font-bold">
+                              {recipe.dietary[0]}
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <h3
                         className="text-lg font-serif font-bold text-stone-900 group-hover:text-orange-700 transition-colors line-clamp-1 mb-2 cursor-pointer"
@@ -640,15 +887,75 @@ function RecipeDetailModal({ recipeId, onClose, currentUser, isOwner, onEditReci
   const [editCommentText, setEditCommentText] = useState("");
   const [editRating, setEditRating] = useState(5);
 
+  const [cookingMode, setCookingMode] = useState(false);
+  const [checkedIngredients, setCheckedIngredients] = useState({});
+  const [completedSteps, setCompletedSteps] = useState({});
+  const [unitSystem, setUnitSystem] = useState("metric");
+  const [servings, setServings] = useState(2);
+  const [activeTimer, setActiveTimer] = useState(null);
+  const wakeLockRef = useRef(null);
+
   const loadData = () => {
     if (!recipeId) return;
     const rec = window.store.getRecipeById(recipeId);
-    setRecipe(rec ? { ...rec } : null);
+    if (rec) {
+      setRecipe({ ...rec });
+      setServings(Number(rec.servings) || 2);
+    } else {
+      setRecipe(null);
+    }
   };
 
   useEffect(() => {
     loadData();
   }, [recipeId]);
+
+  useEffect(() => {
+    let interval = null;
+    if (activeTimer && activeTimer.running && activeTimer.remaining > 0) {
+      interval = setInterval(() => {
+        setActiveTimer((prev) => {
+          if (!prev || !prev.running) return prev;
+          if (prev.remaining <= 1) {
+            playCookingChime();
+            showToast(`Time is up for ${prev.label || "Timer"}!`, "success");
+            return { ...prev, remaining: 0, running: false };
+          }
+          return { ...prev, remaining: prev.remaining - 1 };
+        });
+      }, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [activeTimer?.running, activeTimer?.remaining]);
+
+  useEffect(() => {
+    const handleWakeLock = async () => {
+      if (cookingMode) {
+        if ("wakeLock" in navigator) {
+          try {
+            wakeLockRef.current = await navigator.wakeLock.request("screen");
+          } catch (err) {}
+        }
+      } else {
+        if (wakeLockRef.current) {
+          try {
+            await wakeLockRef.current.release();
+            wakeLockRef.current = null;
+          } catch (err) {}
+        }
+      }
+    };
+    handleWakeLock();
+    return () => {
+      if (wakeLockRef.current) {
+        try {
+          wakeLockRef.current.release();
+        } catch (err) {}
+      }
+    };
+  }, [cookingMode]);
 
   if (!recipe) return null;
 
@@ -661,6 +968,10 @@ function RecipeDetailModal({ recipeId, onClose, currentUser, isOwner, onEditReci
   if (Array.isArray(recipe.ingredients)) {
     ingredients = recipe.ingredients.map((i) => (typeof i === "object" ? `${i.quantity || ""} ${i.unit || ""} ${i.name || ""}`.trim() : String(i).trim()));
   }
+
+  const parsedSteps = recipe.instructions
+    ? recipe.instructions.split(/\n+/).map((s) => s.trim()).filter(Boolean)
+    : ["Cook with fresh ingredients and serve hot."];
 
   const handleReviewSubmit = async (e) => {
     e.preventDefault();
@@ -708,6 +1019,51 @@ function RecipeDetailModal({ recipeId, onClose, currentUser, isOwner, onEditReci
     }
   };
 
+  const renderStepWithTimers = (stepText) => {
+    const timeRegex = /\b(\d+(?:\.\d+)?)\s*(minutes?|mins?|seconds?|secs?|hours?|hrs?)\b/gi;
+    const parts = [];
+    let lastIdx = 0;
+    let match;
+    while ((match = timeRegex.exec(stepText)) !== null) {
+      if (match.index > lastIdx) {
+        parts.push(stepText.substring(lastIdx, match.index));
+      }
+      const matchedPhrase = match[0];
+      const seconds = parseTimePhraseToSeconds(matchedPhrase);
+      parts.push(
+        <button
+          key={match.index}
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setActiveTimer({
+              label: matchedPhrase,
+              total: seconds,
+              remaining: seconds,
+              running: true
+            });
+            showToast(`Started ${matchedPhrase} timer!`, "info");
+          }}
+          className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold text-xs mx-1 border border-amber-300 active:scale-95 transition-all shadow-sm"
+          title="Click to start timer"
+        >
+          <svg className="w-3.5 h-3.5 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span>⏱️ {matchedPhrase}</span>
+        </button>
+      );
+      lastIdx = timeRegex.lastIndex;
+    }
+    if (lastIdx < stepText.length) {
+      parts.push(stepText.substring(lastIdx));
+    }
+    return parts.length > 0 ? parts : stepText;
+  };
+
+  const baseServings = Number(recipe.servings) || 2;
+  const servingsMultiplier = servings / baseServings;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto bg-black/60 backdrop-blur-sm animate-fade-in">
       <div className="relative w-full max-w-4xl bg-white rounded-3xl overflow-hidden shadow-2xl my-8 max-h-[90vh] flex flex-col">
@@ -716,13 +1072,45 @@ function RecipeDetailModal({ recipeId, onClose, currentUser, isOwner, onEditReci
             src={photo}
             alt={recipe.title}
             className="w-full h-full object-cover"
+            loading="lazy"
+            decoding="async"
             onError={(e) => {
-              e.target.src = "https://images.unsplash.com/photo-1495521821757-a1efb6729352?auto=format&fit=crop&w=1200&q=80";
+              if (recipe.backup_image && e.target.src !== recipe.backup_image) {
+                e.target.src = recipe.backup_image;
+              } else {
+                e.target.src = "https://images.unsplash.com/photo-1495521821757-a1efb6729352?auto=format&fit=crop&w=1200&q=80";
+              }
             }}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-950/40 to-transparent"></div>
 
           <div className="absolute top-4 right-4 z-10 flex items-center space-x-2">
+            <button
+              type="button"
+              onClick={() => {
+                const el = document.getElementById("recipe-instructions-section");
+                if (el) el.scrollIntoView({ behavior: "smooth" });
+              }}
+              className="px-3 py-1.5 rounded-full bg-black/50 hover:bg-black text-white text-xs font-bold flex items-center space-x-1.5 shadow-lg backdrop-blur-md transition-all"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+              </svg>
+              <span>Jump to Recipe</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const next = !cookingMode;
+                setCookingMode(next);
+                showToast(next ? "Cooking Mode active: Screen will stay awake!" : "Cooking Mode turned off", "info");
+              }}
+              className={`px-3 py-1.5 rounded-full text-xs font-bold flex items-center space-x-1.5 shadow-lg backdrop-blur-md transition-all ${
+                cookingMode ? "bg-amber-500 text-stone-950 font-black ring-2 ring-amber-300" : "bg-black/50 hover:bg-black text-white"
+              }`}
+            >
+              <span>{cookingMode ? "🔥 Screen Awake" : "👨‍🍳 Cooking Mode"}</span>
+            </button>
             {canEdit && (
               <button
                 type="button"
@@ -730,9 +1118,9 @@ function RecipeDetailModal({ recipeId, onClose, currentUser, isOwner, onEditReci
                   onClose();
                   onEditRecipe(recipeId);
                 }}
-                className="px-3.5 py-1.5 rounded-full bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold flex items-center space-x-1.5 shadow-lg backdrop-blur-md transition-all"
+                className="px-3 py-1.5 rounded-full bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold flex items-center space-x-1.5 shadow-lg backdrop-blur-md transition-all"
               >
-                <span>Edit Recipe</span>
+                <span>Edit</span>
               </button>
             )}
             {canDelete && (
@@ -742,15 +1130,15 @@ function RecipeDetailModal({ recipeId, onClose, currentUser, isOwner, onEditReci
                   onClose();
                   onDeleteRecipe(recipeId, recipe.title);
                 }}
-                className="px-3.5 py-1.5 rounded-full bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold flex items-center space-x-1.5 shadow-lg backdrop-blur-md transition-all"
+                className="px-3 py-1.5 rounded-full bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold flex items-center space-x-1.5 shadow-lg backdrop-blur-md transition-all"
               >
-                <span>{isOwner ? "Delete Recipe (Owner)" : "Delete Recipe"}</span>
+                <span>Delete</span>
               </button>
             )}
             <button
               type="button"
               onClick={onClose}
-              className="w-10 h-10 rounded-full bg-black/50 hover:bg-black/80 text-white flex items-center justify-center backdrop-blur-md transition-all"
+              className="w-9 h-9 rounded-full bg-black/50 hover:bg-black/80 text-white flex items-center justify-center backdrop-blur-md transition-all"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" />
@@ -759,12 +1147,24 @@ function RecipeDetailModal({ recipeId, onClose, currentUser, isOwner, onEditReci
           </div>
 
           <div className="absolute bottom-5 left-6 right-6 text-white">
-            <div className="flex items-center space-x-2 text-xs text-emerald-300 font-semibold uppercase tracking-wider mb-2">
+            <div className="flex flex-wrap items-center gap-2 text-xs text-emerald-300 font-semibold uppercase tracking-wider mb-2">
               <span className="bg-emerald-500/30 backdrop-blur-md px-2.5 py-0.5 rounded-full border border-emerald-400/30">
                 Verified Heritage Dish
               </span>
               <span>•</span>
               <span className="text-stone-200">{recipe.prep_time || 25} Mins Prep</span>
+              {recipe.meal_type && (
+                <>
+                  <span>•</span>
+                  <span className="text-amber-300">{recipe.meal_type}</span>
+                </>
+              )}
+              {recipe.dietary && Array.isArray(recipe.dietary) && recipe.dietary[0] && (
+                <>
+                  <span>•</span>
+                  <span className="text-emerald-300">{recipe.dietary[0]}</span>
+                </>
+              )}
             </div>
             <h2 className="text-2xl sm:text-4xl font-serif font-extrabold text-white leading-tight mb-2">
               {recipe.title}
@@ -782,25 +1182,138 @@ function RecipeDetailModal({ recipeId, onClose, currentUser, isOwner, onEditReci
           </div>
         </div>
 
-        <div className="p-6 sm:p-8 overflow-y-auto flex-1 space-y-8">
+        <div className="p-6 sm:p-8 overflow-y-auto flex-1 space-y-6">
+          {cookingMode && (
+            <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between">
+              <div className="flex items-center space-x-2 text-xs text-amber-900 font-bold">
+                <span className="text-base">🔥</span>
+                <span>Cooking Mode Active: Screen will stay awake while you cook! Hands-free friendly.</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCookingMode(false)}
+                className="text-xs text-amber-800 underline font-semibold ml-2 shrink-0"
+              >
+                Turn off
+              </button>
+            </div>
+          )}
+
+          {activeTimer && (
+            <div className="sticky top-0 z-20 bg-stone-900 text-white px-4 py-3 rounded-2xl shadow-xl flex items-center justify-between gap-3 border border-amber-500/40 animate-fade-in">
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold">
+                  ⏱️
+                </div>
+                <div>
+                  <div className="text-[11px] text-stone-400 font-medium">{activeTimer.label || "Timer"}</div>
+                  <div className="font-mono text-xl font-black text-amber-400 tracking-wider">
+                    {formatTimerClock(activeTimer.remaining)}
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <button
+                  type="button"
+                  onClick={() => setActiveTimer((prev) => ({ ...prev, running: !prev.running }))}
+                  className="px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-stone-950 transition-colors"
+                >
+                  {activeTimer.running ? "Pause" : "Resume"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTimer((prev) => ({ ...prev, remaining: prev.total, running: false }))}
+                  className="px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-stone-800 hover:bg-stone-700 text-stone-300"
+                >
+                  Reset
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTimer(null)}
+                  className="p-1.5 rounded-full hover:bg-stone-800 text-stone-400 hover:text-white"
+                  title="Close timer"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="md:col-span-1 bg-stone-50 rounded-2xl p-5 border border-stone-200/80">
-              <h4 className="font-serif font-bold text-stone-900 text-base mb-4 flex items-center space-x-2">
-                <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                </svg>
-                <span>Ingredients</span>
-              </h4>
+            <div className="md:col-span-1 bg-stone-50 rounded-2xl p-5 border border-stone-200/80 space-y-4">
+              <div className="flex items-center justify-between">
+                <h4 className="font-serif font-bold text-stone-900 text-base flex items-center space-x-2">
+                  <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                  </svg>
+                  <span>Ingredients</span>
+                </h4>
+                <div className="flex items-center space-x-1 bg-stone-200/80 p-0.5 rounded-lg text-[10px] font-bold">
+                  <button
+                    type="button"
+                    onClick={() => setUnitSystem("metric")}
+                    className={`px-2 py-0.5 rounded ${unitSystem === "metric" ? "bg-white text-stone-900 shadow-sm" : "text-stone-600"}`}
+                  >
+                    Metric
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setUnitSystem("imperial")}
+                    className={`px-2 py-0.5 rounded ${unitSystem === "imperial" ? "bg-white text-stone-900 shadow-sm" : "text-stone-600"}`}
+                  >
+                    Imperial
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between p-2.5 rounded-xl bg-white border border-stone-200/80">
+                <span className="text-xs font-bold text-stone-700">Servings</span>
+                <div className="flex items-center space-x-2">
+                  <button
+                    type="button"
+                    onClick={() => setServings(Math.max(1, servings - 1))}
+                    className="w-6 h-6 rounded-lg bg-stone-100 hover:bg-stone-200 flex items-center justify-center font-bold text-stone-700 text-xs active:scale-95"
+                  >
+                    -
+                  </button>
+                  <span className="text-xs font-black text-stone-900 w-5 text-center">{servings}</span>
+                  <button
+                    type="button"
+                    onClick={() => setServings(Math.min(20, servings + 1))}
+                    className="w-6 h-6 rounded-lg bg-stone-100 hover:bg-stone-200 flex items-center justify-center font-bold text-stone-700 text-xs active:scale-95"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+
               {ingredients.length === 0 ? (
                 <p className="text-xs text-stone-500 italic">No specific ingredients listed.</p>
               ) : (
-                <ul className="space-y-2 text-xs sm:text-sm text-stone-700">
-                  {ingredients.map((ing, i) => (
-                    <li key={i} className="flex items-start space-x-2">
-                      <span className="text-orange-600 font-bold">&bull;</span>
-                      <span>{ing}</span>
-                    </li>
-                  ))}
+                <ul className="space-y-1.5 text-xs sm:text-sm text-stone-700">
+                  {ingredients.map((ing, i) => {
+                    const isChecked = !!checkedIngredients[i];
+                    const scaled = scaleIngredientAmount(ing, servingsMultiplier, unitSystem);
+                    return (
+                      <li
+                        key={i}
+                        onClick={() => setCheckedIngredients((prev) => ({ ...prev, [i]: !prev[i] }))}
+                        className={`flex items-start space-x-2.5 p-2 rounded-xl cursor-pointer transition-all ${
+                          isChecked ? "bg-emerald-50 text-stone-400 line-through" : "hover:bg-white/80"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => {}}
+                          className="mt-0.5 rounded text-orange-600 focus:ring-orange-500 cursor-pointer"
+                        />
+                        <span className={`flex-1 ${isChecked ? "line-through opacity-60" : "font-medium text-stone-800"}`}>
+                          {scaled}
+                        </span>
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
             </div>
@@ -826,10 +1339,43 @@ function RecipeDetailModal({ recipeId, onClose, currentUser, isOwner, onEditReci
                   </video>
                 </div>
               )}
-              <div>
-                <h4 className="font-serif font-bold text-stone-900 text-lg mb-3">Preparation Instructions</h4>
-                <div className="text-sm text-stone-700 leading-relaxed whitespace-pre-line bg-white p-5 rounded-2xl border border-stone-100 shadow-sm">
-                  {recipe.instructions || "Cook with fresh ingredients and serve hot."}
+
+              <div id="recipe-instructions-section" className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-serif font-bold text-stone-900 text-lg">Step-by-Step Preparation</h4>
+                  <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+                    {Object.values(completedSteps).filter(Boolean).length} of {parsedSteps.length} Steps Done
+                  </span>
+                </div>
+
+                <div className="space-y-3">
+                  {parsedSteps.map((step, idx) => {
+                    const isDone = !!completedSteps[idx];
+                    return (
+                      <div
+                        key={idx}
+                        onClick={() => setCompletedSteps((prev) => ({ ...prev, [idx]: !prev[idx] }))}
+                        className={`p-4 rounded-2xl border transition-all cursor-pointer ${
+                          isDone
+                            ? "bg-emerald-50/70 border-emerald-200"
+                            : "bg-white border-stone-200/80 shadow-sm hover:border-orange-200"
+                        }`}
+                      >
+                        <div className="flex items-start space-x-3">
+                          <div
+                            className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 text-xs font-bold transition-colors ${
+                              isDone ? "bg-emerald-600 text-white" : "bg-orange-100 text-orange-800"
+                            }`}
+                          >
+                            {isDone ? "✓" : idx + 1}
+                          </div>
+                          <div className={`flex-1 text-xs sm:text-sm leading-relaxed ${isDone ? "line-through text-stone-400" : "text-stone-700"}`}>
+                            {renderStepWithTimers(step)}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -1005,9 +1551,13 @@ function ShareRecipeForm({ currentUser, editingRecipeId, onComplete, showToast }
   const [title, setTitle] = useState("");
   const [authorName, setAuthorName] = useState("");
   const [prepTime, setPrepTime] = useState(25);
+  const [dietary, setDietary] = useState("Vegetarian");
+  const [mealType, setMealType] = useState("Dinner");
+  const [servingsCount, setServingsCount] = useState(2);
   const [ingredientsText, setIngredientsText] = useState("");
   const [instructionsText, setInstructionsText] = useState("");
   const [photoUrl, setPhotoUrl] = useState("");
+  const [backupImage, setBackupImage] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
   const [searchingPhoto, setSearchingPhoto] = useState(false);
   const [uploadingVideo, setUploadingVideo] = useState(false);
@@ -1020,6 +1570,9 @@ function ShareRecipeForm({ currentUser, editingRecipeId, onComplete, showToast }
         setTitle(rec.title || "");
         setAuthorName(rec.author_name || "");
         setPrepTime(rec.prep_time || 25);
+        setDietary(Array.isArray(rec.dietary) && rec.dietary[0] ? rec.dietary[0] : (rec.dietary || "Vegetarian"));
+        setMealType(rec.meal_type || "Dinner");
+        setServingsCount(Number(rec.servings) || 2);
         if (Array.isArray(rec.ingredients)) {
           setIngredientsText(
             rec.ingredients
@@ -1031,15 +1584,20 @@ function ShareRecipeForm({ currentUser, editingRecipeId, onComplete, showToast }
         }
         setInstructionsText(rec.instructions || "");
         setPhotoUrl(rec.image_url || (rec.photos && rec.photos[0]) || "");
+        setBackupImage(rec.backup_image || "");
         setVideoUrl(rec.video_url || "");
       }
     } else {
       setTitle("");
       setAuthorName(currentUser ? (currentUser.display_name || currentUser.name) : "");
       setPrepTime(25);
+      setDietary("Vegetarian");
+      setMealType("Dinner");
+      setServingsCount(2);
       setIngredientsText("");
       setInstructionsText("");
       setPhotoUrl("");
+      setBackupImage("");
       setVideoUrl("");
     }
   }, [editingRecipeId, currentUser]);
@@ -1090,6 +1648,7 @@ function ShareRecipeForm({ currentUser, editingRecipeId, onComplete, showToast }
         const ctx = canvas.getContext("2d");
         ctx.drawImage(img, 0, 0, w, h);
         const compressedBase64 = canvas.toDataURL("image/jpeg", 0.85);
+        setBackupImage(compressedBase64);
         try {
           const resp = await fetch("/api/upload", {
             method: "POST",
@@ -1116,8 +1675,8 @@ function ShareRecipeForm({ currentUser, editingRecipeId, onComplete, showToast }
   const handleVideoUpload = async (e) => {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
-    if (file.size > 50 * 1024 * 1024) {
-      showToast("Video file exceeds the 50MB limit.", "error");
+    if (file.size > 100 * 1024 * 1024) {
+      showToast("Video file exceeds the 100MB limit.", "error");
       return;
     }
     setUploadingVideo(true);
@@ -1192,9 +1751,13 @@ function ShareRecipeForm({ currentUser, editingRecipeId, onComplete, showToast }
           title: title.trim(),
           author_name: chefName,
           prep_time: Number(prepTime) || 25,
+          dietary: [dietary],
+          meal_type: mealType,
+          servings: Number(servingsCount) || 2,
           ingredients,
           instructions,
           image_url: finalPhoto,
+          backup_image: backupImage || (finalPhoto && finalPhoto.startsWith("data:image") ? finalPhoto : null),
           photos: [finalPhoto],
           video_url: videoUrl || null,
           status: "approved"
@@ -1207,9 +1770,13 @@ function ShareRecipeForm({ currentUser, editingRecipeId, onComplete, showToast }
           author_name: chefName,
           title: title.trim(),
           prep_time: Number(prepTime) || 25,
+          dietary: [dietary],
+          meal_type: mealType,
+          servings: Number(servingsCount) || 2,
           ingredients,
           instructions,
           image_url: finalPhoto,
+          backup_image: backupImage || (finalPhoto && finalPhoto.startsWith("data:image") ? finalPhoto : null),
           photos: [finalPhoto],
           video_url: videoUrl || null,
           status: "approved"
@@ -1269,16 +1836,66 @@ function ShareRecipeForm({ currentUser, editingRecipeId, onComplete, showToast }
             </div>
           </div>
 
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-2">
+                Prep Time (Mins)
+              </label>
+              <input
+                type="number"
+                min="5"
+                max="240"
+                value={prepTime}
+                onChange={(e) => setPrepTime(e.target.value)}
+                className="w-full px-4 py-3 rounded-2xl border border-stone-200 bg-stone-50 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-2">
+                Dietary Category
+              </label>
+              <select
+                value={dietary}
+                onChange={(e) => setDietary(e.target.value)}
+                className="w-full px-4 py-3 rounded-2xl border border-stone-200 bg-stone-50 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 cursor-pointer"
+              >
+                <option value="Vegetarian">Vegetarian</option>
+                <option value="Vegan">Vegan</option>
+                <option value="Gluten-Free">Gluten-Free</option>
+                <option value="Keto">Keto</option>
+                <option value="None">None / General</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-2">
+                Meal Type
+              </label>
+              <select
+                value={mealType}
+                onChange={(e) => setMealType(e.target.value)}
+                className="w-full px-4 py-3 rounded-2xl border border-stone-200 bg-stone-50 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 cursor-pointer"
+              >
+                <option value="Breakfast">Breakfast</option>
+                <option value="Lunch">Lunch</option>
+                <option value="Dinner">Dinner</option>
+                <option value="Snack">Snack</option>
+                <option value="Dessert">Dessert</option>
+              </select>
+            </div>
+          </div>
+
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-stone-700 mb-2">
-              Prep Time (Minutes)
+              Default Servings
             </label>
             <input
               type="number"
-              min="5"
-              max="240"
-              value={prepTime}
-              onChange={(e) => setPrepTime(e.target.value)}
+              min="1"
+              max="50"
+              value={servingsCount}
+              onChange={(e) => setServingsCount(e.target.value)}
               className="w-full px-4 py-3 rounded-2xl border border-stone-200 bg-stone-50 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500"
             />
           </div>
@@ -1352,7 +1969,7 @@ function ShareRecipeForm({ currentUser, editingRecipeId, onComplete, showToast }
           <div className="p-5 rounded-2xl border border-stone-200 bg-stone-50/70">
             <div className="flex items-center justify-between mb-2">
               <label className="block text-xs font-bold uppercase tracking-wider text-stone-700">
-                Cooking Video / Reel (Optional — Up to 50MB)
+                Cooking Video / Reel (Optional — Up to 100MB)
               </label>
               {uploadingVideo && (
                 <span className="text-xs text-amber-600 font-bold animate-pulse">Uploading video...</span>

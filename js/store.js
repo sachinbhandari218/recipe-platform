@@ -104,13 +104,41 @@ class RecipeStore {
 
       if (Array.isArray(data.recipes)) {
         const cleanServerRecipes = data.recipes.filter((r) => !deletedIds.includes(r.recipe_id || r.id));
+        let localRecipes = [];
+        try {
+          localRecipes = JSON.parse(localStorage.getItem(STORAGE_KEY_RECIPES) || "[]");
+        } catch (e) {}
+
+        const recipeMap = new Map();
+        for (const r of cleanServerRecipes) {
+          const rid = r.recipe_id || r.id;
+          if (rid) recipeMap.set(rid, r);
+        }
+
+        let localHadExtra = false;
+        for (const r of localRecipes) {
+          const rid = r.recipe_id || r.id;
+          if (rid && !deletedIds.includes(rid)) {
+            if (!recipeMap.has(rid)) {
+              recipeMap.set(rid, r);
+              localHadExtra = true;
+            } else {
+              const serverRec = recipeMap.get(rid);
+              if (r.backup_image && !serverRec.backup_image) {
+                recipeMap.set(rid, { ...serverRec, backup_image: r.backup_image });
+              }
+            }
+          }
+        }
+
+        const mergedRecipes = Array.from(recipeMap.values());
         const currentSerialized = localStorage.getItem(STORAGE_KEY_RECIPES) || "[]";
-        const newSerialized = JSON.stringify(cleanServerRecipes);
+        const newSerialized = JSON.stringify(mergedRecipes);
         if (currentSerialized !== newSerialized) {
           safeSetStorage(STORAGE_KEY_RECIPES, newSerialized);
           hasNewData = true;
         }
-        if (cleanServerRecipes.length !== data.recipes.length) {
+        if (localHadExtra || cleanServerRecipes.length !== data.recipes.length) {
           this.syncToServer();
         }
       }
@@ -417,6 +445,10 @@ class RecipeStore {
       image_url: photoUrl,
       photos: [photoUrl],
       video_url: recipeData.video_url || null,
+      backup_image: recipeData.backup_image || (typeof photoUrl === "string" && photoUrl.startsWith("data:") ? photoUrl : null),
+      dietary: Array.isArray(recipeData.dietary) ? recipeData.dietary : [],
+      meal_type: recipeData.meal_type || "Dinner",
+      servings: Number(recipeData.servings || 2),
       status: recipeData.status || "approved",
       rejection_reason: null,
       average_rating: 5.0,
@@ -453,6 +485,7 @@ class RecipeStore {
         if (resp.ok) {
           const udata = await resp.json();
           if (udata && udata.url) {
+            if (!partialData.backup_image) partialData.backup_image = partialData.image_url;
             partialData.image_url = udata.url;
             partialData.photos = [udata.url];
           }
@@ -470,6 +503,10 @@ class RecipeStore {
     if (partialData.author_uid) recipes[index].author_id = partialData.author_uid;
     if (partialData.author_id) recipes[index].author_uid = partialData.author_id;
     if (partialData.video_url !== undefined) recipes[index].video_url = partialData.video_url;
+    if (partialData.backup_image !== undefined) recipes[index].backup_image = partialData.backup_image;
+    if (partialData.dietary !== undefined) recipes[index].dietary = partialData.dietary;
+    if (partialData.meal_type !== undefined) recipes[index].meal_type = partialData.meal_type;
+    if (partialData.servings !== undefined) recipes[index].servings = Number(partialData.servings);
 
     safeSetStorage(STORAGE_KEY_RECIPES, JSON.stringify(recipes));
 
