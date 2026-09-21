@@ -1,0 +1,37 @@
+[{
+    "id": "post_active_1",
+    "userId": "usr-1",
+    "username": "Sachin Bhandari",
+    "userAvatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80",
+    "mediaUrl": "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=1080&q=80",
+    "mediaPath": "",
+    "mediaType": "image",
+    "caption": "Double smashed truffle cheese burger sizzling fresh off the skillet 🔥",
+    "duration": 0,
+    "createdAt": 1789980000000,
+    "expiresAt": 1790066400000
+  },{
+    "id": "post_active_2",
+    "userId": "usr-2",
+    "username": "Aarav Sharma",
+    "userAvatar": "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=200&q=80",
+    "mediaUrl": "https://assets.mixkit.co/videos/preview/mixkit-chef-cutting-vegetables-in-a-kitchen-40916-large.mp4",
+    "mediaPath": "",
+    "mediaType": "video",
+    "caption": "Crispy stir fry prep! 10-second knife work and wok toss 🔪🥗",
+    "duration": 9.8,
+    "createdAt": 1789981000000,
+    "expiresAt": 1790067400000
+  },{
+    "id": "post_active_3",
+    "userId": "usr-3",
+    "username": "Priya Patel",
+    "userAvatar": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80",
+    "mediaUrl": "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=1080&q=80",
+    "mediaPath": "",
+    "mediaType": "image",
+    "caption": "Rainbow avocado grain bowl with tahini ginger drizzle! 🥑✨",
+    "duration": 0,
+    "createdAt": 1789982000000,
+    "expiresAt": 1790068400000
+  }]

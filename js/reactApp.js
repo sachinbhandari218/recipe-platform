@@ -3115,6 +3115,490 @@ function AuthModal({ isOpen, onClose, mode: initialMode, showToast, showGooglePi
         </div>
       </div>
     </div>
+function StoryFeed({ stories, onTriggerUpload }) {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const videoRefs = useRef({});
+  const [likedStories, setLikedStories] = useState({});
+
+  useEffect(() => {
+    Object.keys(videoRefs.current).forEach((key) => {
+      const vid = videoRefs.current[key];
+      if (vid) {
+        if (parseInt(key, 10) === activeIndex) {
+          vid.currentTime = 0;
+          vid.play().catch(() => {});
+        } else {
+          vid.pause();
+        }
+      }
+    });
+  }, [activeIndex]);
+
+  const handleScroll = (e) => {
+    const container = e.currentTarget;
+    const itemHeight = container.clientHeight;
+    if (itemHeight > 0) {
+      const index = Math.round(container.scrollTop / itemHeight);
+      if (index !== activeIndex && index >= 0 && index < stories.length) {
+        setActiveIndex(index);
+      }
+    }
+  };
+
+  const formatHoursLeft = (expiresAt) => {
+    const remainingMs = Number(expiresAt) - Date.now();
+    if (remainingMs <= 0) return "Expiring";
+    const hours = Math.floor(remainingMs / (1000 * 60 * 60));
+    const mins = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
+    return hours + "h " + mins + "m left";
+  };
+
+  const toggleLike = (id) => {
+    setLikedStories((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  if (!stories || stories.length === 0) {
+    return (
+      <div className="h-full min-h-[75vh] w-full flex flex-col items-center justify-center p-6 text-center bg-black text-zinc-300">
+        <div className="w-16 h-16 rounded-3xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-3xl mb-4 shadow-xl">
+          🌮
+        </div>
+        <h3 className="text-xl font-black text-white">No Stories Active</h3>
+        <p className="text-xs text-zinc-500 mt-2 max-w-xs leading-relaxed">
+          All food stories automatically purge after 24 hours. Be the first to share today's cooking or dining reel!
+        </p>
+        <button
+          type="button"
+          onClick={onTriggerUpload}
+          className="mt-6 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-orange-600 to-amber-600 text-white text-xs font-black uppercase tracking-wider shadow-lg shadow-orange-600/30 hover:from-orange-500 hover:to-amber-500 active:scale-95 transition-all cursor-pointer"
+        >
+          🔥 Post Food Story
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      onScroll={handleScroll}
+      className="h-[calc(100vh-130px)] sm:h-[calc(100vh-150px)] max-h-[780px] w-full overflow-y-scroll snap-y snap-mandatory bg-black rounded-3xl border border-zinc-900 relative shadow-2xl scrollbar-none"
+    >
+      {stories.map((story, idx) => {
+        const isCurrent = idx === activeIndex;
+        const isLiked = likedStories[story.id];
+        return (
+          <div
+            key={story.id || idx}
+            className="relative h-full w-full snap-start snap-always flex items-center justify-center bg-black overflow-hidden select-none"
+          >
+            <div className="absolute top-3 left-4 right-4 z-20 flex space-x-1.5 pointer-events-none">
+              <div className="h-1 flex-1 rounded-full bg-zinc-800/80 backdrop-blur-sm overflow-hidden">
+                <div
+                  className={`h-full bg-orange-500 transition-all duration-300 ${
+                    isCurrent ? "w-full animate-pulse" : idx < activeIndex ? "w-full" : "w-0"
+                  }`}
+                />
+              </div>
+            </div>
+
+            <div className="relative w-full h-full flex items-center justify-center bg-zinc-950">
+              {story.mediaType === "video" ? (
+                <video
+                  ref={(el) => (videoRefs.current[idx] = el)}
+                  src={story.mediaUrl}
+                  playsInline
+                  loop
+                  muted={false}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <img
+                  src={story.mediaUrl}
+                  alt={story.caption || "Food story"}
+                  className="w-full h-full object-cover"
+                />
+              )}
+            </div>
+
+            <div className="absolute inset-x-0 bottom-0 z-20 p-5 bg-gradient-to-t from-black via-black/60 to-transparent pointer-events-auto">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center space-x-3">
+                  <img
+                    src={story.userAvatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80"}
+                    alt={story.username}
+                    className="w-10 h-10 rounded-full border-2 border-orange-500 object-cover"
+                  />
+                  <div>
+                    <h4 className="text-sm font-black text-white tracking-wide">{story.username}</h4>
+                    <span className="text-[11px] font-bold text-orange-400 flex items-center space-x-1">
+                      <span>⏳</span>
+                      <span>{formatHoursLeft(story.expiresAt)}</span>
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <button
+                    type="button"
+                    onClick={() => toggleLike(story.id)}
+                    className={`p-3 rounded-full border backdrop-blur-md transition-colors ${
+                      isLiked ? "bg-rose-950/80 border-rose-600 text-rose-500" : "bg-zinc-900/80 border-zinc-800 text-white hover:text-rose-400"
+                    }`}
+                  >
+                    <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+                      <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (navigator.share) {
+                        navigator.share({ title: "FoodBite Story", text: story.caption, url: window.location.href }).catch(() => {});
+                      } else {
+                        navigator.clipboard.writeText(window.location.href);
+                        window.showToast && window.showToast("Story link copied to clipboard!", "success");
+                      }
+                    }}
+                    className="p-3 rounded-full bg-zinc-900/80 border border-zinc-800 text-white hover:text-orange-400 backdrop-blur-md"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              {story.caption && (
+                <p className="text-xs text-zinc-200 leading-snug line-clamp-2">
+                  {story.caption}
+                </p>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function UploadStoryModal({ isOpen, onClose, onStoryUploaded, showToast }) {
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState("");
+  const [isVideo, setIsVideo] = useState(false);
+  const [duration, setDuration] = useState(0);
+  const [caption, setCaption] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  if (!isOpen) return null;
+
+  const handleFileChange = (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 50 * 1024 * 1024) {
+      setErrorMessage("File size exceeds the 50MB limit");
+      setSelectedFile(null);
+      setPreviewUrl("");
+      return;
+    }
+
+    setErrorMessage("");
+    const isVid = file.type.startsWith("video");
+    setIsVideo(isVid);
+
+    if (isVid) {
+      const videoElement = document.createElement("video");
+      videoElement.preload = "metadata";
+      const objectUrl = URL.createObjectURL(file);
+      videoElement.onloadedmetadata = () => {
+        URL.revokeObjectURL(objectUrl);
+        if (videoElement.duration > 10.05) {
+          setErrorMessage("Video duration must be 10 seconds or less. Selected: " + videoElement.duration.toFixed(1) + "s");
+          setSelectedFile(null);
+          setPreviewUrl("");
+          return;
+        }
+        setDuration(videoElement.duration);
+        setSelectedFile(file);
+        setPreviewUrl(URL.createObjectURL(file));
+      };
+      videoElement.src = objectUrl;
+    } else {
+      setDuration(0);
+      setSelectedFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!selectedFile) {
+      setErrorMessage("Please select a photo or video under 10 seconds");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setErrorMessage("");
+
+    try {
+      let uploadedUrl = "";
+      let uploadedPath = "";
+
+      if (isVideo) {
+        const resp = await fetch("/api/upload?type=video", {
+          method: "POST",
+          headers: { "Content-Type": selectedFile.type || "video/mp4" },
+          body: selectedFile
+        });
+        if (!resp.ok) throw new Error("Video upload failed");
+        const data = await resp.json();
+        uploadedUrl = data.url;
+        uploadedPath = "uploads/" + data.filename;
+      } else {
+        const reader = new FileReader();
+        const base64 = await new Promise((resolve, reject) => {
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(selectedFile);
+        });
+        const resp = await fetch("/api/upload", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ image: base64 })
+        });
+        if (!resp.ok) throw new Error("Photo upload failed");
+        const data = await resp.json();
+        uploadedUrl = data.url;
+        uploadedPath = "uploads/" + data.filename;
+      }
+
+      const postResp = await fetch("/api/posts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: "usr-1",
+          username: "Sachin Bhandari",
+          userAvatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80",
+          mediaUrl: uploadedUrl,
+          mediaPath: uploadedPath,
+          mediaType: isVideo ? "video" : "image",
+          caption: caption.trim(),
+          duration: duration
+        })
+      });
+
+      if (!postResp.ok) throw new Error("Failed to save story record");
+      const postData = await postResp.json();
+
+      showToast("🔥 Daily Food Story posted! Streak updated to " + postData.currentStreak + "!", "success");
+      onStoryUploaded && onStoryUploaded(postData);
+      onClose();
+    } catch (err) {
+      setErrorMessage(err.message || "Failed to post story");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+      <div className="relative w-full max-w-sm rounded-3xl bg-zinc-950 border border-zinc-800 p-6 text-zinc-100 shadow-2xl">
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute top-5 right-5 text-zinc-400 hover:text-white"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+
+        <div className="mb-4 text-center">
+          <span className="inline-block px-3 py-1 mb-2 text-[10px] font-black uppercase tracking-wider rounded-full bg-orange-950 text-orange-400 border border-orange-800/40">
+            24H Ephemeral Story
+          </span>
+          <h3 className="text-xl font-black text-white tracking-tight">Share Food Story</h3>
+          <p className="text-xs text-zinc-400 mt-1">Images or short videos up to 10s (max 50MB)</p>
+        </div>
+
+        {errorMessage && (
+          <div className="mb-4 p-3 rounded-2xl bg-rose-950/60 border border-rose-800/50 text-rose-300 text-xs text-center font-medium">
+            {errorMessage}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="relative rounded-2xl border-2 border-dashed border-zinc-800 bg-zinc-900/50 p-4 text-center hover:border-orange-500 transition-colors">
+            {previewUrl ? (
+              <div className="relative w-full h-48 rounded-xl overflow-hidden bg-black">
+                {isVideo ? (
+                  <video
+                    src={previewUrl}
+                    controls
+                    playsInline
+                    className="w-full h-full object-contain"
+                  />
+                ) : (
+                  <img
+                    src={previewUrl}
+                    alt="Preview"
+                    className="w-full h-full object-cover"
+                  />
+                )}
+                <span className="absolute bottom-2 right-2 px-2 py-0.5 rounded-md bg-black/70 text-[10px] font-mono text-orange-400">
+                  {isVideo ? duration.toFixed(1) + "s / 10s" : "Photo"}
+                </span>
+              </div>
+            ) : (
+              <label className="cursor-pointer flex flex-col items-center justify-center py-6">
+                <div className="w-12 h-12 rounded-full bg-orange-500/10 text-orange-400 flex items-center justify-center mb-2">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                  </svg>
+                </div>
+                <span className="text-xs font-bold text-zinc-300">Choose Photo or Video</span>
+                <span className="text-[10px] text-zinc-500 mt-1">MP4, MOV, JPEG, PNG, WEBP</span>
+                <input
+                  type="file"
+                  accept="image/jpeg, image/png, image/webp, video/mp4, video/webm, video/quicktime"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+              </label>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-zinc-400 mb-1.5">
+              Food Story Caption
+            </label>
+            <input
+              type="text"
+              value={caption}
+              onChange={(e) => setCaption(e.target.value)}
+              placeholder="What are you cooking or tasting?"
+              maxLength={280}
+              className="w-full px-4 py-3 rounded-2xl bg-zinc-900 border border-zinc-800 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500"
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={isSubmitting || !selectedFile}
+            className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-orange-600 to-amber-600 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-orange-600/20 hover:from-orange-500 hover:to-amber-500 active:scale-95 transition-all disabled:opacity-50"
+          >
+            {isSubmitting ? "Posting Story..." : "🔥 Post Daily Food Story"}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function UserProfileView({ userProfile, onTriggerUpload }) {
+  if (!userProfile || !userProfile.user) return null;
+  const { user, activePosts } = userProfile;
+
+  return (
+    <div className="max-w-md mx-auto min-h-[80vh] bg-black text-zinc-100 p-5 space-y-6">
+      <div className="flex items-center space-x-4 pt-2">
+        <img
+          src={user.avatarUrl}
+          alt={user.username}
+          className="w-20 h-20 rounded-full border-2 border-orange-500 p-0.5 object-cover shadow-lg"
+        />
+        <div>
+          <h2 className="text-xl font-black text-white tracking-tight">{user.username}</h2>
+          <p className="text-xs text-zinc-400">{user.email}</p>
+          <span className="inline-block mt-2 px-2.5 py-0.5 rounded-md bg-zinc-900 border border-zinc-800 text-[10px] font-bold text-orange-400">
+            Ephemeral Food Creator
+          </span>
+        </div>
+      </div>
+
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-zinc-900 via-zinc-900 to-orange-950/40 border border-orange-500/30 p-5 shadow-xl">
+        <div className="flex items-center justify-between">
+          <div>
+            <span className="text-[10px] font-black uppercase tracking-wider text-orange-400">
+              Daily Culinary Streak
+            </span>
+            <div className="flex items-baseline space-x-2 mt-1">
+              <span className="text-4xl font-black text-white">{user.streak}</span>
+              <span className="text-xs font-bold text-zinc-400">Days Active</span>
+            </div>
+          </div>
+          <div className="w-14 h-14 rounded-2xl bg-orange-500/20 border border-orange-500/40 flex items-center justify-center text-3xl animate-bounce">
+            🔥
+          </div>
+        </div>
+
+        <div className="mt-4 pt-3 border-t border-zinc-800 flex items-center justify-between text-xs">
+          <span className="text-zinc-400">
+            {user.streak > 0 ? "Streak preservation window:" : "Streak reset:"}
+          </span>
+          <span className={`font-mono font-bold ${user.streak > 0 ? "text-amber-400" : "text-zinc-500"}`}>
+            {user.streak > 0 ? user.hoursRemaining + "h remaining" : "Post to restart"}
+          </span>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        onClick={onTriggerUpload}
+        className="w-full py-4 rounded-2xl bg-gradient-to-r from-orange-600 to-amber-600 text-white font-black text-xs uppercase tracking-wider shadow-lg shadow-orange-600/25 flex items-center justify-center space-x-2 hover:from-orange-500 hover:to-amber-500 active:scale-95 transition-all"
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
+        </svg>
+        <span>Post New Food Story</span>
+      </button>
+
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-xs font-black uppercase tracking-wider text-zinc-400">
+            My Active 24H Stories ({activePosts ? activePosts.length : 0})
+          </h3>
+          <span className="text-[10px] text-zinc-500">Auto-purges in 24h</span>
+        </div>
+
+        {!activePosts || activePosts.length === 0 ? (
+          <div className="p-8 rounded-2xl bg-zinc-950 border border-zinc-900 text-center">
+            <p className="text-xs text-zinc-500">No active stories in the 24-hour window.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            {activePosts.map((post) => (
+              <div
+                key={post.id}
+                className="relative aspect-[9/16] rounded-2xl overflow-hidden bg-zinc-900 border border-zinc-800"
+              >
+                {post.mediaType === "video" ? (
+                  <video
+                    src={post.mediaUrl}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <img
+                    src={post.mediaUrl}
+                    alt="Active story"
+                    className="w-full h-full object-cover"
+                  />
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col justify-end p-2.5">
+                  <span className="text-[10px] font-bold text-orange-400">
+                    {post.mediaType === "video" ? "🎬 Reel" : "📷 Photo"}
+                  </span>
+                  {post.caption && (
+                    <span className="text-[10px] text-white line-clamp-1">{post.caption}</span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -3125,13 +3609,24 @@ function App() {
   const [activities, setActivities] = useState([]);
   const [settings, setSettings] = useState({});
   const [currentUser, setCurrentUser] = useState(null);
-  const [activeRoute, setActiveRoute] = useState(window.location.hash || "#discover");
+  const [activeRoute, setActiveRoute] = useState(window.location.hash || "#stories");
+  const [viewMode, setViewMode] = useState(
+    window.location.hash === "#discover" ||
+    window.location.hash === "#share-recipe" ||
+    window.location.hash === "#admin" ||
+    window.location.hash === "#user-dashboard"
+      ? "recipes"
+      : "stories"
+  );
   const [selectedRecipeId, setSelectedRecipeId] = useState(null);
   const [editingRecipeId, setEditingRecipeId] = useState(null);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authModalMode, setAuthModalMode] = useState("login");
   const [directGooglePicker, setDirectGooglePicker] = useState(false);
   const [toasts, setToasts] = useState([]);
+  const [stories, setStories] = useState([]);
+  const [userProfile, setUserProfile] = useState(null);
+  const [storyModalOpen, setStoryModalOpen] = useState(false);
 
   const showToast = (message, type = "info") => {
     const id = Date.now().toString(36) + Math.random().toString(36).substring(2, 5);
@@ -3145,8 +3640,31 @@ function App() {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   };
 
+  const fetchStories = async () => {
+    try {
+      const res = await fetch("/api/feed");
+      const data = await res.json();
+      if (data && data.success) {
+        setStories(data.posts || []);
+      }
+    } catch (err) {}
+  };
+
+  const fetchProfile = async () => {
+    try {
+      const res = await fetch("/api/profile");
+      const data = await res.json();
+      if (data && data.success) {
+        setUserProfile(data);
+      }
+    } catch (err) {}
+  };
+
   useEffect(() => {
     window.showToast = showToast;
+
+    fetchStories();
+    fetchProfile();
 
     const syncState = () => {
       if (window.store) {
@@ -3179,7 +3697,13 @@ function App() {
     }
 
     const handleHash = () => {
-      setActiveRoute(window.location.hash || "#discover");
+      const h = window.location.hash || "#stories";
+      setActiveRoute(h);
+      if (h === "#stories" || h === "#profile") {
+        setViewMode("stories");
+      } else if (h === "#discover" || h === "#share-recipe" || h === "#admin" || h === "#user-dashboard") {
+        setViewMode("recipes");
+      }
       window.scrollTo({ top: 0, behavior: "smooth" });
     };
 
@@ -3195,6 +3719,11 @@ function App() {
   const navigateTo = (route) => {
     window.location.hash = route;
     setActiveRoute(route);
+    if (route === "#stories" || route === "#profile") {
+      setViewMode("stories");
+    } else {
+      setViewMode("recipes");
+    }
   };
 
   const handleLogout = () => {
@@ -3224,8 +3753,140 @@ function App() {
 
   const isOwner = window.auth ? window.auth.isOwner() : false;
 
+  if (viewMode === "stories") {
+    return (
+      <div className="min-h-screen flex flex-col bg-zinc-950 text-white selection:bg-orange-600 selection:text-white">
+        <header className="sticky top-0 z-30 bg-black/95 backdrop-blur-md border-b border-zinc-900 px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center space-x-2.5">
+            <span className="text-2xl animate-pulse">🔥</span>
+            <div>
+              <h1 className="text-base font-black tracking-tight text-white uppercase">FoodBite</h1>
+              <span className="text-[10px] text-orange-400 font-bold uppercase tracking-widest block -mt-1">
+                24H Ephemeral Stories
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            {userProfile && userProfile.user && (
+              <button
+                type="button"
+                onClick={() => navigateTo("#profile")}
+                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-zinc-900 border border-orange-500/40 text-xs font-black text-orange-400 shadow-sm hover:border-orange-500 transition-colors"
+                title="Daily Active Streak"
+              >
+                <span>🔥</span>
+                <span>{userProfile.user.streak} Days</span>
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => {
+                setViewMode("recipes");
+                navigateTo("#discover");
+              }}
+              className="px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 text-xs font-bold border border-zinc-800 transition-colors cursor-pointer"
+            >
+              🍽️ Recipes
+            </button>
+          </div>
+        </header>
+
+        <main className="flex-1 max-w-md w-full mx-auto px-2 sm:px-4 py-3">
+          {activeRoute === "#profile" ? (
+            <UserProfileView
+              userProfile={userProfile}
+              onTriggerUpload={() => setStoryModalOpen(true)}
+            />
+          ) : (
+            <StoryFeed
+              stories={stories}
+              onTriggerUpload={() => setStoryModalOpen(true)}
+            />
+          )}
+        </main>
+
+        <nav className="sticky bottom-0 z-30 h-16 bg-black/95 border-t border-zinc-900 flex items-center justify-around px-4 backdrop-blur-lg max-w-md w-full mx-auto">
+          <button
+            type="button"
+            onClick={() => navigateTo("#stories")}
+            className={`flex flex-col items-center justify-center space-y-1 cursor-pointer ${
+              activeRoute === "#stories" || !activeRoute ? "text-orange-500" : "text-zinc-500 hover:text-zinc-300"
+            }`}
+          >
+            <span className="text-lg">🔥</span>
+            <span className="text-[10px] font-bold">Stories</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setStoryModalOpen(true)}
+            className="w-12 h-12 -mt-5 rounded-full bg-gradient-to-tr from-orange-600 to-amber-500 text-white flex items-center justify-center shadow-xl shadow-orange-600/40 active:scale-95 transition-transform cursor-pointer"
+            title="Post Food Story"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4" />
+            </svg>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => navigateTo("#profile")}
+            className={`flex flex-col items-center justify-center space-y-1 cursor-pointer ${
+              activeRoute === "#profile" ? "text-orange-500" : "text-zinc-500 hover:text-zinc-300"
+            }`}
+          >
+            <span className="text-lg">👤</span>
+            <span className="text-[10px] font-bold">Profile</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setViewMode("recipes");
+              navigateTo("#discover");
+            }}
+            className="flex flex-col items-center justify-center space-y-1 text-zinc-500 hover:text-zinc-300 cursor-pointer"
+          >
+            <span className="text-lg">🍽️</span>
+            <span className="text-[10px] font-bold">Recipes</span>
+          </button>
+        </nav>
+
+        <UploadStoryModal
+          isOpen={storyModalOpen}
+          onClose={() => setStoryModalOpen(false)}
+          onStoryUploaded={() => {
+            fetchStories();
+            fetchProfile();
+            navigateTo("#stories");
+          }}
+          showToast={showToast}
+        />
+        <ToastContainer toasts={toasts} removeToast={removeToast} />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-[#fdfbf7] text-stone-900 selection:bg-orange-600 selection:text-white">
+      <div className="bg-gradient-to-r from-stone-900 to-zinc-900 text-white px-4 py-2 text-xs flex items-center justify-between border-b border-stone-800">
+        <div className="flex items-center space-x-2">
+          <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></span>
+          <span className="font-semibold text-zinc-200">Ephemeral Food Stories Active</span>
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            setViewMode("stories");
+            navigateTo("#stories");
+          }}
+          className="px-3 py-1 rounded-full bg-orange-600 hover:bg-orange-700 text-white text-[11px] font-black uppercase tracking-wider flex items-center space-x-1 shadow-sm transition-colors cursor-pointer"
+        >
+          <span>🔥 Switch to Food Stories</span>
+        </button>
+      </div>
+
       <Navbar
         currentUser={currentUser}
         activeRoute={activeRoute}

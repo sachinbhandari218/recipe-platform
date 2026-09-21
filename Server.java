@@ -36,7 +36,18 @@ public class Server {
             server.createContext("/api/health", new HealthHandler());
             server.createContext("/api/state", new StateHandler());
             server.createContext("/api/upload", new UploadHandler());
+            server.createContext("/api/feed", new FeedHandler());
+            server.createContext("/api/posts", new PostsHandler());
+            server.createContext("/api/profile", new ProfileHandler());
             server.createContext("/", new StaticFileHandler());
+
+            java.util.concurrent.ScheduledExecutorService cleanupExecutor = Executors.newSingleThreadScheduledExecutor();
+            cleanupExecutor.scheduleAtFixedRate(new Runnable() {
+                @Override
+                public void run() {
+                    purgeExpiredEphemeralPosts();
+                }
+            }, 1, 10, java.util.concurrent.TimeUnit.MINUTES);
 
             server.start();
 
@@ -47,6 +58,9 @@ public class Server {
                     server8080.createContext("/api/health", new HealthHandler());
                     server8080.createContext("/api/state", new StateHandler());
                     server8080.createContext("/api/upload", new UploadHandler());
+                    server8080.createContext("/api/feed", new FeedHandler());
+                    server8080.createContext("/api/posts", new PostsHandler());
+                    server8080.createContext("/api/profile", new ProfileHandler());
                     server8080.createContext("/", new StaticFileHandler());
                     server8080.start();
                 } catch (Exception ignored) {}
@@ -481,5 +495,307 @@ public class Server {
         if (lower.endsWith(".svg")) return "image/svg+xml";
         if (lower.endsWith(".ico")) return "image/x-icon";
         return "application/octet-stream";
+    }
+
+    static class FeedHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
+                sendCors(exchange);
+                return;
+            }
+            try {
+                purgeExpiredEphemeralPosts();
+                File file = new File("data/stories.json");
+                String data = "[]";
+                if (file.exists()) {
+                    byte[] bytes = Files.readAllBytes(file.toPath());
+                    data = new String(bytes, StandardCharsets.UTF_8).trim();
+                    if (data.isEmpty()) data = "[]";
+                }
+                String response = "{\"success\":true,\"posts\":" + data + "}";
+                sendJsonResponse(exchange, 200, response);
+            } catch (Exception e) {
+                sendJsonResponse(exchange, 500, "{\"error\":\"" + escapeJson(e.getMessage()) + "\"}");
+            }
+        }
+    }
+
+    static class PostsHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
+                sendCors(exchange);
+                return;
+            }
+            if (!"POST".equalsIgnoreCase(exchange.getRequestMethod())) {
+                sendJsonResponse(exchange, 405, "{\"error\":\"Method not allowed\"}");
+                return;
+            }
+            try {
+                InputStream is = exchange.getRequestBody();
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                byte[] buf = new byte[8192];
+                int read;
+                while ((read = is.read(buf)) != -1) {
+                    baos.write(buf, 0, read);
+                }
+                String body = baos.toString(StandardCharsets.UTF_8).trim();
+
+                long now = System.currentTimeMillis();
+                long expiresAt = now + 86400000L;
+
+                String userId = extractJsonString(body, "userId", "usr-1");
+                String username = extractJsonString(body, "username", "Sachin Bhandari");
+                String avatar = extractJsonString(body, "userAvatar", "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80");
+                String mediaUrl = extractJsonString(body, "mediaUrl", "");
+                String mediaPath = extractJsonString(body, "mediaPath", "");
+                String mediaType = extractJsonString(body, "mediaType", "image");
+                String caption = extractJsonString(body, "caption", "");
+                double duration = extractJsonDouble(body, "duration", 0.0);
+
+                if ("video".equalsIgnoreCase(mediaType) && duration > 10.05) {
+                    sendJsonResponse(exchange, 400, "{\"error\":\"Video duration must not exceed 10 seconds\"}");
+                    return;
+                }
+
+                int streak = updateStreak(userId, now);
+
+                String postId = "post_" + now + "_" + (int)(Math.random() * 1000);
+                String newPostJson = "{\"id\":\"" + postId + "\",\"userId\":\"" + userId + "\",\"username\":\"" + escapeJson(username) + "\",\"userAvatar\":\"" + avatar + "\",\"mediaUrl\":\"" + mediaUrl + "\",\"mediaPath\":\"" + mediaPath + "\",\"mediaType\":\"" + mediaType + "\",\"caption\":\"" + escapeJson(caption) + "\",\"duration\":" + duration + ",\"createdAt\":" + now + ",\"expiresAt\":" + expiresAt + "}";
+
+                saveStory(newPostJson);
+
+                String resp = "{\"success\":true,\"post\":" + newPostJson + ",\"currentStreak\":" + streak + ",\"hoursRemaining\":24.0}";
+                sendJsonResponse(exchange, 201, resp);
+            } catch (Exception e) {
+                sendJsonResponse(exchange, 500, "{\"error\":\"" + escapeJson(e.getMessage()) + "\"}");
+            }
+        }
+    }
+
+    static class ProfileHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
+                sendCors(exchange);
+                return;
+            }
+            try {
+                long now = System.currentTimeMillis();
+                long lastUpload = getLastUploadTime("usr-1");
+                int totalStreak = getStreakCount("usr-1");
+                long diff = now - lastUpload;
+
+                int activeStreak = (lastUpload > 0 && diff <= 86400000L) ? totalStreak : 0;
+                double hoursRemaining = (lastUpload > 0 && diff <= 86400000L) ? ((86400000L - diff) / 3600000.0) : 0.0;
+                hoursRemaining = Math.round(hoursRemaining * 10.0) / 10.0;
+
+                String activePosts = getActiveUserStories("usr-1", now);
+
+                String resp = "{\"success\":true,\"user\":{\"id\":\"usr-1\",\"username\":\"Sachin Bhandari\",\"email\":\"sachin.bhandari@recipes.com\",\"avatarUrl\":\"https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80\",\"streak\":" + activeStreak + ",\"hoursRemaining\":" + hoursRemaining + "},\"activePosts\":" + activePosts + "}";
+                sendJsonResponse(exchange, 200, resp);
+            } catch (Exception e) {
+                sendJsonResponse(exchange, 500, "{\"error\":\"" + escapeJson(e.getMessage()) + "\"}");
+            }
+        }
+    }
+
+    private static synchronized void purgeExpiredEphemeralPosts() {
+        try {
+            File file = new File("data/stories.json");
+            if (!file.exists()) return;
+            byte[] bytes = Files.readAllBytes(file.toPath());
+            String content = new String(bytes, StandardCharsets.UTF_8).trim();
+            if (content.isEmpty() || !content.startsWith("[")) return;
+
+            long now = System.currentTimeMillis();
+            StringBuilder kept = new StringBuilder("[");
+            boolean first = true;
+
+            int idx = 0;
+            while ((idx = content.indexOf("{", idx)) != -1) {
+                int end = content.indexOf("}", idx);
+                if (end == -1) break;
+                String obj = content.substring(idx, end + 1);
+                long expiresAt = 0;
+                int expIdx = obj.indexOf("\"expiresAt\":");
+                if (expIdx != -1) {
+                    int numStart = expIdx + 12;
+                    while (numStart < obj.length() && (obj.charAt(numStart) == ' ' || obj.charAt(numStart) == ':')) numStart++;
+                    int numEnd = numStart;
+                    while (numEnd < obj.length() && Character.isDigit(obj.charAt(numEnd))) numEnd++;
+                    if (numEnd > numStart) {
+                        try {
+                            expiresAt = Long.parseLong(obj.substring(numStart, numEnd));
+                        } catch (Exception ignored) {}
+                    }
+                }
+
+                if (expiresAt > 0 && expiresAt <= now) {
+                    int pathIdx = obj.indexOf("\"mediaPath\":");
+                    if (pathIdx != -1) {
+                        int q1 = obj.indexOf("\"", pathIdx + 12);
+                        int q2 = obj.indexOf("\"", q1 + 1);
+                        if (q1 != -1 && q2 != -1) {
+                            String filePath = obj.substring(q1 + 1, q2);
+                            if (!filePath.isEmpty()) {
+                                File f = new File(filePath);
+                                if (f.exists()) f.delete();
+                            }
+                        }
+                    }
+                } else {
+                    if (!first) kept.append(",");
+                    kept.append(obj);
+                    first = false;
+                }
+                idx = end + 1;
+            }
+            kept.append("]");
+            Files.write(file.toPath(), kept.toString().getBytes(StandardCharsets.UTF_8));
+        } catch (Exception ignored) {}
+    }
+
+    private static synchronized void saveStory(String postJson) {
+        try {
+            File dir = new File("data");
+            if (!dir.exists()) dir.mkdirs();
+            File file = new File(dir, "stories.json");
+            String data = "[]";
+            if (file.exists()) {
+                byte[] bytes = Files.readAllBytes(file.toPath());
+                data = new String(bytes, StandardCharsets.UTF_8).trim();
+            }
+            if (!data.startsWith("[")) data = "[]";
+            String updated;
+            if (data.equals("[]") || data.isEmpty()) {
+                updated = "[" + postJson + "]";
+            } else {
+                updated = "[" + postJson + "," + data.substring(1);
+            }
+            Files.write(file.toPath(), updated.getBytes(StandardCharsets.UTF_8));
+        } catch (Exception ignored) {}
+    }
+
+    private static synchronized int updateStreak(String userId, long now) {
+        try {
+            long last = getLastUploadTime(userId);
+            int currentStreak = getStreakCount(userId);
+            int newStreak = 1;
+            if (last > 0 && (now - last) <= 86400000L) {
+                newStreak = currentStreak + 1;
+            }
+            File dir = new File("data");
+            if (!dir.exists()) dir.mkdirs();
+            File file = new File(dir, "streaks.json");
+            String json = "{\"streakCount\":" + newStreak + ",\"lastUploadAt\":" + now + "}";
+            Files.write(file.toPath(), json.getBytes(StandardCharsets.UTF_8));
+            return newStreak;
+        } catch (Exception ignored) {
+            return 1;
+        }
+    }
+
+    private static synchronized long getLastUploadTime(String userId) {
+        try {
+            File file = new File("data/streaks.json");
+            if (!file.exists()) return 0;
+            byte[] bytes = Files.readAllBytes(file.toPath());
+            String s = new String(bytes, StandardCharsets.UTF_8);
+            int idx = s.indexOf("\"lastUploadAt\":");
+            if (idx == -1) return 0;
+            int numStart = idx + 15;
+            while (numStart < s.length() && (s.charAt(numStart) == ' ' || s.charAt(numStart) == ':')) numStart++;
+            int numEnd = numStart;
+            while (numEnd < s.length() && Character.isDigit(s.charAt(numEnd))) numEnd++;
+            if (numEnd > numStart) {
+                return Long.parseLong(s.substring(numStart, numEnd));
+            }
+        } catch (Exception ignored) {}
+        return 0;
+    }
+
+    private static synchronized int getStreakCount(String userId) {
+        try {
+            File file = new File("data/streaks.json");
+            if (!file.exists()) return 0;
+            byte[] bytes = Files.readAllBytes(file.toPath());
+            String s = new String(bytes, StandardCharsets.UTF_8);
+            int idx = s.indexOf("\"streakCount\":");
+            if (idx == -1) return 0;
+            int numStart = idx + 14;
+            while (numStart < s.length() && (s.charAt(numStart) == ' ' || numStart < s.length() && s.charAt(numStart) == ':')) numStart++;
+            int numEnd = numStart;
+            while (numEnd < s.length() && Character.isDigit(s.charAt(numEnd))) numEnd++;
+            if (numEnd > numStart) {
+                return Integer.parseInt(s.substring(numStart, numEnd));
+            }
+        } catch (Exception ignored) {}
+        return 0;
+    }
+
+    private static synchronized String getActiveUserStories(String userId, long now) {
+        try {
+            File file = new File("data/stories.json");
+            if (!file.exists()) return "[]";
+            byte[] bytes = Files.readAllBytes(file.toPath());
+            String content = new String(bytes, StandardCharsets.UTF_8).trim();
+            if (!content.startsWith("[")) return "[]";
+
+            StringBuilder userPosts = new StringBuilder("[");
+            boolean first = true;
+
+            int idx = 0;
+            while ((idx = content.indexOf("{", idx)) != -1) {
+                int end = content.indexOf("}", idx);
+                if (end == -1) break;
+                String obj = content.substring(idx, end + 1);
+                if (obj.contains("\"userId\":\"" + userId + "\"") || userId == null || userId.isEmpty()) {
+                    if (!first) userPosts.append(",");
+                    userPosts.append(obj);
+                    first = false;
+                }
+                idx = end + 1;
+            }
+            userPosts.append("]");
+            return userPosts.toString();
+        } catch (Exception ignored) {
+            return "[]";
+        }
+    }
+
+    private static String extractJsonString(String json, String key, String defaultVal) {
+        int idx = json.indexOf("\"" + key + "\"");
+        if (idx == -1) return defaultVal;
+        int colon = json.indexOf(":", idx);
+        if (colon == -1) return defaultVal;
+        int q1 = json.indexOf("\"", colon);
+        if (q1 == -1) return defaultVal;
+        int q2 = json.indexOf("\"", q1 + 1);
+        if (q2 == -1) return defaultVal;
+        return json.substring(q1 + 1, q2);
+    }
+
+    private static double extractJsonDouble(String json, String key, double defaultVal) {
+        int idx = json.indexOf("\"" + key + "\"");
+        if (idx == -1) return defaultVal;
+        int colon = json.indexOf(":", idx);
+        if (colon == -1) return defaultVal;
+        int start = colon + 1;
+        while (start < json.length() && (json.charAt(start) == ' ' || json.charAt(start) == '\t')) start++;
+        int end = start;
+        while (end < json.length() && (Character.isDigit(json.charAt(end)) || json.charAt(end) == '.')) end++;
+        if (end > start) {
+            try {
+                return Double.parseDouble(json.substring(start, end));
+            } catch (Exception ignored) {}
+        }
+        return defaultVal;
+    }
+
+    private static String escapeJson(String s) {
+        if (s == null) return "";
+        return s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "");
     }
 }
