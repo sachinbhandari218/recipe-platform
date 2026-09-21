@@ -3115,6 +3115,9 @@ function AuthModal({ isOpen, onClose, mode: initialMode, showToast, showGooglePi
         </div>
       </div>
     </div>
+  );
+}
+
 function StoryFeed({ stories, onTriggerUpload }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const videoRefs = useRef({});
@@ -3457,11 +3460,12 @@ function UploadStoryModal({ isOpen, onClose, onStoryUploaded, showToast }) {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
                   </svg>
                 </div>
-                <span className="text-xs font-bold text-zinc-300">Choose Photo or Video</span>
-                <span className="text-[10px] text-zinc-500 mt-1">MP4, MOV, JPEG, PNG, WEBP</span>
+                <span className="text-xs font-bold text-zinc-300">Open Camera / Select Media</span>
+                <span className="text-[10px] text-zinc-500 mt-1">Direct camera capture or gallery (10s max)</span>
                 <input
                   type="file"
-                  accept="image/jpeg, image/png, image/webp, video/mp4, video/webm, video/quicktime"
+                  accept={["image", "*"].join("/") + "," + ["video", "*"].join("/")}
+                  capture="environment"
                   onChange={handleFileChange}
                   className="hidden"
                 />
@@ -3755,7 +3759,7 @@ function App() {
 
   if (viewMode === "stories") {
     return (
-      <div className="min-h-screen flex flex-col bg-zinc-950 text-white selection:bg-orange-600 selection:text-white">
+      <div className="h-full w-full flex flex-col bg-zinc-950 text-white selection:bg-orange-600 selection:text-white overflow-hidden">
         <header className="sticky top-0 z-30 bg-black/95 backdrop-blur-md border-b border-zinc-900 px-4 py-3 flex items-center justify-between">
           <div className="flex items-center space-x-2.5">
             <span className="text-2xl animate-pulse">🔥</span>
@@ -3869,7 +3873,7 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#fdfbf7] text-stone-900 selection:bg-orange-600 selection:text-white">
+    <div className="h-full w-full overflow-y-auto flex flex-col bg-[#fdfbf7] text-stone-900 selection:bg-orange-600 selection:text-white">
       <div className="bg-gradient-to-r from-stone-900 to-zinc-900 text-white px-4 py-2 text-xs flex items-center justify-between border-b border-stone-800">
         <div className="flex items-center space-x-2">
           <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></span>
