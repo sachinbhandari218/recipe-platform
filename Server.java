@@ -45,6 +45,8 @@ public class Server {
             server.createContext("/api/auth/login", new AuthLoginHandler());
             server.createContext("/api/follow", new FollowHandler());
             server.createContext("/api/notifications", new NotificationsHandler());
+            server.createContext("/api/likes", new LikesHandler());
+            server.createContext("/api/comments", new CommentsHandler());
             server.createContext("/", new StaticFileHandler());
 
             java.util.concurrent.ScheduledExecutorService cleanupExecutor = Executors.newSingleThreadScheduledExecutor();
@@ -71,6 +73,8 @@ public class Server {
                     server8080.createContext("/api/auth/login", new AuthLoginHandler());
                     server8080.createContext("/api/follow", new FollowHandler());
                     server8080.createContext("/api/notifications", new NotificationsHandler());
+                    server8080.createContext("/api/likes", new LikesHandler());
+                    server8080.createContext("/api/comments", new CommentsHandler());
                     server8080.createContext("/", new StaticFileHandler());
                     server8080.start();
                 } catch (Exception ignored) {}
@@ -671,6 +675,9 @@ public class Server {
     private static void sendJsonResponse(HttpExchange exchange, int statusCode, String json) throws IOException {
         exchange.getResponseHeaders().set("Content-Type", "application/json; charset=UTF-8");
         exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
+        exchange.getResponseHeaders().set("Cache-Control", "no-cache, no-store, must-revalidate, max-age=0");
+        exchange.getResponseHeaders().set("Pragma", "no-cache");
+        exchange.getResponseHeaders().set("Expires", "0");
         if ("HEAD".equalsIgnoreCase(exchange.getRequestMethod())) {
             exchange.sendResponseHeaders(statusCode, -1);
             exchange.close();
@@ -711,14 +718,8 @@ public class Server {
             }
             try {
                 purgeExpiredEphemeralPosts();
-                File file = new File("data/stories.json");
-                String data = "[]";
-                if (file.exists()) {
-                    byte[] bytes = Files.readAllBytes(file.toPath());
-                    data = new String(bytes, StandardCharsets.UTF_8).trim();
-                    if (data.isEmpty()) data = "[]";
-                }
-                String response = "{\"success\":true,\"posts\":" + data + "}";
+                String enrichedPosts = getEnrichedStories();
+                String response = "{\"success\":true,\"posts\":" + enrichedPosts + "}";
                 sendJsonResponse(exchange, 200, response);
             } catch (Exception e) {
                 sendJsonResponse(exchange, 500, "{\"error\":\"" + escapeJson(e.getMessage()) + "\"}");
@@ -1074,6 +1075,390 @@ public class Server {
         }
     }
 
+    static class LikesHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
+                sendCors(exchange);
+                return;
+            }
+            if ("GET".equalsIgnoreCase(exchange.getRequestMethod())) {
+                String query = exchange.getRequestURI().getQuery();
+                String postId = "";
+                if (query != null && query.contains("postId=")) {
+                    for (String param : query.split("&")) {
+                        if (param.startsWith("postId=")) {
+                            postId = param.substring(7);
+                            break;
+                        }
+                    }
+                }
+                String resp = getLikesForPost(postId);
+                sendJsonResponse(exchange, 200, resp);
+                return;
+            }
+            if ("POST".equalsIgnoreCase(exchange.getRequestMethod())) {
+                try {
+                    InputStream is = exchange.getRequestBody();
+                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                    byte[] buf = new byte[8192];
+                    int read;
+                    while ((read = is.read(buf)) != -1) {
+                        baos.write(buf, 0, read);
+                    }
+                    String body = baos.toString(StandardCharsets.UTF_8).trim();
+                    String postId = extractJsonString(body, "postId", "");
+                    String userId = extractJsonString(body, "userId", "");
+                    String username = extractJsonString(body, "username", "");
+                    String userAvatar = extractJsonString(body, "userAvatar", "");
+                    String resp = toggleLikeRecord(postId, userId, username, userAvatar);
+                    sendJsonResponse(exchange, 200, resp);
+                } catch (Exception e) {
+                    sendJsonResponse(exchange, 500, "{\"error\":\"" + escapeJson(e.getMessage()) + "\"}");
+                }
+                return;
+            }
+            sendJsonResponse(exchange, 405, "{\"error\":\"Method not allowed\"}");
+        }
+    }
+
+    static class CommentsHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
+                sendCors(exchange);
+                return;
+            }
+            if ("GET".equalsIgnoreCase(exchange.getRequestMethod())) {
+                String query = exchange.getRequestURI().getQuery();
+                String postId = "";
+                if (query != null && query.contains("postId=")) {
+                    for (String param : query.split("&")) {
+                        if (param.startsWith("postId=")) {
+                            postId = param.substring(7);
+                            break;
+                        }
+                    }
+                }
+                java.util.Map<String, List<String>> map = getCommentsGroupedByPost();
+                List<String> list = map.getOrDefault(postId, new ArrayList<>());
+                String resp = "{\"success\":true,\"comments\":[" + String.join(",", list) + "]}";
+                sendJsonResponse(exchange, 200, resp);
+                return;
+            }
+            if ("POST".equalsIgnoreCase(exchange.getRequestMethod())) {
+                try {
+                    InputStream is = exchange.getRequestBody();
+                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                    byte[] buf = new byte[8192];
+                    int read;
+                    while ((read = is.read(buf)) != -1) {
+                        baos.write(buf, 0, read);
+                    }
+                    String body = baos.toString(StandardCharsets.UTF_8).trim();
+                    String postId = extractJsonString(body, "postId", "");
+                    String userId = extractJsonString(body, "userId", "");
+                    String username = extractJsonString(body, "username", "");
+                    String userAvatar = extractJsonString(body, "userAvatar", "");
+                    String text = extractJsonString(body, "text", "");
+                    String resp = addCommentRecord(postId, userId, username, userAvatar, text);
+                    sendJsonResponse(exchange, 201, resp);
+                } catch (Exception e) {
+                    sendJsonResponse(exchange, 500, "{\"error\":\"" + escapeJson(e.getMessage()) + "\"}");
+                }
+                return;
+            }
+            sendJsonResponse(exchange, 405, "{\"error\":\"Method not allowed\"}");
+        }
+    }
+
+    private static final String LIKES_FILE = "data/likes.json";
+    private static final String COMMENTS_FILE = "data/comments.json";
+
+    private static synchronized String getEnrichedStories() {
+        try {
+            File file = new File("data/stories.json");
+            if (!file.exists()) return "[]";
+            byte[] bytes = Files.readAllBytes(file.toPath());
+            String data = new String(bytes, StandardCharsets.UTF_8).trim();
+            if (!data.startsWith("[")) return "[]";
+
+            java.util.Map<String, List<String>> likesMap = getLikesGroupedByPost();
+            java.util.Map<String, List<String>> commentsMap = getCommentsGroupedByPost();
+
+            StringBuilder sb = new StringBuilder("[");
+            boolean first = true;
+            int idx = 0;
+            while ((idx = data.indexOf("{", idx)) != -1) {
+                int end = data.indexOf("}", idx);
+                if (end == -1) break;
+                String postJson = data.substring(idx, end + 1);
+                String postId = extractJsonString(postJson, "id", "");
+
+                List<String> postLikes = likesMap.getOrDefault(postId, new ArrayList<>());
+                String likesArrayStr = "[" + String.join(",", postLikes) + "]";
+                int likeCount = postLikes.size();
+
+                List<String> postComments = commentsMap.getOrDefault(postId, new ArrayList<>());
+                String commentsArrayStr = "[" + String.join(",", postComments) + "]";
+                int commentCount = postComments.size();
+
+                String enrichedPost = postJson.substring(0, postJson.length() - 1)
+                    + ",\"likes\":" + likesArrayStr
+                    + ",\"likeCount\":" + likeCount
+                    + ",\"comments\":" + commentsArrayStr
+                    + ",\"commentCount\":" + commentCount
+                    + "}";
+
+                if (!first) sb.append(",");
+                sb.append(enrichedPost);
+                first = false;
+                idx = end + 1;
+            }
+            sb.append("]");
+            return sb.toString();
+        } catch (Exception e) {
+            return "[]";
+        }
+    }
+
+    private static synchronized java.util.Map<String, List<String>> getLikesGroupedByPost() {
+        java.util.Map<String, List<String>> map = new java.util.HashMap<>();
+        try {
+            File f = new File(LIKES_FILE);
+            if (!f.exists()) return map;
+            byte[] bytes = Files.readAllBytes(f.toPath());
+            String s = new String(bytes, StandardCharsets.UTF_8).trim();
+            if (!s.startsWith("[")) return map;
+            int idx = 0;
+            while ((idx = s.indexOf("{", idx)) != -1) {
+                int end = s.indexOf("}", idx);
+                if (end == -1) break;
+                String obj = s.substring(idx, end + 1);
+                String postId = extractJsonString(obj, "postId", "");
+                if (!postId.isEmpty()) {
+                    map.computeIfAbsent(postId, k -> new ArrayList<>()).add(obj);
+                }
+                idx = end + 1;
+            }
+        } catch (Exception ignored) {}
+        return map;
+    }
+
+    private static synchronized java.util.Map<String, List<String>> getCommentsGroupedByPost() {
+        java.util.Map<String, List<String>> map = new java.util.HashMap<>();
+        try {
+            File f = new File(COMMENTS_FILE);
+            if (!f.exists()) return map;
+            byte[] bytes = Files.readAllBytes(f.toPath());
+            String s = new String(bytes, StandardCharsets.UTF_8).trim();
+            if (!s.startsWith("[")) return map;
+            int idx = 0;
+            while ((idx = s.indexOf("{", idx)) != -1) {
+                int end = s.indexOf("}", idx);
+                if (end == -1) break;
+                String obj = s.substring(idx, end + 1);
+                String postId = extractJsonString(obj, "postId", "");
+                if (!postId.isEmpty()) {
+                    map.computeIfAbsent(postId, k -> new ArrayList<>()).add(obj);
+                }
+                idx = end + 1;
+            }
+        } catch (Exception ignored) {}
+        return map;
+    }
+
+    private static synchronized String toggleLikeRecord(String postId, String userId, String username, String userAvatar) {
+        if (postId == null || postId.isEmpty() || userId == null || userId.isEmpty()) {
+            return "{\"success\":false,\"error\":\"postId and userId required\"}";
+        }
+        try {
+            File dir = new File("data");
+            if (!dir.exists()) dir.mkdirs();
+            File f = new File(LIKES_FILE);
+            String s = "[]";
+            if (f.exists()) {
+                byte[] bytes = Files.readAllBytes(f.toPath());
+                s = new String(bytes, StandardCharsets.UTF_8).trim();
+                if (!s.startsWith("[")) s = "[]";
+            }
+            List<String> allLikes = new ArrayList<>();
+            List<String> thisPostLikes = new ArrayList<>();
+            boolean alreadyLiked = false;
+            int idx = 0;
+            while ((idx = s.indexOf("{", idx)) != -1) {
+                int end = s.indexOf("}", idx);
+                if (end == -1) break;
+                String obj = s.substring(idx, end + 1);
+                String pId = extractJsonString(obj, "postId", "");
+                String uId = extractJsonString(obj, "userId", "");
+                String uName = extractJsonString(obj, "username", "");
+                if (pId.equals(postId)) {
+                    if (uId.equals(userId) || (!uName.isEmpty() && uName.equalsIgnoreCase(username))) {
+                        alreadyLiked = true;
+                    } else {
+                        allLikes.add(obj);
+                        thisPostLikes.add(obj);
+                    }
+                } else {
+                    allLikes.add(obj);
+                }
+                idx = end + 1;
+            }
+
+            boolean isNowLiked = !alreadyLiked;
+            if (isNowLiked) {
+                long now = System.currentTimeMillis();
+                String newLike = "{\"postId\":\"" + escapeJson(postId) + "\",\"userId\":\"" + escapeJson(userId) + "\",\"username\":\"" + escapeJson(username) + "\",\"userAvatar\":\"" + escapeJson(userAvatar) + "\",\"likedAt\":" + now + "}";
+                allLikes.add(newLike);
+                thisPostLikes.add(newLike);
+
+                String postOwner = getStoryOwner(postId);
+                if (postOwner != null && !postOwner.isEmpty() && !postOwner.equals(userId)) {
+                    String notifId = "notif_" + now + "_" + (int)(Math.random() * 10000);
+                    String notif = "{\"id\":\"" + notifId + "\",\"recipientId\":\"" + escapeJson(postOwner) + "\",\"senderId\":\"" + escapeJson(userId) + "\",\"senderName\":\"" + escapeJson(username) + "\",\"senderAvatar\":\"" + escapeJson(userAvatar) + "\",\"postId\":\"" + escapeJson(postId) + "\",\"type\":\"like\",\"message\":\"@" + escapeJson(username) + " liked your daily food story! 🔥\",\"createdAt\":" + now + ",\"read\":false}";
+                    appendNotification(notif);
+                }
+            }
+
+            StringBuilder sb = new StringBuilder("[");
+            for (int i = 0; i < allLikes.size(); i++) {
+                if (i > 0) sb.append(",");
+                sb.append(allLikes.get(i));
+            }
+            sb.append("]");
+            Files.write(f.toPath(), sb.toString().getBytes(StandardCharsets.UTF_8));
+
+            String likesArrayStr = "[" + String.join(",", thisPostLikes) + "]";
+            return "{\"success\":true,\"isLiked\":" + isNowLiked + ",\"likeCount\":" + thisPostLikes.size() + ",\"likes\":" + likesArrayStr + "}";
+        } catch (Exception e) {
+            return "{\"success\":false,\"error\":\"" + escapeJson(e.getMessage()) + "\"}";
+        }
+    }
+
+    private static synchronized String getStoryOwner(String postId) {
+        if (postId == null || postId.isEmpty()) return null;
+        try {
+            File f = new File("data/stories.json");
+            if (!f.exists()) return null;
+            byte[] bytes = Files.readAllBytes(f.toPath());
+            String s = new String(bytes, StandardCharsets.UTF_8).trim();
+            int idx = 0;
+            while ((idx = s.indexOf("{", idx)) != -1) {
+                int end = s.indexOf("}", idx);
+                if (end == -1) break;
+                String obj = s.substring(idx, end + 1);
+                String pId = extractJsonString(obj, "id", "");
+                if (pId.equals(postId)) {
+                    return extractJsonString(obj, "userId", "");
+                }
+                idx = end + 1;
+            }
+        } catch (Exception ignored) {}
+        return null;
+    }
+
+    private static synchronized String getLikesForPost(String postId) {
+        if (postId == null || postId.isEmpty()) return "{\"success\":true,\"likes\":[],\"likeCount\":0}";
+        try {
+            File f = new File(LIKES_FILE);
+            if (!f.exists()) return "{\"success\":true,\"likes\":[],\"likeCount\":0}";
+            byte[] bytes = Files.readAllBytes(f.toPath());
+            String s = new String(bytes, StandardCharsets.UTF_8).trim();
+            if (!s.startsWith("[")) return "{\"success\":true,\"likes\":[],\"likeCount\":0}";
+            List<String> list = new ArrayList<>();
+            int idx = 0;
+            while ((idx = s.indexOf("{", idx)) != -1) {
+                int end = s.indexOf("}", idx);
+                if (end == -1) break;
+                String obj = s.substring(idx, end + 1);
+                String pId = extractJsonString(obj, "postId", "");
+                if (pId.equals(postId)) {
+                    list.add(obj);
+                }
+                idx = end + 1;
+            }
+            return "{\"success\":true,\"postId\":\"" + escapeJson(postId) + "\",\"likeCount\":" + list.size() + ",\"likes\":[" + String.join(",", list) + "]}";
+        } catch (Exception e) {
+            return "{\"success\":true,\"likes\":[],\"likeCount\":0}";
+        }
+    }
+
+    private static synchronized String addCommentRecord(String postId, String userId, String username, String userAvatar, String text) {
+        if (postId == null || postId.isEmpty() || text == null || text.trim().isEmpty()) {
+            return "{\"success\":false,\"error\":\"postId and text required\"}";
+        }
+        try {
+            File dir = new File("data");
+            if (!dir.exists()) dir.mkdirs();
+            File f = new File(COMMENTS_FILE);
+            String s = "[]";
+            if (f.exists()) {
+                byte[] bytes = Files.readAllBytes(f.toPath());
+                s = new String(bytes, StandardCharsets.UTF_8).trim();
+                if (!s.startsWith("[")) s = "[]";
+            }
+            long now = System.currentTimeMillis();
+            String cId = "cmt_" + now + "_" + (int)(Math.random() * 1000);
+            String newCmt = "{\"id\":\"" + cId + "\",\"postId\":\"" + escapeJson(postId) + "\",\"userId\":\"" + escapeJson(userId) + "\",\"username\":\"" + escapeJson(username) + "\",\"userAvatar\":\"" + escapeJson(userAvatar) + "\",\"text\":\"" + escapeJson(text.trim()) + "\",\"createdAt\":" + now + "}";
+
+            String updated;
+            if (s.equals("[]") || s.isEmpty()) {
+                updated = "[" + newCmt + "]";
+            } else {
+                updated = s.substring(0, s.length() - 1) + "," + newCmt + "]";
+            }
+            Files.write(f.toPath(), updated.getBytes(StandardCharsets.UTF_8));
+            return "{\"success\":true,\"comment\":" + newCmt + "}";
+        } catch (Exception e) {
+            return "{\"success\":false,\"error\":\"" + escapeJson(e.getMessage()) + "\"}";
+        }
+    }
+
+    private static synchronized void purgeLikesAndComments(String postId) {
+        if (postId == null || postId.isEmpty()) return;
+        try {
+            File lf = new File(LIKES_FILE);
+            if (lf.exists()) {
+                byte[] bytes = Files.readAllBytes(lf.toPath());
+                String s = new String(bytes, StandardCharsets.UTF_8).trim();
+                if (s.startsWith("[")) {
+                    List<String> kept = new ArrayList<>();
+                    int idx = 0;
+                    while ((idx = s.indexOf("{", idx)) != -1) {
+                        int end = s.indexOf("}", idx);
+                        if (end == -1) break;
+                        String obj = s.substring(idx, end + 1);
+                        if (!postId.equals(extractJsonString(obj, "postId", ""))) {
+                            kept.add(obj);
+                        }
+                        idx = end + 1;
+                    }
+                    Files.write(lf.toPath(), ("[" + String.join(",", kept) + "]").getBytes(StandardCharsets.UTF_8));
+                }
+            }
+            File cf = new File(COMMENTS_FILE);
+            if (cf.exists()) {
+                byte[] bytes = Files.readAllBytes(cf.toPath());
+                String s = new String(bytes, StandardCharsets.UTF_8).trim();
+                if (s.startsWith("[")) {
+                    List<String> kept = new ArrayList<>();
+                    int idx = 0;
+                    while ((idx = s.indexOf("{", idx)) != -1) {
+                        int end = s.indexOf("}", idx);
+                        if (end == -1) break;
+                        String obj = s.substring(idx, end + 1);
+                        if (!postId.equals(extractJsonString(obj, "postId", ""))) {
+                            kept.add(obj);
+                        }
+                        idx = end + 1;
+                    }
+                    Files.write(cf.toPath(), ("[" + String.join(",", kept) + "]").getBytes(StandardCharsets.UTF_8));
+                }
+            }
+        } catch (Exception ignored) {}
+    }
+
     private static synchronized void purgeExpiredEphemeralPosts() {
         try {
             File file = new File("data/stories.json");
@@ -1188,6 +1573,9 @@ public class Server {
             }
             kept.append("]");
             Files.write(file.toPath(), kept.toString().getBytes(StandardCharsets.UTF_8));
+            if (found) {
+                purgeLikesAndComments(postId);
+            }
             return found;
         } catch (Exception ignored) {
             return false;

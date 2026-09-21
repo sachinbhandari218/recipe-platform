@@ -66,127 +66,137 @@ function ToastContainer({
   toasts,
   removeToast
 }) {
-  if (!toasts || toasts.length === 0) return null;
   return React.createElement("div", {
-    className: "fixed top-5 inset-x-4 max-w-sm mx-auto z-50 flex flex-col space-y-2 pointer-events-none"
-  }, toasts.map(toast => {
-    let bgClass = "bg-white border-[#e8e4dc] text-[#1a1917] shadow-lg";
-    let icon = "ℹ️";
-    if (toast.type === "success") {
-      bgClass = "bg-emerald-50 border-emerald-300 text-emerald-950 shadow-lg shadow-emerald-900/10";
-      icon = "✅";
-    } else if (toast.type === "error") {
-      bgClass = "bg-rose-50 border-rose-300 text-rose-950 shadow-lg shadow-rose-900/10";
-      icon = "⚠️";
-    } else if (toast.type === "warning") {
-      bgClass = "bg-amber-50 border-amber-300 text-amber-950 shadow-lg shadow-amber-900/10";
-      icon = "⚡";
-    }
+    className: "fixed bottom-20 md:bottom-6 right-4 z-50 flex flex-col space-y-2 pointer-events-none max-w-sm w-full px-4"
+  }, toasts.map(toast => React.createElement("div", {
+    key: toast.id,
+    className: `pointer-events-auto flex items-center justify-between p-3.5 rounded-xl shadow-lg border text-xs font-medium animate-pop-in ${toast.type === "success" ? "bg-[#121214] text-white border-black/10" : toast.type === "error" ? "bg-rose-900 text-white border-rose-800" : "bg-white text-[#121214] border-[#e8e4dc]"}`
+  }, React.createElement("span", {
+    className: "flex-1 mr-2"
+  }, toast.message), React.createElement("button", {
+    type: "button",
+    onClick: () => removeToast(toast.id),
+    className: "text-white/60 hover:text-white transition-colors cursor-pointer text-sm font-bold"
+  }, "\u2715"))));
+}
+function LikesModal({
+  isOpen,
+  onClose,
+  likes,
+  currentUser,
+  onToggleFollow,
+  followingList
+}) {
+  if (!isOpen) return null;
+  const currentUid = currentUser ? currentUser.id || currentUser.uid : "";
+  const currentUname = currentUser ? (currentUser.username || currentUser.name || "").toLowerCase() : "";
+  return React.createElement("div", {
+    className: "fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-fade-in",
+    onClick: onClose
+  }, React.createElement("div", {
+    className: "w-full max-w-sm bg-white rounded-2xl border border-[#e8e4dc] shadow-xl overflow-hidden animate-pop-in text-left",
+    onClick: e => e.stopPropagation()
+  }, React.createElement("div", {
+    className: "px-5 py-3.5 border-b border-[#f0ece4] flex items-center justify-between bg-white"
+  }, React.createElement("div", {
+    className: "flex items-center space-x-2"
+  }, React.createElement("span", {
+    className: "text-sm"
+  }, "\u2764\uFE0F"), React.createElement("h3", {
+    className: "text-sm font-bold text-[#121214]"
+  }, "Likes (", (likes || []).length, ")")), React.createElement("button", {
+    type: "button",
+    onClick: onClose,
+    className: "p-1 rounded-lg text-[#736f68] hover:text-[#121214] hover:bg-[#f5f2eb] transition-colors cursor-pointer text-xs font-bold"
+  }, "\u2715")), React.createElement("div", {
+    className: "p-4 max-h-80 overflow-y-auto space-y-3 divide-y divide-[#f5f2eb]"
+  }, !likes || likes.length === 0 ? React.createElement("p", {
+    className: "text-center text-xs text-[#a6a198] py-8"
+  }, "No likes yet. Be the first to crave this bite!") : likes.map((u, i) => {
+    const uid = u.userId || u.uid || "";
+    const uname = (u.username || "foodie").toLowerCase();
+    const isMe = uid && uid === currentUid || uname && uname === currentUname;
+    const isFollowing = followingList && followingList.includes(uid);
     return React.createElement("div", {
-      key: toast.id,
-      className: `pointer-events-auto flex items-center justify-between p-3.5 rounded-2xl border backdrop-blur-md transition-all animate-pop-in ${bgClass}`
+      key: (uid || uname) + "_" + i,
+      className: "pt-3 first:pt-0 flex items-center justify-between"
     }, React.createElement("div", {
-      className: "flex items-center space-x-2.5 mr-3"
-    }, React.createElement("span", {
-      className: "text-base"
-    }, icon), React.createElement("p", {
-      className: "text-xs font-semibold leading-relaxed"
-    }, toast.message)), React.createElement("button", {
+      className: "flex items-center space-x-2.5"
+    }, React.createElement("img", {
+      src: u.userAvatar || u.avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80",
+      alt: u.username,
+      className: "w-8 h-8 rounded-full object-cover border border-[#e8e4dc]"
+    }), React.createElement("div", null, React.createElement("span", {
+      className: "text-xs font-bold text-[#121214] block"
+    }, "@", u.username || "foodie"), u.likedAt && React.createElement("span", {
+      className: "text-[10px] text-[#a6a198] block"
+    }, formatTimeAgo(u.likedAt)))), !isMe && onToggleFollow && uid && React.createElement("button", {
       type: "button",
-      onClick: () => removeToast(toast.id),
-      className: "text-[#736f68] hover:text-[#1a1917] p-1 rounded-lg hover:bg-black/5 transition-colors cursor-pointer"
-    }, React.createElement("svg", {
-      className: "w-4 h-4",
-      fill: "none",
-      stroke: "currentColor",
-      viewBox: "0 0 24 24"
-    }, React.createElement("path", {
-      strokeLinecap: "round",
-      strokeLinejoin: "round",
-      strokeWidth: "2",
-      d: "M6 18L18 6M6 6l12 12"
-    }))));
-  }));
+      onClick: () => onToggleFollow(uid, u.username),
+      className: `text-[10px] font-semibold px-2.5 py-1 rounded-full transition-colors cursor-pointer ${isFollowing ? "bg-[#f5f2eb] text-[#736f68] hover:bg-[#e8e4dc]" : "bg-[#fff5f0] text-[#f05a28] hover:bg-[#ffe8de]"}`
+    }, isFollowing ? "Following" : "Follow"));
+  }))));
+}
+function FoodCardSkeleton() {
+  return React.createElement("div", {
+    className: "food-card p-4 space-y-3 animate-pulse"
+  }, React.createElement("div", {
+    className: "flex items-center space-x-3"
+  }, React.createElement("div", {
+    className: "w-8 h-8 rounded-full bg-[#e8e4dc]"
+  }), React.createElement("div", {
+    className: "space-y-1.5 flex-1"
+  }, React.createElement("div", {
+    className: "h-3 bg-[#e8e4dc] rounded w-28"
+  }), React.createElement("div", {
+    className: "h-2 bg-[#e8e4dc] rounded w-16"
+  }))), React.createElement("div", {
+    className: "w-full aspect-[4/3] rounded-xl bg-[#e8e4dc]"
+  }), React.createElement("div", {
+    className: "space-y-2 pt-1"
+  }, React.createElement("div", {
+    className: "h-3.5 bg-[#e8e4dc] rounded w-3/4"
+  }), React.createElement("div", {
+    className: "h-3 bg-[#e8e4dc] rounded w-1/2"
+  })));
 }
 function EmptyState({
-  icon = "🍽️",
-  title = "No bites here yet",
-  description = "Be the first person to share something delicious.",
-  actionText,
+  title,
+  message,
+  actionLabel,
   onAction
 }) {
   return React.createElement("div", {
-    className: "w-full max-w-md mx-auto my-10 p-8 text-center bg-white border border-[#e8e4dc] rounded-2xl shadow-xs space-y-3.5"
+    className: "w-full py-16 px-4 flex flex-col items-center justify-center text-center space-y-3"
   }, React.createElement("div", {
-    className: "w-14 h-14 rounded-2xl bg-[#fff5f0] border border-[#ffe8de] text-[#f05a28] text-2xl flex items-center justify-center mx-auto shadow-2xs"
-  }, icon), React.createElement("h3", {
+    className: "w-16 h-16 rounded-2xl bg-[#fff5f0] border border-[#ffe8de] text-[#f05a28] flex items-center justify-center text-3xl shadow-xs"
+  }, "\uD83C\uDF7D\uFE0F"), React.createElement("h3", {
     className: "text-base font-bold text-[#121214] tracking-tight"
   }, title), React.createElement("p", {
-    className: "text-xs text-[#736f68] leading-relaxed max-w-xs mx-auto"
-  }, description), actionText && onAction && React.createElement("div", {
-    className: "pt-2"
-  }, React.createElement("button", {
+    className: "text-xs text-[#736f68] max-w-sm leading-relaxed"
+  }, message), actionLabel && onAction && React.createElement("button", {
     type: "button",
     onClick: onAction,
-    className: "px-5 py-2.5 rounded-xl bg-[#f05a28] hover:bg-[#d94918] text-white font-semibold text-xs tracking-wide shadow-sm hover:shadow active:scale-95 transition-all cursor-pointer inline-flex items-center space-x-2"
-  }, React.createElement("span", null, "\uD83D\uDD25"), React.createElement("span", null, actionText))));
+    className: "mt-2 px-4 py-2 rounded-xl bg-[#121214] hover:bg-black text-white text-xs font-semibold tracking-wide shadow-sm hover:shadow active:scale-95 transition-all cursor-pointer"
+  }, actionLabel));
 }
 function ErrorState({
   message,
   onRetry
 }) {
   return React.createElement("div", {
-    className: "w-full max-w-md mx-auto my-8 p-6 text-center bg-white border border-rose-200 rounded-2xl shadow-xs space-y-3"
+    className: "w-full py-12 px-4 flex flex-col items-center justify-center text-center space-y-3"
   }, React.createElement("div", {
-    className: "w-12 h-12 rounded-xl bg-rose-50 text-rose-600 text-xl flex items-center justify-center mx-auto"
+    className: "w-12 h-12 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center text-2xl"
   }, "\u26A0\uFE0F"), React.createElement("h3", {
     className: "text-sm font-bold text-[#121214]"
-  }, "Something went wrong"), React.createElement("p", {
-    className: "text-xs text-[#736f68] leading-relaxed"
-  }, message || "FoodBite couldn&apos;t load this content. Please try again."), onRetry && React.createElement("button", {
+  }, "Could not load feed"), React.createElement("p", {
+    className: "text-xs text-[#736f68] max-w-xs"
+  }, message || "Connection issue. Please try again."), onRetry && React.createElement("button", {
     type: "button",
     onClick: onRetry,
-    className: "px-4 py-2 rounded-xl bg-[#121214] hover:bg-black text-white text-xs font-semibold cursor-pointer transition-colors"
-  }, "Try Again"));
-}
-function FoodCardSkeleton() {
-  return React.createElement("div", {
-    className: "bg-white border border-[#e8e4dc] rounded-2xl p-4 space-y-3.5 shadow-2xs"
-  }, React.createElement("div", {
-    className: "flex items-center space-x-3"
-  }, React.createElement("div", {
-    className: "w-9 h-9 rounded-full skeleton-shimmer flex-shrink-0"
-  }), React.createElement("div", {
-    className: "space-y-1.5 flex-1"
-  }, React.createElement("div", {
-    className: "w-24 h-3 rounded-md skeleton-shimmer"
-  }), React.createElement("div", {
-    className: "w-16 h-2.5 rounded-md skeleton-shimmer"
-  })), React.createElement("div", {
-    className: "w-14 h-5 rounded-full skeleton-shimmer"
-  })), React.createElement("div", {
-    className: "w-full aspect-[4/3] rounded-xl skeleton-shimmer"
-  }), React.createElement("div", {
-    className: "space-y-2 pt-1"
-  }, React.createElement("div", {
-    className: "w-3/4 h-3.5 rounded-md skeleton-shimmer"
-  }), React.createElement("div", {
-    className: "w-full h-2.5 rounded-md skeleton-shimmer"
-  }), React.createElement("div", {
-    className: "w-1/2 h-2.5 rounded-md skeleton-shimmer"
-  })), React.createElement("div", {
-    className: "flex items-center justify-between pt-1 border-t border-[#f0ece4]"
-  }, React.createElement("div", {
-    className: "flex items-center space-x-3"
-  }, React.createElement("div", {
-    className: "w-5 h-5 rounded-md skeleton-shimmer"
-  }), React.createElement("div", {
-    className: "w-5 h-5 rounded-md skeleton-shimmer"
-  }), React.createElement("div", {
-    className: "w-5 h-5 rounded-md skeleton-shimmer"
-  })), React.createElement("div", {
-    className: "w-5 h-5 rounded-md skeleton-shimmer"
-  })));
+    className: "px-3.5 py-1.5 rounded-lg bg-[#121214] hover:bg-black text-white text-xs font-medium shadow-sm cursor-pointer"
+  }, "Retry"));
 }
 function AuthScreen({
   onAuthSuccess,
@@ -299,46 +309,34 @@ function HomeHeroSection({
   }, "Explore Food"), React.createElement("button", {
     type: "button",
     onClick: onShareFood,
-    className: "px-4 py-2 rounded-xl bg-[#f05a28] hover:bg-[#d94918] text-white text-xs font-semibold tracking-wide shadow-sm hover:shadow active:scale-95 transition-all cursor-pointer inline-flex items-center space-x-1.5"
-  }, React.createElement("span", null, "+"), React.createElement("span", null, "Share Food")))), React.createElement("div", {
-    className: "flex items-center space-x-3 overflow-hidden py-1"
+    className: "px-4 py-2 rounded-xl bg-[#fff5f0] hover:bg-[#ffe8de] text-[#f05a28] border border-[#ffe8de] text-xs font-semibold tracking-wide shadow-2xs hover:shadow active:scale-95 transition-all cursor-pointer"
+  }, "+ Share a Bite"))), React.createElement("div", {
+    className: "hidden lg:flex items-center space-x-4"
   }, React.createElement("div", {
-    className: "w-32 sm:w-36 rounded-xl overflow-hidden border border-[#e8e4dc] shadow-sm bg-white"
+    className: "w-48 rounded-2xl overflow-hidden shadow-md border border-[#e8e4dc] bg-white -rotate-2 hover:rotate-0 transition-transform duration-300"
   }, React.createElement("img", {
-    src: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=300&q=80",
-    alt: "Stone Baked Pizza",
-    className: "w-full h-24 sm:h-28 object-cover hover:scale-105 transition-transform duration-300"
+    src: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80",
+    alt: "Fresh bowl",
+    className: "w-full h-36 object-cover"
   }), React.createElement("div", {
-    className: "p-2 text-left"
+    className: "p-2.5 text-left"
   }, React.createElement("span", {
-    className: "text-[9px] font-bold text-[#f05a28] uppercase"
-  }, "Pizza"), React.createElement("p", {
-    className: "text-[11px] font-semibold text-[#121214] truncate"
-  }, "Truffle Margherita"))), React.createElement("div", {
-    className: "w-32 sm:w-36 rounded-xl overflow-hidden border border-[#e8e4dc] shadow-sm bg-white -translate-y-2"
+    className: "text-[10px] text-[#f05a28] font-bold block"
+  }, "SALAD BOWL"), React.createElement("span", {
+    className: "text-xs font-semibold text-[#121214] truncate block"
+  }, "Avocado Green Crunch"))), React.createElement("div", {
+    className: "w-48 rounded-2xl overflow-hidden shadow-md border border-[#e8e4dc] bg-white rotate-3 hover:rotate-0 transition-transform duration-300 mt-6"
   }, React.createElement("img", {
-    src: "https://images.unsplash.com/photo-1555126634-323283e090fa?auto=format&fit=crop&w=300&q=80",
-    alt: "Artisan Ramen",
-    className: "w-full h-24 sm:h-28 object-cover hover:scale-105 transition-transform duration-300"
+    src: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=400&q=80",
+    alt: "Pizza",
+    className: "w-full h-36 object-cover"
   }), React.createElement("div", {
-    className: "p-2 text-left"
+    className: "p-2.5 text-left"
   }, React.createElement("span", {
-    className: "text-[9px] font-bold text-[#f05a28] uppercase"
-  }, "Bowls"), React.createElement("p", {
-    className: "text-[11px] font-semibold text-[#121214] truncate"
-  }, "Spicy Tonkotsu"))), React.createElement("div", {
-    className: "w-32 sm:w-36 rounded-xl overflow-hidden border border-[#e8e4dc] shadow-sm bg-white hidden sm:block"
-  }, React.createElement("img", {
-    src: "https://images.unsplash.com/photo-1509722747041-616f39b57569?auto=format&fit=crop&w=300&q=80",
-    alt: "Bakery Pastry",
-    className: "w-full h-24 sm:h-28 object-cover hover:scale-105 transition-transform duration-300"
-  }), React.createElement("div", {
-    className: "p-2 text-left"
-  }, React.createElement("span", {
-    className: "text-[9px] font-bold text-[#f05a28] uppercase"
-  }, "Desserts"), React.createElement("p", {
-    className: "text-[11px] font-semibold text-[#121214] truncate"
-  }, "Honey Brioche"))))));
+    className: "text-[10px] text-[#f05a28] font-bold block"
+  }, "PIZZA"), React.createElement("span", {
+    className: "text-xs font-semibold text-[#121214] truncate block"
+  }, "Sourdough Margherita"))))));
 }
 function StoriesTray({
   stories,
@@ -346,8 +344,9 @@ function StoriesTray({
   onTriggerUpload,
   onViewStory
 }) {
-  const distinctCreators = useMemo(() => {
-    if (!stories || stories.length === 0) return [];
+  const currentUid = currentUser ? currentUser.id || currentUser.uid : "";
+  const uniqueUsers = useMemo(() => {
+    if (!stories) return [];
     const map = new Map();
     stories.forEach(s => {
       if (!map.has(s.userId)) {
@@ -356,42 +355,41 @@ function StoriesTray({
     });
     return Array.from(map.values());
   }, [stories]);
-  const avatarUrl = currentUser && (currentUser.avatar || currentUser.avatarUrl) ? currentUser.avatar || currentUser.avatarUrl : "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80";
   return React.createElement("div", {
-    className: "w-full bg-white border-b border-[#e8e4dc]"
+    className: "w-full bg-white border-b border-[#e8e4dc] py-3.5 px-4 sm:px-6"
   }, React.createElement("div", {
-    className: "max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center space-x-4 overflow-x-auto scrollbar-none"
+    className: "max-w-7xl mx-auto flex items-center space-x-4 overflow-x-auto scrollbar-none"
   }, React.createElement("div", {
     onClick: onTriggerUpload,
-    className: "flex flex-col items-center space-y-1 flex-shrink-0 cursor-pointer group",
-    title: "Share Food Story"
+    className: "flex flex-col items-center space-y-1.5 flex-shrink-0 cursor-pointer group select-none"
   }, React.createElement("div", {
-    className: "relative"
-  }, React.createElement("div", {
-    className: "w-14 h-14 rounded-full p-[2px] border-2 border-dashed border-[#f05a28] flex items-center justify-center bg-[#fbf9f6] group-hover:scale-105 transition-transform"
+    className: "relative w-14 h-14 rounded-full p-[2px] border-2 border-dashed border-[#f05a28] group-hover:border-[#121214] transition-colors flex items-center justify-center bg-[#fff5f0]"
   }, React.createElement("img", {
-    src: avatarUrl,
-    alt: "Your Story",
-    className: "w-12 h-12 rounded-full object-cover"
-  })), React.createElement("div", {
-    className: "absolute bottom-0 right-0 w-4 h-4 rounded-full bg-[#f05a28] text-white flex items-center justify-center text-[10px] font-bold border border-white shadow-xs"
+    src: currentUser && (currentUser.avatar || currentUser.avatarUrl) || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80",
+    alt: "Your story",
+    className: "w-full h-full rounded-full object-cover"
+  }), React.createElement("span", {
+    className: "absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-[#f05a28] text-white flex items-center justify-center text-xs font-bold shadow-xs"
   }, "+")), React.createElement("span", {
-    className: "text-[11px] font-medium text-[#121214]"
-  }, "Your Story")), distinctCreators.map((creatorStory, idx) => React.createElement("div", {
-    key: creatorStory.id || idx,
-    onClick: () => onViewStory(creatorStory),
-    className: "flex flex-col items-center space-y-1 flex-shrink-0 cursor-pointer group"
-  }, React.createElement("div", {
-    className: "p-[2px] rounded-full bg-gradient-to-tr from-[#f05a28] via-amber-500 to-rose-500 group-hover:scale-105 transition-transform shadow-2xs"
-  }, React.createElement("div", {
-    className: "p-[1.5px] bg-white rounded-full"
-  }, React.createElement("img", {
-    src: creatorStory.userAvatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=120&q=80",
-    alt: creatorStory.username,
-    className: "w-12 h-12 rounded-full object-cover"
-  }))), React.createElement("span", {
-    className: "text-[11px] font-medium text-[#736f68] max-w-[64px] truncate text-center group-hover:text-[#121214] transition-colors"
-  }, creatorStory.username)))));
+    className: "text-[10px] font-semibold text-[#121214] max-w-[64px] truncate"
+  }, "Your Bite")), uniqueUsers.map(story => {
+    const isCurrentUser = story.userId === currentUid;
+    return React.createElement("div", {
+      key: story.userId,
+      onClick: () => onViewStory(story),
+      className: "flex flex-col items-center space-y-1.5 flex-shrink-0 cursor-pointer group select-none"
+    }, React.createElement("div", {
+      className: "w-14 h-14 rounded-full p-[2px] bg-gradient-to-tr from-[#f05a28] via-amber-500 to-rose-500 group-hover:scale-105 transition-transform duration-200"
+    }, React.createElement("div", {
+      className: "w-full h-full rounded-full p-[1.5px] bg-white"
+    }, React.createElement("img", {
+      src: story.userAvatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80",
+      alt: story.username,
+      className: "w-full h-full rounded-full object-cover"
+    }))), React.createElement("span", {
+      className: "text-[10px] font-medium text-[#736f68] group-hover:text-[#121214] max-w-[64px] truncate transition-colors"
+    }, isCurrentUser ? "You" : story.username));
+  })));
 }
 function TrendingNowShelf({
   stories,
@@ -441,21 +439,21 @@ function SearchFilterBar({
   setActiveCategory
 }) {
   return React.createElement("div", {
-    className: "w-full space-y-3 py-2 text-left"
+    className: "w-full space-y-3"
   }, React.createElement("div", {
-    className: "relative"
+    className: "relative w-full"
   }, React.createElement("span", {
-    className: "absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-[#736f68]"
+    className: "absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-[#a6a198]"
   }, "\uD83D\uDD0D"), React.createElement("input", {
     type: "text",
     value: searchQuery,
     onChange: e => setSearchQuery(e.target.value),
     placeholder: "Search food, dishes, or cravings...",
-    className: "w-full pl-9 pr-8 py-2.5 rounded-xl bg-white border border-[#e8e4dc] text-xs text-[#121214] placeholder:text-[#a6a198] focus:outline-none focus:border-[#f05a28] focus:ring-2 focus:ring-[#f05a28]/10 transition-all shadow-2xs"
+    className: "w-full pl-9 pr-9 py-2.5 rounded-xl bg-white border border-[#e8e4dc] text-xs text-[#121214] placeholder:text-[#a6a198] focus:outline-none focus:border-[#f05a28] shadow-2xs transition-all"
   }), searchQuery && React.createElement("button", {
     type: "button",
     onClick: () => setSearchQuery(""),
-    className: "absolute right-3 top-1/2 -translate-y-1/2 text-[#a6a198] hover:text-[#121214] text-xs p-0.5 rounded-md cursor-pointer"
+    className: "absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#a6a198] hover:text-[#121214] cursor-pointer"
   }, "\u2715")), React.createElement("div", {
     className: "flex items-center space-x-2 overflow-x-auto scrollbar-none pb-1"
   }, CATEGORIES.map(cat => {
@@ -464,7 +462,7 @@ function SearchFilterBar({
       key: cat.id,
       type: "button",
       onClick: () => setActiveCategory(cat.id),
-      className: `flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer flex items-center space-x-1.5 ${isActive ? "bg-[#121214] text-white shadow-2xs" : "bg-white hover:bg-[#f5f2eb] border border-[#e8e4dc] text-[#736f68] hover:text-[#121214]"}`
+      className: `flex-shrink-0 px-3 py-1.5 rounded-xl text-xs font-medium transition-all cursor-pointer flex items-center space-x-1.5 ${isActive ? "bg-[#121214] text-white shadow-xs" : "bg-white text-[#736f68] hover:text-[#121214] border border-[#e8e4dc] hover:bg-[#fbf9f6]"}`
     }, React.createElement("span", null, cat.icon), React.createElement("span", null, cat.label));
   })));
 }
@@ -476,6 +474,8 @@ function FoodCard({
   onLike,
   isLiked,
   likeCount,
+  postLikes,
+  onShowLikes,
   onDoubleTap,
   heartBurst,
   comments,
@@ -588,7 +588,15 @@ function FoodCard({
     title: isLiked ? "Unlike" : "Like"
   }, React.createElement("span", {
     className: isLiked ? "text-[#f05a28] scale-110" : "text-[#736f68]"
-  }, isLiked ? "❤️" : "🤍"), React.createElement("span", null, likeCount)), React.createElement("button", {
+  }, isLiked ? "❤️" : "🤍"), React.createElement("span", {
+    onClick: e => {
+      if (likeCount > 0 && onShowLikes) {
+        e.stopPropagation();
+        onShowLikes(post.id, postLikes);
+      }
+    },
+    className: likeCount > 0 ? "hover:underline cursor-pointer" : ""
+  }, likeCount)), React.createElement("button", {
     type: "button",
     onClick: () => setShowComments(prev => !prev),
     className: "flex items-center space-x-1 text-xs font-semibold text-[#736f68] hover:text-[#121214] transition-colors cursor-pointer",
@@ -603,14 +611,19 @@ function FoodCard({
     onClick: () => onSave(post.id),
     className: `text-xs transition-colors cursor-pointer ${isSaved ? "text-[#f05a28]" : "text-[#a6a198] hover:text-[#121214]"}`,
     title: isSaved ? "Saved" : "Save"
-  }, isSaved ? "🔖" : "🏷️")), showComments && comments && comments.length > 0 && React.createElement("div", {
+  }, isSaved ? "🔖" : "🏷️")), postLikes && postLikes.length > 0 && React.createElement("div", {
+    onClick: () => onShowLikes && onShowLikes(post.id, postLikes),
+    className: "pt-0.5 text-[11px] text-[#736f68] hover:text-[#121214] cursor-pointer transition-colors flex items-center space-x-1 select-none"
+  }, React.createElement("span", null, "Liked by"), React.createElement("strong", {
+    className: "text-[#121214]"
+  }, "@", postLikes[0].username), postLikes.length > 1 && React.createElement("span", null, " and ", postLikes.length - 1, " other", postLikes.length > 2 ? "s" : "")), showComments && comments && comments.length > 0 && React.createElement("div", {
     className: "pt-2 space-y-1.5 max-h-32 overflow-y-auto"
-  }, comments.map(c => React.createElement("div", {
-    key: c.id,
+  }, comments.map((c, i) => React.createElement("div", {
+    key: c.id || i,
     className: "text-xs text-[#736f68] leading-tight"
   }, React.createElement("strong", {
     className: "text-[#121214] mr-1.5"
-  }, "@", c.author), React.createElement("span", null, c.text)))), React.createElement("form", {
+  }, "@", c.author || c.username), React.createElement("span", null, c.text)))), React.createElement("form", {
     onSubmit: handleCommentSubmit,
     className: "pt-1 flex items-center space-x-2"
   }, React.createElement("input", {
@@ -632,10 +645,11 @@ function DesktopNavBar({
   userProfile,
   unreadCount,
   onTriggerInstall,
-  currentUser
+  currentUser,
+  onRefreshFeed
 }) {
   const streak = userProfile && userProfile.user ? userProfile.user.streak || 0 : 0;
-  const avatarUrl = currentUser && (currentUser.avatar || currentUser.avatarUrl) ? currentUser.avatar || currentUser.avatarUrl : "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80";
+  const avatarUrl = currentUser && (currentUser.avatar || currentUser.avatarUrl) || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80";
   return React.createElement("header", {
     className: "hidden md:block sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#e8e4dc]"
   }, React.createElement("div", {
@@ -643,26 +657,36 @@ function DesktopNavBar({
   }, React.createElement("div", {
     className: "flex items-center space-x-8"
   }, React.createElement("div", {
-    onClick: () => setActiveTab("home"),
+    onClick: () => {
+      setActiveTab("home");
+      onRefreshFeed && onRefreshFeed();
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+      });
+    },
     className: "flex items-center space-x-2.5 cursor-pointer select-none"
   }, React.createElement("div", {
     className: "w-8 h-8 rounded-xl bg-[#fff5f0] border border-[#ffe8de] text-[#f05a28] flex items-center justify-center text-lg shadow-2xs"
   }, "\uD83D\uDD25"), React.createElement("div", null, React.createElement("h1", {
     className: "text-base font-bold text-[#121214] tracking-tight leading-none font-heading"
   }, "FoodBite"), React.createElement("span", {
-    className: "text-[10px] uppercase tracking-widest text-[#f05a28] font-semibold block mt-0.5"
+    className: "text-[9px] uppercase tracking-widest text-[#f05a28] font-bold"
   }, "Discover. Share. Crave."))), React.createElement("nav", {
     className: "flex items-center space-x-1"
   }, React.createElement("button", {
     type: "button",
-    onClick: () => setActiveTab("home"),
+    onClick: () => {
+      setActiveTab("home");
+      onRefreshFeed && onRefreshFeed();
+    },
     className: `px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${activeTab === "home" ? "bg-[#f5f2eb] text-[#121214]" : "text-[#736f68] hover:text-[#121214]"}`
   }, "Feed"), React.createElement("button", {
     type: "button",
     onClick: () => setActiveTab("activity"),
     className: `relative px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${activeTab === "activity" ? "bg-[#f5f2eb] text-[#121214]" : "text-[#736f68] hover:text-[#121214]"}`
-  }, "Activity", unreadCount > 0 && React.createElement("span", {
-    className: "ml-1.5 px-1.5 py-0.2 rounded-full bg-[#f05a28] text-white text-[9px] font-bold"
+  }, React.createElement("span", null, "Activity"), unreadCount > 0 && React.createElement("span", {
+    className: "ml-1 px-1.5 py-0.2 rounded-full bg-[#f05a28] text-white text-[9px] font-bold"
   }, unreadCount)), React.createElement("button", {
     type: "button",
     onClick: () => setActiveTab("profile"),
@@ -670,23 +694,21 @@ function DesktopNavBar({
   }, "Profile"))), React.createElement("div", {
     className: "flex items-center space-x-3"
   }, React.createElement("div", {
-    onClick: () => setActiveTab("profile"),
-    className: "flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-[#fff5f0] border border-[#ffe8de] text-xs font-bold text-[#f05a28] cursor-pointer",
-    title: "Daily Active Streak"
+    className: "flex items-center space-x-1 px-2.5 py-1 rounded-full bg-[#fff5f0] border border-[#ffe8de] text-[#f05a28] text-xs font-bold shadow-2xs"
   }, React.createElement("span", null, "\uD83D\uDD25"), React.createElement("span", null, streak, "d Streak")), React.createElement("button", {
     type: "button",
     onClick: onTriggerInstall,
-    className: "px-3 py-1.5 rounded-xl bg-[#f5f2eb] hover:bg-[#e8e4dc] text-[#121214] text-xs font-medium transition-colors cursor-pointer"
-  }, "\uD83D\uDCF1 App"), React.createElement("button", {
+    className: "px-3 py-1.5 rounded-xl border border-[#e8e4dc] bg-white hover:bg-[#fbf9f6] text-[#736f68] hover:text-[#121214] text-xs font-medium transition-colors cursor-pointer flex items-center space-x-1"
+  }, React.createElement("span", null, "\uD83D\uDCF1"), React.createElement("span", null, "App")), React.createElement("button", {
     type: "button",
     onClick: onTriggerUpload,
-    className: "px-4 py-2 rounded-xl bg-[#f05a28] hover:bg-[#d94918] text-white text-xs font-semibold tracking-wide shadow-sm hover:shadow active:scale-95 transition-all cursor-pointer flex items-center space-x-1.5"
+    className: "px-4 py-2 rounded-xl bg-[#f05a28] hover:bg-[#e04818] text-white text-xs font-semibold tracking-wide shadow-sm hover:shadow active:scale-95 transition-all cursor-pointer flex items-center space-x-1.5"
   }, React.createElement("span", null, "+"), React.createElement("span", null, "Share Food")), React.createElement("div", {
     onClick: () => setActiveTab("profile"),
-    className: "w-8 h-8 rounded-full overflow-hidden border border-[#e8e4dc] cursor-pointer hover:ring-2 hover:ring-[#f05a28]/30 transition-all"
+    className: "w-8 h-8 rounded-full border border-[#e8e4dc] overflow-hidden cursor-pointer hover:ring-2 hover:ring-[#f05a28]/20 transition-all"
   }, React.createElement("img", {
     src: avatarUrl,
-    alt: "Profile",
+    alt: "Avatar",
     className: "w-full h-full object-cover"
   })))));
 }
@@ -699,65 +721,79 @@ function MobileTopBar({
     className: "md:hidden sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#e8e4dc] px-4 py-2.5 flex items-center justify-between"
   }, React.createElement("div", {
     onClick: onLogoClick,
-    className: "flex items-center space-x-2 cursor-pointer"
-  }, React.createElement("span", {
-    className: "text-xl"
-  }, "\uD83D\uDD25"), React.createElement("div", null, React.createElement("h1", {
-    className: "text-sm font-bold text-[#121214] leading-none font-heading"
+    className: "flex items-center space-x-2 cursor-pointer select-none"
+  }, React.createElement("div", {
+    className: "w-7 h-7 rounded-lg bg-[#fff5f0] border border-[#ffe8de] text-[#f05a28] flex items-center justify-center text-sm"
+  }, "\uD83D\uDD25"), React.createElement("span", {
+    className: "text-sm font-bold text-[#121214] tracking-tight font-heading"
   }, "FoodBite"), React.createElement("span", {
-    className: "text-[9px] uppercase tracking-wider text-[#f05a28] font-semibold"
-  }, "Discover. Share. Crave."))), React.createElement("div", {
+    className: "text-[9px] uppercase tracking-widest text-[#f05a28] font-bold"
+  }, "DISCOVER. SHARE. CRAVE.")), React.createElement("div", {
     className: "flex items-center space-x-2"
   }, React.createElement("div", {
-    className: "flex items-center space-x-1 px-2 py-0.5 rounded-full bg-[#fff5f0] border border-[#ffe8de] text-[11px] font-bold text-[#f05a28]"
+    className: "flex items-center space-x-1 px-2 py-0.5 rounded-full bg-[#fff5f0] border border-[#ffe8de] text-[#f05a28] text-[11px] font-bold"
   }, React.createElement("span", null, "\uD83D\uDD25"), React.createElement("span", null, streak, "d")), React.createElement("button", {
     type: "button",
     onClick: onTriggerInstall,
-    className: "px-2 py-1 rounded-lg bg-[#f5f2eb] text-[11px] font-medium text-[#121214] cursor-pointer"
+    className: "p-1.5 rounded-lg border border-[#e8e4dc] bg-white text-xs",
+    title: "Install App"
   }, "\uD83D\uDCF1")));
 }
-function MobileBottomBar({
+function MobileBottomNav({
   activeTab,
   setActiveTab,
   onTriggerUpload,
-  unreadCount
+  unreadCount,
+  onRefreshFeed
 }) {
   return React.createElement("nav", {
-    className: "md:hidden fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-md border-t border-[#e8e4dc] h-16 flex items-center justify-around px-2 z-40"
+    className: "md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-[#e8e4dc] px-2 py-1 flex items-center justify-around"
   }, React.createElement("button", {
     type: "button",
-    onClick: () => setActiveTab("home"),
-    className: `flex flex-col items-center justify-center space-y-0.5 cursor-pointer ${activeTab === "home" ? "text-[#f05a28] font-bold" : "text-[#736f68]"}`
+    onClick: () => {
+      setActiveTab("home");
+      onRefreshFeed && onRefreshFeed();
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+      });
+    },
+    className: `flex flex-col items-center py-1 px-3 text-[10px] font-semibold transition-colors cursor-pointer ${activeTab === "home" ? "text-[#f05a28]" : "text-[#a6a198]"}`
   }, React.createElement("span", {
     className: "text-lg"
-  }, "\uD83C\uDFE0"), React.createElement("span", {
-    className: "text-[10px]"
-  }, "Feed")), React.createElement("button", {
+  }, "\uD83C\uDFE0"), React.createElement("span", null, "Home")), React.createElement("button", {
+    type: "button",
+    onClick: () => {
+      setActiveTab("home");
+      const el = document.getElementById("food-feed-section");
+      if (el) el.scrollIntoView({
+        behavior: "smooth"
+      });
+    },
+    className: `flex flex-col items-center py-1 px-3 text-[10px] font-semibold transition-colors cursor-pointer ${activeTab === "explore" ? "text-[#f05a28]" : "text-[#a6a198]"}`
+  }, React.createElement("span", {
+    className: "text-lg"
+  }, "\uD83E\uDDED"), React.createElement("span", null, "Explore")), React.createElement("div", {
+    className: "-mt-5"
+  }, React.createElement("button", {
     type: "button",
     onClick: onTriggerUpload,
-    className: "w-11 h-11 -mt-5 rounded-full bg-[#f05a28] text-white flex items-center justify-center shadow-md active:scale-95 transition-transform cursor-pointer",
-    title: "Share Food"
-  }, React.createElement("span", {
-    className: "text-xl font-bold"
+    className: "w-12 h-12 rounded-full bg-[#f05a28] hover:bg-[#e04818] text-white flex items-center justify-center text-2xl font-bold shadow-lg shadow-[#f05a28]/30 active:scale-95 transition-transform cursor-pointer"
   }, "+")), React.createElement("button", {
     type: "button",
     onClick: () => setActiveTab("activity"),
-    className: `relative flex flex-col items-center justify-center space-y-0.5 cursor-pointer ${activeTab === "activity" ? "text-[#f05a28] font-bold" : "text-[#736f68]"}`
+    className: `relative flex flex-col items-center py-1 px-3 text-[10px] font-semibold transition-colors cursor-pointer ${activeTab === "activity" ? "text-[#f05a28]" : "text-[#a6a198]"}`
   }, React.createElement("span", {
     className: "text-lg"
-  }, "\uD83D\uDD14"), React.createElement("span", {
-    className: "text-[10px]"
-  }, "Activity"), unreadCount > 0 && React.createElement("span", {
-    className: "absolute -top-1 right-1 px-1.5 py-0.2 rounded-full bg-[#f05a28] text-white text-[9px] font-bold"
-  }, unreadCount > 9 ? "9+" : unreadCount)), React.createElement("button", {
+  }, "\uD83D\uDD14"), React.createElement("span", null, "Activity"), unreadCount > 0 && React.createElement("span", {
+    className: "absolute top-1 right-2 w-2 h-2 rounded-full bg-[#f05a28]"
+  })), React.createElement("button", {
     type: "button",
     onClick: () => setActiveTab("profile"),
-    className: `flex flex-col items-center justify-center space-y-0.5 cursor-pointer ${activeTab === "profile" ? "text-[#f05a28] font-bold" : "text-[#736f68]"}`
+    className: `flex flex-col items-center py-1 px-3 text-[10px] font-semibold transition-colors cursor-pointer ${activeTab === "profile" ? "text-[#f05a28]" : "text-[#a6a198]"}`
   }, React.createElement("span", {
     className: "text-lg"
-  }, "\uD83D\uDC64"), React.createElement("span", {
-    className: "text-[10px]"
-  }, "Profile")));
+  }, "\uD83D\uDC64"), React.createElement("span", null, "Profile")));
 }
 function ShareFoodModal({
   isOpen,
@@ -771,60 +807,36 @@ function ShareFoodModal({
   const [isVideo, setIsVideo] = useState(false);
   const [duration, setDuration] = useState(0);
   const [foodTitle, setFoodTitle] = useState("");
-  const [foodCategory, setFoodCategory] = useState("Street Food");
+  const [foodCategory, setFoodCategory] = useState("street");
   const [foodLocation, setFoodLocation] = useState("");
   const [description, setDescription] = useState("");
-  const [errorMessage, setErrorMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const fileInputRef = useRef(null);
   const resetForm = () => {
-    if (previewUrl && previewUrl.startsWith("blob:")) {
-      try {
-        URL.revokeObjectURL(previewUrl);
-      } catch (e) {}
-    }
     setSelectedFile(null);
     setPreviewUrl("");
     setIsVideo(false);
     setDuration(0);
     setFoodTitle("");
-    setFoodCategory("Street Food");
+    setFoodCategory("street");
     setFoodLocation("");
     setDescription("");
     setErrorMessage("");
-    setIsSubmitting(false);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-  };
-  useEffect(() => {
-    if (!isOpen) resetForm();
-  }, [isOpen]);
-  if (!isOpen) return null;
-  const handleClose = () => {
-    resetForm();
-    onClose && onClose();
   };
   const handleFileChange = e => {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
-    if (file.size > 50 * 1024 * 1024) {
-      setErrorMessage("File size exceeds 50MB limit");
-      setSelectedFile(null);
-      setPreviewUrl("");
-      return;
-    }
-    setErrorMessage("");
-    const isVid = file.type.startsWith("video");
+    const isVid = file.type.startsWith("video/");
     setIsVideo(isVid);
     if (isVid) {
       const videoElement = document.createElement("video");
       videoElement.preload = "metadata";
       const objectUrl = URL.createObjectURL(file);
       videoElement.onloadedmetadata = () => {
-        URL.revokeObjectURL(objectUrl);
+        window.URL.revokeObjectURL(objectUrl);
         if (videoElement.duration > 10.05) {
-          setErrorMessage("Video duration must be 10 seconds or less. Selected: " + videoElement.duration.toFixed(1) + "s");
+          setErrorMessage("Video must be 10 seconds or shorter.");
           setSelectedFile(null);
           setPreviewUrl("");
           return;
@@ -928,74 +940,74 @@ function ShareFoodModal({
       setIsSubmitting(false);
     }
   };
-  const acceptString = ["image", "*"].join("/") + "," + ["video", "*"].join("/");
+  if (!isOpen) return null;
   return React.createElement("div", {
-    className: "fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop animate-fade-in"
+    className: "fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-fade-in"
   }, React.createElement("div", {
-    className: "relative w-full max-w-lg rounded-2xl bg-white border border-[#e8e4dc] p-6 text-[#1a1917] shadow-xl max-h-[90vh] overflow-y-auto text-left"
-  }, React.createElement("button", {
+    className: "w-full max-w-lg bg-white rounded-2xl border border-[#e8e4dc] shadow-2xl overflow-hidden animate-pop-in text-left flex flex-col max-h-[90vh]",
+    onClick: e => e.stopPropagation()
+  }, React.createElement("div", {
+    className: "px-6 py-4 border-b border-[#f0ece4] flex items-center justify-between"
+  }, React.createElement("div", null, React.createElement("h3", {
+    className: "text-base font-bold text-[#121214] tracking-tight"
+  }, "Share Food Creation"), React.createElement("p", {
+    className: "text-[11px] text-[#736f68]"
+  }, "Visible for 24 hours in the live community feed")), React.createElement("button", {
     type: "button",
-    onClick: handleClose,
-    className: "absolute top-4 right-4 text-[#a6a198] hover:text-[#121214] p-1 rounded-lg hover:bg-black/5 transition-colors cursor-pointer"
-  }, "\u2715"), React.createElement("div", {
-    className: "mb-5 space-y-1"
-  }, React.createElement("div", {
-    className: "inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-[#fff5f0] text-[#f05a28] text-[10px] font-bold border border-[#ffe8de]"
-  }, React.createElement("span", null, "\uD83D\uDD25"), React.createElement("span", null, "24-Hour Story")), React.createElement("h3", {
-    className: "text-lg font-bold text-[#121214] tracking-tight"
-  }, "Share Food"), React.createElement("p", {
-    className: "text-xs text-[#736f68]"
-  }, "Capture or upload a photo or short video (up to 10s).")), errorMessage && React.createElement("div", {
-    className: "mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-medium"
-  }, errorMessage), React.createElement("form", {
+    onClick: onClose,
+    className: "p-1 rounded-lg text-[#736f68] hover:text-[#121214] hover:bg-[#f5f2eb] transition-colors cursor-pointer text-sm"
+  }, "\u2715")), React.createElement("form", {
     onSubmit: handleSubmit,
-    className: "space-y-4"
-  }, React.createElement("div", {
+    className: "p-6 space-y-4 overflow-y-auto"
+  }, errorMessage && React.createElement("div", {
+    className: "p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-medium"
+  }, errorMessage), React.createElement("div", {
     className: "space-y-1.5"
   }, React.createElement("label", {
     className: "text-xs font-semibold text-[#121214] block"
-  }, "Media Upload"), !previewUrl ? React.createElement("div", {
-    onClick: () => fileInputRef.current && fileInputRef.current.click(),
-    className: "w-full aspect-[16/9] border-2 border-dashed border-[#e8e4dc] hover:border-[#f05a28] rounded-xl flex flex-col items-center justify-center bg-[#fbf9f6] hover:bg-[#fff5f0]/30 transition-colors cursor-pointer p-4 space-y-2"
-  }, React.createElement("span", {
-    className: "text-3xl"
-  }, "\uD83D\uDCF7"), React.createElement("p", {
-    className: "text-xs font-medium text-[#121214]"
-  }, "Click to upload photo or short video"), React.createElement("p", {
-    className: "text-[10px] text-[#736f68]"
-  }, "JPG, PNG, WebP or MP4 up to 10s (max 50MB)")) : React.createElement("div", {
-    className: "relative w-full aspect-[16/9] rounded-xl overflow-hidden bg-black flex items-center justify-center"
+  }, "Food Photo or Short Video"), React.createElement("input", {
+    ref: fileInputRef,
+    type: "file",
+    accept: [["image", "*"].join("/"), "video/mp4", "video/webm", "video/quicktime"].join(","),
+    onChange: handleFileChange,
+    className: "hidden"
+  }), previewUrl ? React.createElement("div", {
+    className: "relative w-full aspect-[16/9] rounded-xl overflow-hidden bg-[#f5f2eb] border border-[#e8e4dc]"
   }, isVideo ? React.createElement("video", {
     src: previewUrl,
     controls: true,
-    className: "w-full h-full object-contain"
+    className: "w-full h-full object-cover"
   }) : React.createElement("img", {
     src: previewUrl,
     alt: "Preview",
-    className: "w-full h-full object-contain"
+    className: "w-full h-full object-cover"
   }), React.createElement("button", {
     type: "button",
     onClick: () => {
       setSelectedFile(null);
       setPreviewUrl("");
     },
-    className: "absolute top-2 right-2 px-2.5 py-1 rounded-lg bg-black/70 hover:bg-black text-white text-xs font-medium cursor-pointer"
-  }, "Change")), React.createElement("input", {
-    ref: fileInputRef,
-    type: "file",
-    accept: acceptString,
-    onChange: handleFileChange,
-    className: "hidden"
-  })), React.createElement("div", {
+    className: "absolute top-2 right-2 p-1.5 rounded-full bg-black/70 text-white text-xs hover:bg-black cursor-pointer"
+  }, "\u2715")) : React.createElement("div", {
+    onClick: () => fileInputRef.current && fileInputRef.current.click(),
+    className: "w-full border-2 border-dashed border-[#e8e4dc] hover:border-[#f05a28] rounded-xl p-8 text-center cursor-pointer bg-[#fbf9f6] transition-colors group"
+  }, React.createElement("div", {
+    className: "text-3xl mb-1 group-hover:scale-110 transition-transform"
+  }, "\uD83D\uDCF8"), React.createElement("p", {
+    className: "text-xs font-semibold text-[#121214]"
+  }, "Tap to upload photo or short video"), React.createElement("p", {
+    className: "text-[11px] text-[#736f68] mt-0.5"
+  }, "JPEG, PNG, MP4 (max 10 seconds)"))), React.createElement("div", {
     className: "space-y-1.5"
   }, React.createElement("label", {
     className: "text-xs font-semibold text-[#121214] block"
-  }, "Food Name"), React.createElement("input", {
+  }, "Dish Name"), React.createElement("input", {
     type: "text",
+    required: true,
     value: foodTitle,
     onChange: e => setFoodTitle(e.target.value),
-    placeholder: "e.g. Truffle Mushroom Risotto",
-    className: "w-full px-3.5 py-2.5 rounded-xl bg-[#fbf9f6] border border-[#e8e4dc] text-xs text-[#121214] placeholder:text-[#a6a198] focus:outline-none focus:border-[#f05a28] focus:bg-white transition-all"
+    placeholder: "e.g. Spicy Street Tacos, Hand-pulled Noodles",
+    className: "w-full px-3.5 py-2 rounded-xl bg-[#fbf9f6] border border-[#e8e4dc] text-xs text-[#121214] placeholder:text-[#a6a198] focus:outline-none focus:border-[#f05a28] focus:bg-white"
   })), React.createElement("div", {
     className: "grid grid-cols-1 sm:grid-cols-2 gap-3"
   }, React.createElement("div", {
@@ -1005,20 +1017,20 @@ function ShareFoodModal({
   }, "Category"), React.createElement("select", {
     value: foodCategory,
     onChange: e => setFoodCategory(e.target.value),
-    className: "w-full px-3.5 py-2.5 rounded-xl bg-[#fbf9f6] border border-[#e8e4dc] text-xs text-[#121214] focus:outline-none focus:border-[#f05a28] focus:bg-white transition-all"
+    className: "w-full px-3.5 py-2 rounded-xl bg-[#fbf9f6] border border-[#e8e4dc] text-xs text-[#121214] focus:outline-none focus:border-[#f05a28] focus:bg-white"
   }, React.createElement("option", {
-    value: "Street Food"
-  }, "Street Food"), React.createElement("option", {
-    value: "Pizza & Pasta"
-  }, "Pizza & Pasta"), React.createElement("option", {
-    value: "Healthy Bowls"
-  }, "Healthy Bowls"), React.createElement("option", {
-    value: "Desserts & Bakery"
-  }, "Desserts & Bakery"), React.createElement("option", {
-    value: "Coffee & Drinks"
-  }, "Coffee & Drinks"), React.createElement("option", {
-    value: "Homemade"
-  }, "Homemade"))), React.createElement("div", {
+    value: "street"
+  }, "\uD83C\uDF2E Street Food"), React.createElement("option", {
+    value: "pizza"
+  }, "\uD83C\uDF55 Pizza & Pasta"), React.createElement("option", {
+    value: "healthy"
+  }, "\uD83E\uDD57 Healthy Bowls"), React.createElement("option", {
+    value: "desserts"
+  }, "\uD83C\uDF70 Desserts & Bakery"), React.createElement("option", {
+    value: "drinks"
+  }, "\u2615 Coffee & Drinks"), React.createElement("option", {
+    value: "trending"
+  }, "\uD83D\uDD25 Specials"))), React.createElement("div", {
     className: "space-y-1.5"
   }, React.createElement("label", {
     className: "text-xs font-semibold text-[#121214] block"
@@ -1026,29 +1038,29 @@ function ShareFoodModal({
     type: "text",
     value: foodLocation,
     onChange: e => setFoodLocation(e.target.value),
-    placeholder: "e.g. Downtown Cafe",
-    className: "w-full px-3.5 py-2.5 rounded-xl bg-[#fbf9f6] border border-[#e8e4dc] text-xs text-[#121214] placeholder:text-[#a6a198] focus:outline-none focus:border-[#f05a28] focus:bg-white transition-all"
+    placeholder: "e.g. Downtown Bistro, Home Kitchen",
+    className: "w-full px-3.5 py-2 rounded-xl bg-[#fbf9f6] border border-[#e8e4dc] text-xs text-[#121214] placeholder:text-[#a6a198] focus:outline-none focus:border-[#f05a28] focus:bg-white"
   }))), React.createElement("div", {
     className: "space-y-1.5"
   }, React.createElement("label", {
     className: "text-xs font-semibold text-[#121214] block"
-  }, "Story Notes / Recipe Description"), React.createElement("textarea", {
+  }, "Story Notes"), React.createElement("textarea", {
     rows: 2,
     value: description,
     onChange: e => setDescription(e.target.value),
-    placeholder: "Tell other foodies about the taste, flavors, or cooking method...",
-    className: "w-full px-3.5 py-2.5 rounded-xl bg-[#fbf9f6] border border-[#e8e4dc] text-xs text-[#121214] placeholder:text-[#a6a198] focus:outline-none focus:border-[#f05a28] focus:bg-white transition-all resize-none"
+    placeholder: "What made this dish craveable today? Flavors, secret ingredient, experience...",
+    className: "w-full px-3.5 py-2 rounded-xl bg-[#fbf9f6] border border-[#e8e4dc] text-xs text-[#121214] placeholder:text-[#a6a198] focus:outline-none focus:border-[#f05a28] focus:bg-white resize-none"
   })), React.createElement("div", {
-    className: "pt-2 flex items-center space-x-3"
+    className: "pt-2 flex items-center justify-end space-x-3"
   }, React.createElement("button", {
     type: "button",
-    onClick: handleClose,
-    className: "flex-1 py-2.5 rounded-xl border border-[#e8e4dc] text-xs font-semibold text-[#736f68] hover:text-[#121214] transition-colors cursor-pointer"
+    onClick: onClose,
+    className: "px-4 py-2 rounded-xl text-xs font-semibold text-[#736f68] hover:text-[#121214] cursor-pointer"
   }, "Cancel"), React.createElement("button", {
     type: "submit",
     disabled: isSubmitting || !selectedFile,
-    className: "flex-1 py-2.5 rounded-xl bg-[#f05a28] hover:bg-[#d94918] disabled:opacity-40 text-white text-xs font-semibold tracking-wide shadow-sm hover:shadow active:scale-95 transition-all cursor-pointer flex items-center justify-center space-x-1.5"
-  }, isSubmitting ? React.createElement("span", null, "Posting...") : React.createElement(React.Fragment, null, React.createElement("span", null, "\uD83D\uDD25"), React.createElement("span", null, "Share Food")))))));
+    className: "px-5 py-2 rounded-xl bg-[#f05a28] hover:bg-[#e04818] disabled:opacity-40 text-white text-xs font-semibold shadow-sm hover:shadow active:scale-95 transition-all cursor-pointer"
+  }, isSubmitting ? "Sharing..." : "Post to Feed 🔥")))));
 }
 function StoryViewerModal({
   isOpen,
@@ -1058,287 +1070,50 @@ function StoryViewerModal({
   onDeletePost,
   currentUser
 }) {
-  const [progress, setProgress] = useState(0);
-  const currentUserId = currentUser ? currentUser.id || currentUser.uid : "usr-1";
-  const currentIndex = useMemo(() => {
-    if (!story || !stories) return 0;
-    const idx = stories.findIndex(s => s.id === story.id);
-    return idx >= 0 ? idx : 0;
-  }, [story, stories]);
-  useEffect(() => {
-    if (!isOpen || !story) return;
-    setProgress(0);
-    const interval = setInterval(() => {
-      setProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          handleNext();
-          return 100;
-        }
-        return prev + 1;
-      });
-    }, 100);
-    return () => clearInterval(interval);
-  }, [isOpen, story]);
   if (!isOpen || !story) return null;
-  const handleNext = () => {
-    if (!stories || stories.length === 0) return onClose();
-    if (currentIndex < stories.length - 1) {
-      onClose();
-      setTimeout(() => {
-        window.dispatchEvent(new CustomEvent("openStory", {
-          detail: stories[currentIndex + 1]
-        }));
-      }, 50);
-    } else {
-      onClose();
-    }
-  };
-  const handlePrev = () => {
-    if (!stories || stories.length === 0) return;
-    if (currentIndex > 0) {
-      onClose();
-      setTimeout(() => {
-        window.dispatchEvent(new CustomEvent("openStory", {
-          detail: stories[currentIndex - 1]
-        }));
-      }, 50);
-    }
-  };
-  const isOwner = story.userId === currentUserId;
+  const isOwner = currentUser && story.userId === (currentUser.id || currentUser.uid);
   return React.createElement("div", {
-    className: "fixed inset-0 z-50 bg-black flex items-center justify-center select-none"
+    className: "fixed inset-0 z-50 bg-black/95 flex items-center justify-center p-4 animate-fade-in",
+    onClick: onClose
   }, React.createElement("div", {
-    className: "relative w-full h-full max-w-md bg-black flex flex-col justify-between overflow-hidden"
+    className: "relative max-w-sm w-full bg-[#121214] rounded-2xl overflow-hidden shadow-2xl text-white flex flex-col max-h-[92vh]",
+    onClick: e => e.stopPropagation()
   }, React.createElement("div", {
-    className: "absolute top-3 inset-x-3 z-30 flex items-center space-x-1"
-  }, React.createElement("div", {
-    className: "flex-1 h-1 bg-white/30 rounded-full overflow-hidden"
-  }, React.createElement("div", {
-    className: "h-full bg-white transition-all ease-linear",
-    style: {
-      width: `${progress}%`
-    }
-  }))), React.createElement("div", {
-    className: "absolute top-7 inset-x-4 z-30 flex items-center justify-between text-white"
+    className: "p-3.5 flex items-center justify-between border-b border-white/10"
   }, React.createElement("div", {
     className: "flex items-center space-x-2.5"
   }, React.createElement("img", {
     src: story.userAvatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80",
     alt: story.username,
-    className: "w-9 h-9 rounded-full object-cover border border-white/50"
-  }), React.createElement("div", null, React.createElement("p", {
-    className: "text-xs font-bold leading-none"
+    className: "w-8 h-8 rounded-full object-cover border border-white/20"
+  }), React.createElement("div", null, React.createElement("span", {
+    className: "text-xs font-bold block"
   }, story.username), React.createElement("span", {
-    className: "text-[10px] text-white/70"
-  }, formatTimeAgo(story.createdAt), " \u2022 ", formatHoursLeft(story.expiresAt)))), React.createElement("div", {
-    className: "flex items-center space-x-2"
-  }, isOwner && onDeletePost && React.createElement("button", {
-    type: "button",
-    onClick: () => {
-      if (window.confirm("Delete this story?")) {
-        onDeletePost(story.id);
-        onClose();
-      }
-    },
-    className: "w-8 h-8 rounded-full bg-black/40 text-white flex items-center justify-center text-xs hover:bg-rose-600 transition-colors cursor-pointer"
-  }, "\uD83D\uDDD1\uFE0F"), React.createElement("button", {
+    className: "text-[10px] text-white/60 block"
+  }, formatTimeAgo(story.createdAt)))), React.createElement("button", {
     type: "button",
     onClick: onClose,
-    className: "w-8 h-8 rounded-full bg-black/40 text-white flex items-center justify-center text-sm font-bold hover:bg-white/20 transition-colors cursor-pointer"
-  }, "\u2715"))), React.createElement("div", {
-    className: "relative w-full h-full flex items-center justify-center"
-  }, React.createElement("div", {
-    onClick: handlePrev,
-    className: "absolute left-0 inset-y-0 w-1/3 z-20 cursor-pointer"
-  }), React.createElement("div", {
-    onClick: handleNext,
-    className: "absolute right-0 inset-y-0 w-1/3 z-20 cursor-pointer"
-  }), story.mediaType === "video" ? React.createElement("video", {
+    className: "p-1 rounded-lg text-white/60 hover:text-white cursor-pointer text-sm"
+  }, "\u2715")), React.createElement("div", {
+    className: "relative aspect-[9/16] bg-black flex items-center justify-center overflow-hidden"
+  }, story.mediaType === "video" ? React.createElement("video", {
     src: story.mediaUrl,
     autoPlay: true,
+    controls: true,
     playsInline: true,
-    className: "w-full h-full object-contain"
+    loop: true,
+    className: "w-full h-full object-cover"
   }) : React.createElement("img", {
     src: story.mediaUrl,
-    alt: story.caption || "Story",
-    className: "w-full h-full object-contain"
-  })), story.caption && React.createElement("div", {
-    className: "absolute bottom-6 inset-x-4 z-30 p-3.5 rounded-xl bg-black/60 backdrop-blur-md text-white text-xs text-left"
-  }, React.createElement("strong", {
-    className: "font-bold mr-1.5"
-  }, story.username, ":"), React.createElement("span", null, decodeUnicode(story.caption)))));
-}
-function ActivityView({
-  currentUser,
-  userProfile,
-  notifications,
-  onRefreshNotifs
-}) {
-  return React.createElement("div", {
-    className: "w-full max-w-2xl mx-auto p-4 sm:p-6 pb-24 text-left space-y-4 animate-fade-in"
-  }, React.createElement("div", {
-    className: "flex items-center justify-between"
-  }, React.createElement("div", null, React.createElement("h2", {
-    className: "text-lg font-bold text-[#121214] tracking-tight"
-  }, "Activity & Alerts"), React.createElement("p", {
-    className: "text-xs text-[#736f68]"
-  }, "Recent updates from creators you follow")), React.createElement("button", {
-    type: "button",
-    onClick: onRefreshNotifs,
-    className: "px-3 py-1.5 rounded-xl bg-white hover:bg-[#f5f2eb] border border-[#e8e4dc] text-xs font-semibold text-[#121214] transition-colors cursor-pointer shadow-2xs"
-  }, "\uD83D\uDD04 Refresh")), userProfile && userProfile.user && React.createElement("div", {
-    className: "p-4 rounded-2xl bg-white border border-[#e8e4dc] shadow-2xs flex items-center justify-between"
-  }, React.createElement("div", {
-    className: "flex items-center space-x-3"
-  }, React.createElement("div", {
-    className: "w-10 h-10 rounded-xl bg-[#fff5f0] border border-[#ffe8de] text-[#f05a28] flex items-center justify-center text-xl"
-  }, "\uD83D\uDD25"), React.createElement("div", null, React.createElement("p", {
-    className: "text-xs font-bold text-[#121214]"
-  }, "Daily Streak Active"), React.createElement("p", {
-    className: "text-[11px] text-[#736f68]"
-  }, userProfile.user.streak > 0 ? userProfile.user.streak + "-day culinary streak in progress!" : "Post today&apos;s food story to ignite your streak."))), React.createElement("span", {
-    className: "text-xs font-bold text-[#f05a28] font-mono"
-  }, userProfile.user.streak, "d")), React.createElement("div", {
-    className: "space-y-2"
-  }, React.createElement("h3", {
-    className: "text-xs font-semibold uppercase tracking-wider text-[#736f68] px-1"
-  }, "Notification Inbox"), !notifications || notifications.length === 0 ? React.createElement(EmptyState, {
-    icon: "\uD83D\uDCEC",
-    title: "No New Notifications",
-    description: "When food creators you follow publish new daily food stories, alerts will appear right here."
-  }) : React.createElement("div", {
-    className: "divide-y divide-[#f0ece4] rounded-2xl bg-white border border-[#e8e4dc] shadow-2xs overflow-hidden"
-  }, notifications.map(notif => React.createElement("div", {
-    key: notif.id,
-    className: "p-3.5 flex items-center space-x-3 hover:bg-[#fbf9f6] transition-colors"
-  }, React.createElement("div", {
-    className: "relative flex-shrink-0"
-  }, React.createElement("img", {
-    src: notif.senderAvatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80",
-    alt: notif.senderName,
-    className: "w-10 h-10 rounded-full border border-[#f05a28] object-cover"
-  }), React.createElement("span", {
-    className: "absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-[#f05a28] text-white flex items-center justify-center text-[9px]"
-  }, "\uD83D\uDD25")), React.createElement("div", {
-    className: "flex-1 min-w-0"
-  }, React.createElement("p", {
-    className: "text-xs text-[#121214] leading-snug"
-  }, React.createElement("strong", {
-    className: "font-bold mr-1"
-  }, notif.senderName), "just posted a new daily food story."), React.createElement("span", {
-    className: "text-[10px] text-[#736f68] block mt-0.5"
-  }, formatTimeAgo(notif.createdAt))))))));
-}
-function UserProfileView({
-  userProfile,
-  currentUser,
-  followingList,
-  onTriggerUpload,
-  onTriggerInstall,
-  onDeletePost,
-  onLogout
-}) {
-  if (!userProfile || !userProfile.user) return null;
-  const {
-    user,
-    activePosts
-  } = userProfile;
-  return React.createElement("div", {
-    className: "w-full max-w-2xl mx-auto p-4 sm:p-6 pb-24 text-left space-y-6 animate-fade-in"
-  }, React.createElement("div", {
-    className: "bg-white border border-[#e8e4dc] rounded-2xl p-6 shadow-2xs space-y-4"
-  }, React.createElement("div", {
-    className: "flex items-center space-x-4"
-  }, React.createElement("div", {
-    className: "p-[2px] rounded-full bg-gradient-to-tr from-[#f05a28] via-amber-500 to-rose-500"
-  }, React.createElement("img", {
-    src: user.avatarUrl || user.avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80",
-    alt: user.username,
-    className: "w-16 h-16 rounded-full border-2 border-white object-cover"
-  })), React.createElement("div", {
-    className: "space-y-1"
-  }, React.createElement("h2", {
-    className: "text-lg font-bold text-[#121214]"
-  }, user.name || user.username), React.createElement("p", {
-    className: "text-xs text-[#f05a28] font-mono font-semibold"
-  }, "@", user.username), React.createElement("div", {
-    className: "inline-flex items-center px-2.5 py-0.5 rounded-full bg-[#f5f2eb] text-[11px] text-[#736f68] font-medium"
-  }, "Following ", React.createElement("strong", {
-    className: "text-[#121214] ml-1 font-bold"
-  }, (followingList || []).length)))), React.createElement("div", {
-    className: "p-4 rounded-xl bg-[#fff5f0] border border-[#ffe8de] flex items-center justify-between"
-  }, React.createElement("div", null, React.createElement("span", {
-    className: "text-[10px] font-bold uppercase tracking-wider text-[#f05a28]"
-  }, "Daily Culinary Streak"), React.createElement("div", {
-    className: "flex items-baseline space-x-1.5 mt-0.5"
-  }, React.createElement("span", {
-    className: "text-2xl font-bold text-[#121214]"
-  }, user.streak), React.createElement("span", {
-    className: "text-xs text-[#736f68]"
-  }, "Days Active"))), React.createElement("div", {
-    className: "w-12 h-12 rounded-xl bg-white border border-[#ffe8de] flex items-center justify-center text-2xl shadow-2xs"
-  }, "\uD83D\uDD25")), React.createElement("div", {
-    className: "grid grid-cols-2 gap-3 pt-1"
-  }, React.createElement("button", {
-    type: "button",
-    onClick: onTriggerUpload,
-    className: "py-2.5 rounded-xl bg-[#f05a28] hover:bg-[#d94918] text-white text-xs font-semibold tracking-wide shadow-sm hover:shadow active:scale-95 transition-all cursor-pointer flex items-center justify-center space-x-1.5"
-  }, React.createElement("span", null, "\uD83D\uDD25"), React.createElement("span", null, "Share Story")), React.createElement("button", {
-    type: "button",
-    onClick: onTriggerInstall,
-    className: "py-2.5 rounded-xl bg-white hover:bg-[#f5f2eb] border border-[#e8e4dc] text-[#121214] text-xs font-semibold shadow-2xs transition-colors cursor-pointer flex items-center justify-center space-x-1.5"
-  }, React.createElement("span", null, "\uD83D\uDCF1"), React.createElement("span", null, "Install App")))), React.createElement("div", {
-    className: "space-y-3"
-  }, React.createElement("div", {
-    className: "flex items-center justify-between px-1"
-  }, React.createElement("h3", {
-    className: "text-xs font-bold uppercase tracking-wider text-[#736f68]"
-  }, "Active 24H Stories (", activePosts ? activePosts.length : 0, ")"), React.createElement("span", {
-    className: "text-[10px] text-[#a6a198]"
-  }, "Auto-purges after 24h")), !activePosts || activePosts.length === 0 ? React.createElement(EmptyState, {
-    icon: "\uD83D\uDCF8",
-    title: "No Active Stories",
-    description: "You haven't shared any food creations in the past 24 hours.",
-    actionText: "Share Today's Bite",
-    onAction: onTriggerUpload
-  }) : React.createElement("div", {
-    className: "grid grid-cols-2 sm:grid-cols-3 gap-3"
-  }, activePosts.map(post => React.createElement("div", {
-    key: post.id,
-    className: "relative aspect-[4/3] rounded-xl overflow-hidden bg-white border border-[#e8e4dc] shadow-2xs group"
-  }, post.mediaType === "video" ? React.createElement("video", {
-    src: post.mediaUrl,
+    alt: story.caption,
     className: "w-full h-full object-cover"
-  }) : React.createElement("img", {
-    src: post.mediaUrl,
-    alt: "Story",
-    className: "w-full h-full object-cover"
-  }), React.createElement("button", {
-    type: "button",
-    onClick: e => {
-      e.stopPropagation();
-      if (window.confirm("Delete this food story?")) {
-        onDeletePost && onDeletePost(post.id);
-      }
-    },
-    className: "absolute top-2 right-2 w-6 h-6 rounded-md bg-white/90 hover:bg-rose-600 hover:text-white text-[#736f68] flex items-center justify-center text-xs shadow-sm transition-colors z-20 cursor-pointer",
-    title: "Delete Story"
-  }, "\uD83D\uDDD1\uFE0F"), React.createElement("div", {
-    className: "absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent flex flex-col justify-end p-2 text-white"
-  }, React.createElement("span", {
-    className: "text-[9px] font-bold text-[#f05a28]"
-  }, post.mediaType === "video" ? "🎬 Video" : "📷 Photo"), post.caption && React.createElement("span", {
-    className: "text-[10px] text-white/90 line-clamp-1 truncate"
-  }, post.caption)))))), React.createElement("button", {
-    type: "button",
-    onClick: onLogout,
-    className: "w-full py-2.5 rounded-xl bg-white hover:bg-rose-50 border border-[#e8e4dc] text-[#736f68] hover:text-rose-600 hover:border-rose-200 text-xs font-semibold transition-all shadow-2xs cursor-pointer"
-  }, "Sign Out of FoodBite"), React.createElement("div", {
-    className: "text-center pt-2"
+  }), React.createElement("div", {
+    className: "absolute top-3 right-3 px-2 py-0.5 rounded-full bg-black/60 text-[10px] font-medium backdrop-blur-sm"
+  }, "\u23F3 ", formatHoursLeft(story.expiresAt))), story.caption && React.createElement("div", {
+    className: "p-3.5 border-t border-white/10 bg-[#1a1917] text-left"
   }, React.createElement("p", {
-    className: "text-[10px] text-[#a6a198]"
-  }, "\xA9 2026 Online Recipe Sharing Platform. Built & Engineered by Sachin Bhandari.")));
+    className: "text-xs text-white/90 leading-relaxed"
+  }, decodeUnicode(story.caption)))));
 }
 function InstallAppModal({
   isOpen,
@@ -1350,34 +1125,31 @@ function InstallAppModal({
   const handleInstallClick = async () => {
     if (deferredPrompt) {
       deferredPrompt.prompt();
-      const choiceResult = await deferredPrompt.userChoice;
-      if (choiceResult.outcome === "accepted") {
+      const choice = await deferredPrompt.userChoice;
+      if (choice.outcome === "accepted") {
         onInstalled();
       }
-      onClose();
     } else {
-      alert("To install FoodBite, tap your browser menu (three dots or Share button) and select 'Add to Home Screen' or 'Install App'.");
-      onClose();
+      alert("To install FoodBite, open your browser menu (⋮ or Share) and tap 'Add to Home screen' or 'Install app'.");
     }
+    onClose();
   };
   return React.createElement("div", {
-    className: "fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop animate-fade-in"
+    className: "fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-fade-in",
+    onClick: onClose
   }, React.createElement("div", {
-    className: "relative w-full max-w-sm rounded-2xl bg-white border border-[#e8e4dc] p-6 text-[#1a1917] shadow-xl text-center space-y-4"
-  }, React.createElement("button", {
-    type: "button",
-    onClick: onClose,
-    className: "absolute top-4 right-4 text-[#a6a198] hover:text-[#121214] p-1 rounded-lg hover:bg-black/5 transition-colors cursor-pointer"
-  }, "\u2715"), React.createElement("div", {
-    className: "w-14 h-14 rounded-2xl bg-[#fff5f0] border border-[#ffe8de] text-[#f05a28] text-2xl flex items-center justify-center mx-auto shadow-2xs"
+    className: "w-full max-w-sm bg-white rounded-2xl border border-[#e8e4dc] p-6 shadow-2xl text-center space-y-4 animate-pop-in",
+    onClick: e => e.stopPropagation()
+  }, React.createElement("div", {
+    className: "w-14 h-14 rounded-2xl bg-[#fff5f0] border border-[#ffe8de] text-[#f05a28] flex items-center justify-center text-3xl mx-auto shadow-xs"
   }, "\uD83D\uDCF1"), React.createElement("div", {
     className: "space-y-1"
   }, React.createElement("h3", {
     className: "text-base font-bold text-[#121214] tracking-tight"
-  }, "Install FoodBite"), React.createElement("p", {
+  }, "Install FoodBite App"), React.createElement("p", {
     className: "text-xs text-[#736f68] leading-relaxed"
-  }, "Install FoodBite on your phone or desktop home screen for instant food sharing, fast loading, and offline access.")), React.createElement("div", {
-    className: "pt-2 space-y-2"
+  }, "Install FoodBite as a native app on your phone or desktop for instant access, offline mode, and fast food story sharing.")), React.createElement("div", {
+    className: "pt-2 flex flex-col space-y-2"
   }, React.createElement("button", {
     type: "button",
     onClick: handleInstallClick,
@@ -1385,8 +1157,141 @@ function InstallAppModal({
   }, "Install Now"), React.createElement("button", {
     type: "button",
     onClick: onClose,
-    className: "w-full py-2 rounded-xl text-xs font-medium text-[#736f68] hover:text-[#121214] transition-colors cursor-pointer"
-  }, "Maybe Later"))));
+    className: "w-full py-2 rounded-xl text-xs font-medium text-[#736f68] hover:text-[#121214] cursor-pointer"
+  }, "Not Now"))));
+}
+function ActivityView({
+  currentUser,
+  userProfile,
+  notifications,
+  onRefreshNotifs
+}) {
+  return React.createElement("div", {
+    className: "max-w-2xl mx-auto px-4 sm:px-6 py-6 space-y-5 text-left"
+  }, React.createElement("div", {
+    className: "flex items-center justify-between"
+  }, React.createElement("div", null, React.createElement("h2", {
+    className: "text-lg font-bold text-[#121214] tracking-tight"
+  }, "Activity & Alerts"), React.createElement("p", {
+    className: "text-xs text-[#736f68]"
+  }, "Real-time interactions on your daily food stories")), React.createElement("button", {
+    type: "button",
+    onClick: onRefreshNotifs,
+    className: "text-xs text-[#f05a28] font-semibold hover:underline cursor-pointer"
+  }, "Refresh")), !notifications || notifications.length === 0 ? React.createElement("div", {
+    className: "p-8 rounded-2xl bg-white border border-[#e8e4dc] text-center space-y-2"
+  }, React.createElement("span", {
+    className: "text-3xl block"
+  }, "\uD83D\uDD14"), React.createElement("h4", {
+    className: "text-sm font-bold text-[#121214]"
+  }, "No new alerts"), React.createElement("p", {
+    className: "text-xs text-[#736f68]"
+  }, "When other food lovers like, comment, or follow your culinary creations, you will see alerts here.")) : React.createElement("div", {
+    className: "space-y-2.5"
+  }, notifications.map(n => React.createElement("div", {
+    key: n.id,
+    className: "p-3.5 rounded-xl bg-white border border-[#e8e4dc] flex items-center space-x-3 shadow-2xs hover:border-[#f05a28]/40 transition-colors"
+  }, React.createElement("img", {
+    src: n.senderAvatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80",
+    alt: n.senderName,
+    className: "w-9 h-9 rounded-full object-cover border border-[#e8e4dc]"
+  }), React.createElement("div", {
+    className: "flex-1 text-left"
+  }, React.createElement("p", {
+    className: "text-xs text-[#121214] leading-relaxed"
+  }, React.createElement("strong", {
+    className: "font-semibold"
+  }, n.senderName), " ", n.message), React.createElement("span", {
+    className: "text-[10px] text-[#a6a198]"
+  }, formatTimeAgo(n.createdAt)))))));
+}
+function ProfileView({
+  currentUser,
+  userProfile,
+  stories,
+  onLogout,
+  onTriggerUpload
+}) {
+  const user = userProfile && userProfile.user || currentUser || {};
+  const streak = user.streak || 0;
+  const userStories = (stories || []).filter(s => s.userId === (user.id || user.uid));
+  return React.createElement("div", {
+    className: "max-w-2xl mx-auto px-4 sm:px-6 py-6 space-y-6 text-left"
+  }, React.createElement("div", {
+    className: "p-6 rounded-2xl bg-white border border-[#e8e4dc] shadow-2xs flex flex-col sm:flex-row items-center sm:items-start space-y-4 sm:space-y-0 sm:space-x-5"
+  }, React.createElement("img", {
+    src: user.avatar || user.avatarUrl || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80",
+    alt: user.username || "Profile",
+    className: "w-20 h-20 rounded-full object-cover border-2 border-white shadow-md ring-2 ring-[#e8e4dc]"
+  }), React.createElement("div", {
+    className: "space-y-2 text-center sm:text-left flex-1"
+  }, React.createElement("div", {
+    className: "flex flex-col sm:flex-row sm:items-center justify-between gap-2"
+  }, React.createElement("div", null, React.createElement("h2", {
+    className: "text-lg font-bold text-[#121214] tracking-tight leading-tight"
+  }, user.name || user.username || "Chef"), React.createElement("span", {
+    className: "text-xs text-[#736f68] font-mono"
+  }, "@", user.username || "chef")), React.createElement("button", {
+    type: "button",
+    onClick: onLogout,
+    className: "px-3 py-1.5 rounded-lg border border-[#e8e4dc] hover:bg-rose-50 hover:text-rose-600 text-xs font-semibold transition-colors cursor-pointer"
+  }, "Sign Out")), React.createElement("div", {
+    className: "flex items-center justify-center sm:justify-start space-x-4 pt-1"
+  }, React.createElement("div", {
+    className: "flex items-center space-x-1 text-xs"
+  }, React.createElement("span", {
+    className: "font-bold text-[#121214]"
+  }, userStories.length), React.createElement("span", {
+    className: "text-[#736f68]"
+  }, "Active Bites")), React.createElement("div", {
+    className: "flex items-center space-x-1 text-xs"
+  }, React.createElement("span", {
+    className: "font-bold text-[#121214]"
+  }, userProfile && userProfile.followersCount || 0), React.createElement("span", {
+    className: "text-[#736f68]"
+  }, "Followers")), React.createElement("div", {
+    className: "flex items-center space-x-1 text-xs"
+  }, React.createElement("span", {
+    className: "font-bold text-[#121214]"
+  }, userProfile && userProfile.followingCount || 0), React.createElement("span", {
+    className: "text-[#736f68]"
+  }, "Following"))), React.createElement("div", {
+    className: "inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-[#fff5f0] border border-[#ffe8de] text-[#f05a28] text-xs font-bold"
+  }, React.createElement("span", null, "\uD83D\uDD25"), React.createElement("span", null, streak, " Days Ephemeral Streak")))), React.createElement("div", {
+    className: "space-y-3"
+  }, React.createElement("div", {
+    className: "flex items-center justify-between"
+  }, React.createElement("h3", {
+    className: "text-sm font-bold text-[#121214] tracking-tight"
+  }, "Your Active Food Stories"), React.createElement("button", {
+    type: "button",
+    onClick: onTriggerUpload,
+    className: "text-xs font-semibold text-[#f05a28] hover:underline cursor-pointer"
+  }, "+ New Bite")), userStories.length === 0 ? React.createElement("div", {
+    className: "p-8 rounded-2xl bg-white border border-[#e8e4dc] text-center space-y-2"
+  }, React.createElement("span", {
+    className: "text-3xl block"
+  }, "\uD83C\uDF72"), React.createElement("h4", {
+    className: "text-sm font-bold text-[#121214]"
+  }, "No active stories"), React.createElement("p", {
+    className: "text-xs text-[#736f68]"
+  }, "You haven't posted any food stories today. Share what you're cooking or eating!")) : React.createElement("div", {
+    className: "grid grid-cols-2 sm:grid-cols-3 gap-3"
+  }, userStories.map(story => React.createElement("div", {
+    key: story.id,
+    className: "relative rounded-xl overflow-hidden bg-black aspect-square shadow-2xs group cursor-pointer"
+  }, story.mediaType === "video" ? React.createElement("video", {
+    src: story.mediaUrl,
+    className: "w-full h-full object-cover"
+  }) : React.createElement("img", {
+    src: story.mediaUrl,
+    alt: story.caption,
+    className: "w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+  }), React.createElement("div", {
+    className: "absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-2 text-white text-[10px]"
+  }, React.createElement("span", {
+    className: "truncate"
+  }, decodeUnicode(story.caption))))))));
 }
 function App() {
   const [currentUser, setCurrentUser] = useState(() => {
@@ -1433,10 +1338,11 @@ function App() {
   const [activeCategory, setActiveCategory] = useState("all");
   const [likes, setLikes] = useState({});
   const [likeCounts, setLikeCounts] = useState({});
+  const [postLikes, setPostLikes] = useState({});
+  const [likesModalData, setLikesModalData] = useState(null);
   const [comments, setComments] = useState({});
   const [savedPosts, setSavedPosts] = useState({});
   const [heartBursts, setHeartBursts] = useState({});
-  const lastTapRef = useRef({});
   const showToast = (message, type = "info") => {
     const id = Date.now().toString(36) + Math.random().toString(36).substring(2, 5);
     setToasts(prev => [...prev, {
@@ -1451,27 +1357,59 @@ function App() {
   const removeToast = id => {
     setToasts(prev => prev.filter(t => t.id !== id));
   };
-  const fetchStories = async () => {
-    setIsLoadingFeed(true);
+  const fetchStories = async (silent = false) => {
+    if (!silent) setIsLoadingFeed(true);
     setFeedError(null);
     try {
-      const res = await fetch("/api/feed");
+      const res = await fetch("/api/feed?_t=" + Date.now(), {
+        cache: "no-store"
+      });
       const data = await res.json();
       if (data && data.success) {
-        setStories(data.posts || []);
+        const posts = data.posts || [];
+        setStories(posts);
+        const newLikes = {};
+        const newCounts = {};
+        const newPostLikes = {};
+        const newComments = {};
+        const currentUid = currentUser ? currentUser.id || currentUser.uid : "";
+        const currentUname = currentUser ? (currentUser.username || currentUser.name || "").toLowerCase() : "";
+        posts.forEach(p => {
+          const pLikes = Array.isArray(p.likes) ? p.likes : [];
+          newPostLikes[p.id] = pLikes;
+          newCounts[p.id] = typeof p.likeCount === "number" ? p.likeCount : pLikes.length;
+          newLikes[p.id] = pLikes.some(u => u.userId && u.userId === currentUid || u.username && u.username.toLowerCase() === currentUname);
+          if (Array.isArray(p.comments)) {
+            newComments[p.id] = p.comments.map(c => ({
+              id: c.id,
+              author: c.username || c.author || "foodie",
+              text: c.text,
+              createdAt: c.createdAt
+            }));
+          }
+        });
+        setLikeCounts(newCounts);
+        setLikes(newLikes);
+        setPostLikes(newPostLikes);
+        setComments(prev => ({
+          ...newComments,
+          ...prev
+        }));
       } else {
-        setFeedError("Failed to fetch food feed.");
+        if (!silent) setFeedError("Failed to fetch food feed.");
       }
     } catch (err) {
-      setFeedError("Network connection issue.");
+      if (!silent) setFeedError("Network connection issue.");
     } finally {
-      setIsLoadingFeed(false);
+      if (!silent) setIsLoadingFeed(false);
     }
   };
   const fetchProfile = async uid => {
     const targetUid = uid || (currentUser ? currentUser.id || currentUser.uid : "usr-1");
     try {
-      const res = await fetch("/api/profile?userId=" + encodeURIComponent(targetUid));
+      const res = await fetch("/api/profile?userId=" + encodeURIComponent(targetUid) + "&_t=" + Date.now(), {
+        cache: "no-store"
+      });
       const data = await res.json();
       if (data && data.success) {
         setUserProfile(data);
@@ -1481,7 +1419,9 @@ function App() {
   const fetchFollows = async uid => {
     const targetUid = uid || (currentUser ? currentUser.id || currentUser.uid : "usr-1");
     try {
-      const res = await fetch("/api/follow?userId=" + encodeURIComponent(targetUid));
+      const res = await fetch("/api/follow?userId=" + encodeURIComponent(targetUid) + "&_t=" + Date.now(), {
+        cache: "no-store"
+      });
       const data = await res.json();
       if (data && data.success) {
         setFollowingList(data.following || []);
@@ -1491,7 +1431,9 @@ function App() {
   const fetchNotifications = async uid => {
     const targetUid = uid || (currentUser ? currentUser.id || currentUser.uid : "usr-1");
     try {
-      const res = await fetch("/api/notifications?userId=" + encodeURIComponent(targetUid));
+      const res = await fetch("/api/notifications?userId=" + encodeURIComponent(targetUid) + "&_t=" + Date.now(), {
+        cache: "no-store"
+      });
       const data = await res.json();
       if (data && data.success) {
         setNotifications(data.notifications || []);
@@ -1513,6 +1455,23 @@ function App() {
       fetchProfile(uid);
       fetchFollows(uid);
       fetchNotifications(uid);
+      const pollInterval = setInterval(() => {
+        fetchStories(true);
+        fetchNotifications(uid);
+      }, 7000);
+      const handleSync = () => {
+        if (document.visibilityState === "visible") {
+          fetchStories(true);
+          fetchNotifications(uid);
+        }
+      };
+      document.addEventListener("visibilitychange", handleSync);
+      window.addEventListener("focus", handleSync);
+      return () => {
+        clearInterval(pollInterval);
+        document.removeEventListener("visibilitychange", handleSync);
+        window.removeEventListener("focus", handleSync);
+      };
     }
   }, [currentUser]);
   useEffect(() => {
@@ -1580,17 +1539,76 @@ function App() {
       showToast("Failed to delete story", "error");
     }
   };
-  const toggleLike = postId => {
+  const toggleLike = async postId => {
+    if (!currentUser) {
+      showToast("Please sign in to like food stories", "info");
+      return;
+    }
+    const uid = currentUser.id || currentUser.uid;
+    const uname = currentUser.username || currentUser.name || "foodie";
+    const uavatar = currentUser.avatar || currentUser.avatarUrl || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80";
     const isLiked = !!likes[postId];
-    const curCount = likeCounts[postId] !== undefined ? likeCounts[postId] : 12;
+    const curCount = likeCounts[postId] || 0;
+    const nextLiked = !isLiked;
+    const nextCount = nextLiked ? curCount + 1 : Math.max(0, curCount - 1);
     setLikes(prev => ({
       ...prev,
-      [postId]: !isLiked
+      [postId]: nextLiked
     }));
     setLikeCounts(prev => ({
       ...prev,
-      [postId]: isLiked ? Math.max(0, curCount - 1) : curCount + 1
+      [postId]: nextCount
     }));
+    setPostLikes(prev => {
+      const list = prev[postId] || [];
+      if (nextLiked) {
+        return {
+          ...prev,
+          [postId]: [...list, {
+            userId: uid,
+            username: uname,
+            userAvatar: uavatar,
+            likedAt: Date.now()
+          }]
+        };
+      } else {
+        return {
+          ...prev,
+          [postId]: list.filter(u => u.userId !== uid && (u.username || "").toLowerCase() !== uname.toLowerCase())
+        };
+      }
+    });
+    try {
+      const res = await fetch("/api/likes", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          postId,
+          userId: uid,
+          username: uname,
+          userAvatar: uavatar
+        })
+      });
+      const data = await res.json();
+      if (data && data.success) {
+        setLikeCounts(prev => ({
+          ...prev,
+          [postId]: data.likeCount
+        }));
+        setLikes(prev => ({
+          ...prev,
+          [postId]: data.isLiked
+        }));
+        if (Array.isArray(data.likes)) {
+          setPostLikes(prev => ({
+            ...prev,
+            [postId]: data.likes
+          }));
+        }
+      }
+    } catch (e) {}
   };
   const handleDoubleTap = post => {
     const postId = post.id;
@@ -1610,29 +1628,45 @@ function App() {
       }));
     }, 750);
     if (!likes[postId]) {
-      const curCount = likeCounts[postId] !== undefined ? likeCounts[postId] : 12;
-      setLikes(prev => ({
-        ...prev,
-        [postId]: true
-      }));
-      setLikeCounts(prev => ({
-        ...prev,
-        [postId]: curCount + 1
-      }));
+      toggleLike(postId);
     }
   };
-  const handleAddComment = (postId, commentText) => {
+  const handleAddComment = async (postId, commentText) => {
+    if (!commentText.trim()) return;
     const author = currentUser ? currentUser.username || currentUser.name || "foodie" : "foodie";
+    const uid = currentUser ? currentUser.id || currentUser.uid || "usr-1" : "usr-1";
+    const uavatar = currentUser ? currentUser.avatar || currentUser.avatarUrl || "" : "";
+    const cleanText = commentText.trim();
+    const tempId = "cmt_" + Date.now();
     const newComment = {
-      id: Date.now(),
+      id: tempId,
       author,
-      text: commentText
+      username: author,
+      userId: uid,
+      userAvatar: uavatar,
+      text: cleanText,
+      createdAt: Date.now()
     };
     setComments(prev => ({
       ...prev,
       [postId]: [...(prev[postId] || []), newComment]
     }));
     showToast("Comment posted! 💬", "success");
+    try {
+      await fetch("/api/comments", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          postId,
+          userId: uid,
+          username: author,
+          userAvatar: uavatar,
+          text: cleanText
+        })
+      });
+    } catch (e) {}
   };
   const handleSharePost = post => {
     if (navigator.share) {
@@ -1651,12 +1685,12 @@ function App() {
     }
   };
   const toggleSave = postId => {
-    const nextSaved = !savedPosts[postId];
+    const isSaved = !!savedPosts[postId];
     setSavedPosts(prev => ({
       ...prev,
-      [postId]: nextSaved
+      [postId]: !isSaved
     }));
-    showToast(nextSaved ? "Saved to your food collection! 🔖" : "Removed from saved bites", "info");
+    showToast(isSaved ? "Removed from saved bites" : "Saved to your food collection! 🔖", "info");
   };
   const handleLogout = () => {
     localStorage.removeItem("foodbite_session");
@@ -1721,11 +1755,19 @@ function App() {
     userProfile: userProfile,
     unreadCount: notifications.length,
     onTriggerInstall: () => setShowInstallModal(true),
-    currentUser: currentUser
+    currentUser: currentUser,
+    onRefreshFeed: () => fetchStories(true)
   }), React.createElement(MobileTopBar, {
     streak: streakCount,
     onTriggerInstall: () => setShowInstallModal(true),
-    onLogoClick: () => setActiveTab("home")
+    onLogoClick: () => {
+      setActiveTab("home");
+      fetchStories(true);
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+      });
+    }
   }), React.createElement("main", {
     className: "flex-1 w-full"
   }, activeTab === "home" && React.createElement("div", {
@@ -1759,21 +1801,13 @@ function App() {
     onRetry: fetchStories
   }), isLoadingFeed ? React.createElement("div", {
     className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-  }, React.createElement(FoodCardSkeleton, null), React.createElement(FoodCardSkeleton, null), React.createElement(FoodCardSkeleton, null)) : filteredStories.length === 0 ? searchQuery || activeCategory !== "all" ? React.createElement(EmptyState, {
-    icon: "\uD83D\uDD0D",
-    title: "No Cravings Found",
-    description: `No food posts matched your search for &quot;${searchQuery || activeCategory}&quot;. Try exploring other categories.`,
-    actionText: "Reset Filters",
+  }, React.createElement(FoodCardSkeleton, null), React.createElement(FoodCardSkeleton, null), React.createElement(FoodCardSkeleton, null)) : filteredStories.length === 0 ? React.createElement(EmptyState, {
+    title: searchQuery ? "No dishes matched your search" : "No food stories active",
+    message: searchQuery ? "Try searching for street food, desserts, bowls, or another creator." : "Be the first home chef to share your daily food creation today!",
+    actionLabel: searchQuery ? "Clear Search" : "+ Share First Bite",
     onAction: () => {
-      setSearchQuery("");
-      setActiveCategory("all");
+      if (searchQuery) setSearchQuery("");else setStoryModalOpen(true);
     }
-  }) : React.createElement(EmptyState, {
-    icon: "\uD83C\uDF7D\uFE0F",
-    title: "No Bites Here Yet",
-    description: "FoodBite stories stay fresh for 24 hours. Be the first person to share today's delicious food creation!",
-    actionText: "Share First Bite",
-    onAction: () => setStoryModalOpen(true)
   }) : React.createElement("div", {
     className: "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
   }, filteredStories.map(post => React.createElement(FoodCard, {
@@ -1784,10 +1818,15 @@ function App() {
     onToggleFollow: handleToggleFollow,
     onLike: toggleLike,
     isLiked: !!likes[post.id],
-    likeCount: likeCounts[post.id] !== undefined ? likeCounts[post.id] : 12,
+    likeCount: likeCounts[post.id] !== undefined ? likeCounts[post.id] : post.likeCount || 0,
+    postLikes: postLikes[post.id] || post.likes || [],
+    onShowLikes: (pId, lks) => setLikesModalData({
+      postId: pId,
+      likes: lks
+    }),
     onDoubleTap: handleDoubleTap,
     heartBurst: !!heartBursts[post.id],
-    comments: comments[post.id] || [],
+    comments: comments[post.id] || post.comments || [],
     onAddComment: handleAddComment,
     onShare: handleSharePost,
     onSave: toggleSave,
@@ -1799,19 +1838,18 @@ function App() {
     userProfile: userProfile,
     notifications: notifications,
     onRefreshNotifs: () => fetchNotifications()
-  }), activeTab === "profile" && React.createElement(UserProfileView, {
-    userProfile: userProfile,
+  }), activeTab === "profile" && React.createElement(ProfileView, {
     currentUser: currentUser,
-    followingList: followingList,
-    onTriggerUpload: () => setStoryModalOpen(true),
-    onTriggerInstall: () => setShowInstallModal(true),
-    onDeletePost: handleDeletePost,
-    onLogout: handleLogout
-  })), React.createElement(MobileBottomBar, {
+    userProfile: userProfile,
+    stories: stories,
+    onLogout: handleLogout,
+    onTriggerUpload: () => setStoryModalOpen(true)
+  })), React.createElement(MobileBottomNav, {
     activeTab: activeTab,
     setActiveTab: setActiveTab,
     onTriggerUpload: () => setStoryModalOpen(true),
-    unreadCount: notifications.length
+    unreadCount: notifications.length,
+    onRefreshFeed: () => fetchStories(true)
   }), React.createElement(ShareFoodModal, {
     isOpen: storyModalOpen,
     onClose: () => setStoryModalOpen(false),
@@ -1838,6 +1876,13 @@ function App() {
       setDeferredPrompt(null);
       showToast("FoodBite installed successfully! 📱", "success");
     }
+  }), React.createElement(LikesModal, {
+    isOpen: !!likesModalData,
+    onClose: () => setLikesModalData(null),
+    likes: likesModalData ? likesModalData.likes : [],
+    currentUser: currentUser,
+    onToggleFollow: handleToggleFollow,
+    followingList: followingList
   }), React.createElement(ToastContainer, {
     toasts: toasts,
     removeToast: removeToast
