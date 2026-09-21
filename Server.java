@@ -389,6 +389,13 @@ public class Server {
             exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
             exchange.getResponseHeaders().set("Accept-Ranges", "bytes");
 
+            String nameLower = file.getName().toLowerCase();
+            if (nameLower.endsWith(".html") || nameLower.endsWith(".js") || nameLower.endsWith(".css") || nameLower.endsWith(".json")) {
+                exchange.getResponseHeaders().set("Cache-Control", "no-cache, no-store, must-revalidate");
+                exchange.getResponseHeaders().set("Pragma", "no-cache");
+                exchange.getResponseHeaders().set("Expires", "0");
+            }
+
             if ("HEAD".equalsIgnoreCase(exchange.getRequestMethod())) {
                 exchange.getResponseHeaders().set("Content-Length", String.valueOf(fileLength));
                 exchange.sendResponseHeaders(200, -1);
