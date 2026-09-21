@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="author" content="Sachin Bhandari">
+  <title>FlavorCraft - Online Recipe Sharing Platform - Built by Sachin Bhandari</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            serif: ['Playfair Display', 'Georgia', 'serif'],
+            sans: ['Plus Jakarta Sans', '-apple-system', 'BlinkMacSystemFont', 'sans-serif']
+          },
+          colors: {
+            terracotta: {
+              50: '#fff7ed',
+              100: '#ffedd5',
+              200: '#fed7aa',
+              300: '#fdba74',
+              400: '#fb923c',
+              500: '#f97316',
+              600: '#ea580c',
+              700: '#c2410c',
+              800: '#9a3412',
+              900: '#7c2d12'
+            },
+            saffron: {
+              50: '#fffbeb',
+              100: '#fef3c7',
+              200: '#fde68a',
+              300: '#fcd34d',
+              400: '#fbbf24',
+              500: '#f59e0b',
+              600: '#d97706',
+              700: '#b45309',
+              800: '#92400e',
+              900: '#78350f'
+            },
+            sage: {
+              50: '#f2f8f5',
+              100: '#e1efe7',
+              200: '#c2dfcf',
+              300: '#98c7b0',
+              400: '#6ea98f',
+              500: '#488c71',
+              600: '#2d7256',
+              700: '#047857',
+              800: '#065f46',
+              900: '#064e3b'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="min-h-screen flex flex-col bg-[#fdfbf7] text-stone-900 selection:bg-orange-600 selection:text-white">
+
+  <div id="root">
+    <div class="min-h-screen flex items-center justify-center bg-[#fdfbf7]">
+      <div className="text-center p-8">
+        <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-600 to-amber-500 flex items-center justify-center text-white font-serif font-black text-2xl shadow-xl shadow-orange-600/30 mx-auto mb-4 animate-bounce">
+          FC
+        </div>
+        <h2 class="text-2xl font-serif font-black text-stone-900 tracking-tight">FlavorCraft</h2>
+        <p class="text-xs text-orange-700 font-bold uppercase tracking-widest mt-1">Online Recipe Sharing Platform</p>
+        <p class="text-xs text-stone-400 mt-2">Loading React components & culinary database...</p>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { store } from "./js/store.js";
+    import { auth } from "./js/auth.js";
+    import { searchOnlineDishPhoto } from "./js/imageSearch.js";
+    window.store = store;
+    window.auth = auth;
+    window.searchOnlineDishPhoto = searchOnlineDishPhoto;
+  </script>
+  <script type="text/babel" src="js/reactApp.js"></script>
+</body>
+</html>

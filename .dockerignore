@@ -1,0 +1,5 @@
+.git
+cloudflared.exe
+*.bat
+*.ps1
+*.class
