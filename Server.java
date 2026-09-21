@@ -30,7 +30,7 @@ public class Server {
 
             loadPersistedState();
 
-            HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
+            HttpServer server = HttpServer.create(new InetSocketAddress("0.0.0.0", port), 0);
             server.setExecutor(Executors.newFixedThreadPool(10));
 
             server.createContext("/api/health", new HealthHandler());
@@ -39,6 +39,19 @@ public class Server {
             server.createContext("/", new StaticFileHandler());
 
             server.start();
+
+            if (port != 8080) {
+                try {
+                    HttpServer server8080 = HttpServer.create(new InetSocketAddress("0.0.0.0", 8080), 0);
+                    server8080.setExecutor(Executors.newFixedThreadPool(10));
+                    server8080.createContext("/api/health", new HealthHandler());
+                    server8080.createContext("/api/state", new StateHandler());
+                    server8080.createContext("/api/upload", new UploadHandler());
+                    server8080.createContext("/", new StaticFileHandler());
+                    server8080.start();
+                } catch (Exception ignored) {}
+            }
+
             System.out.println("Online Recipe Sharing Platform Server by Sachin Bhandari running at port " + port);
         } catch (IOException e) {
             System.err.println("Server error: " + e.getMessage());
@@ -128,10 +141,15 @@ public class Server {
                 sendCors(exchange);
                 return;
             }
-            String response = "{\"status\":\"healthy\",\"platform\":\"Online Recipe Sharing Platform\",\"developer\":\"Sachin Bhandari\",\"port\":" + port + "}";
-            byte[] bytes = response.getBytes(StandardCharsets.UTF_8);
             exchange.getResponseHeaders().set("Content-Type", "application/json; charset=UTF-8");
             exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
+            if ("HEAD".equalsIgnoreCase(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(200, -1);
+                exchange.close();
+                return;
+            }
+            String response = "{\"status\":\"healthy\",\"platform\":\"Online Recipe Sharing Platform\",\"developer\":\"Sachin Bhandari\",\"port\":" + port + "}";
+            byte[] bytes = response.getBytes(StandardCharsets.UTF_8);
             exchange.sendResponseHeaders(200, bytes.length);
             try (OutputStream os = exchange.getResponseBody()) {
                 os.write(bytes);
@@ -321,6 +339,11 @@ public class Server {
 
             exchange.getResponseHeaders().set("Content-Type", contentType);
             exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
+            if ("HEAD".equalsIgnoreCase(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(200, -1);
+                exchange.close();
+                return;
+            }
             exchange.sendResponseHeaders(200, fileBytes.length);
             try (OutputStream os = exchange.getResponseBody()) {
                 os.write(fileBytes);
@@ -336,9 +359,14 @@ public class Server {
     }
 
     private static void sendJsonResponse(HttpExchange exchange, int statusCode, String json) throws IOException {
-        byte[] bytes = json.getBytes(StandardCharsets.UTF_8);
         exchange.getResponseHeaders().set("Content-Type", "application/json; charset=UTF-8");
         exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
+        if ("HEAD".equalsIgnoreCase(exchange.getRequestMethod())) {
+            exchange.sendResponseHeaders(statusCode, -1);
+            exchange.close();
+            return;
+        }
+        byte[] bytes = json.getBytes(StandardCharsets.UTF_8);
         exchange.sendResponseHeaders(statusCode, bytes.length);
         try (OutputStream os = exchange.getResponseBody()) {
             os.write(bytes);
