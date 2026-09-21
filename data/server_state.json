@@ -526,5 +526,13 @@
     "rec-mua5nck3ewh",
     "rec-muacvd74q0j",
     "rec-muacoukhkb5"
-  ]
+  ],
+  "announcement": {
+    "enabled": true,
+    "title": "Site Maintenance Notice",
+    "message": "Sorry, our site is currently undergoing scheduled maintenance and updates. All features will be fully available shortly. Thank you for your patience!",
+    "type": "maintenance",
+    "updatedAt": 1790013020050,
+    "updatedBy": "Sachin Bhandari (Admin)"
+  }
 }

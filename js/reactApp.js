@@ -727,6 +727,235 @@ function FoodCard({
     className: "px-2.5 py-1.5 rounded-lg bg-[#121214] hover:bg-black disabled:opacity-30 text-white text-[11px] font-semibold transition-colors cursor-pointer"
   }, "Post")));
 }
+function AnnouncementModal({
+  announcement,
+  isOpen,
+  onClose
+}) {
+  if (!isOpen || !announcement || !announcement.enabled) return null;
+  const isMaintenance = announcement.type === "maintenance" || announcement.title && announcement.title.toLowerCase().includes("maintain");
+  return React.createElement("div", {
+    className: "fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/65 backdrop-blur-md animate-fadeIn"
+  }, React.createElement("div", {
+    className: "relative w-full max-w-md bg-white rounded-3xl p-6 sm:p-7 shadow-2xl border border-[#f0ece1] text-center overflow-hidden"
+  }, React.createElement("div", {
+    className: `absolute top-0 left-0 right-0 h-2.5 ${isMaintenance ? 'bg-gradient-to-r from-amber-500 via-orange-500 to-red-500' : 'bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500'}`
+  }), React.createElement("div", {
+    className: "mx-auto w-16 h-16 rounded-2xl bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center text-3xl mb-4 shadow-inner"
+  }, isMaintenance ? '🛠️' : '📢'), React.createElement("div", {
+    className: "inline-block px-3 py-1 rounded-full bg-amber-100 text-amber-900 text-[10px] font-extrabold uppercase tracking-wider mb-2"
+  }, isMaintenance ? 'Site Maintenance Notice' : 'Official Notice'), React.createElement("h3", {
+    className: "text-xl font-bold text-[#121214] font-heading tracking-tight mb-2"
+  }, announcement.title || 'Platform Notice'), React.createElement("div", {
+    className: "bg-[#faf8f5] rounded-2xl p-4 border border-[#eee8dc] text-sm text-[#45423d] leading-relaxed mb-6 font-medium whitespace-pre-line text-left sm:text-center"
+  }, announcement.message || 'Sorry, our site is currently undergoing scheduled maintenance. Please check back shortly.'), React.createElement("div", {
+    className: "flex flex-col sm:flex-row items-center justify-center gap-2.5"
+  }, React.createElement("button", {
+    type: "button",
+    onClick: onClose,
+    className: "w-full sm:w-auto flex-1 px-5 py-2.5 rounded-xl bg-[#f05a28] hover:bg-[#e04818] text-white text-xs font-bold tracking-wide shadow hover:shadow-md active:scale-95 transition-all cursor-pointer"
+  }, "I Understand & Continue"), React.createElement("button", {
+    type: "button",
+    onClick: () => window.location.reload(),
+    className: "w-full sm:w-auto px-4 py-2.5 rounded-xl border border-[#d6d0c4] bg-white hover:bg-[#fbf9f6] text-[#524e48] text-xs font-semibold transition-colors cursor-pointer"
+  }, "\uD83D\uDD04 Refresh")), React.createElement("div", {
+    className: "mt-4 pt-3 border-t border-[#f2ede4] text-[10px] text-[#8e8a83]"
+  }, "Broadcasted by ", announcement.updatedBy || 'Platform Admin', " \u2022 FoodBite System")));
+}
+function AdminBroadcastModal({
+  isOpen,
+  onClose,
+  announcement,
+  onSaveAnnouncement,
+  showToast
+}) {
+  if (!isOpen) return null;
+  const [enabled, setEnabled] = useState(announcement ? !!announcement.enabled : false);
+  const [title, setTitle] = useState(announcement ? announcement.title || "" : "Site Maintenance Notice");
+  const [message, setMessage] = useState(announcement ? announcement.message || "" : "Sorry, our site is currently undergoing scheduled maintenance and updates. All features will be fully available shortly. Thank you for your patience!");
+  const [type, setType] = useState(announcement ? announcement.type || "maintenance" : "maintenance");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const handleSubmit = async e => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    try {
+      const payload = {
+        enabled,
+        title: title.trim() || "Notice",
+        message: message.trim(),
+        type
+      };
+      const res = await fetch("/api/announcement", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (data && data.success) {
+        onSaveAnnouncement && onSaveAnnouncement(data.announcement);
+        showToast && showToast("Announcement popup updated successfully!", "success");
+        onClose();
+      } else {
+        showToast && showToast(data && data.error ? data.error : "Failed to update announcement", "error");
+      }
+    } catch (err) {
+      showToast && showToast("Error connecting to server", "error");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  const handleQuickMaintenance = () => {
+    setEnabled(true);
+    setTitle("Site Maintenance Notice");
+    setMessage("Sorry, our site is currently undergoing scheduled maintenance and updates. All features will be fully available shortly. Thank you for your patience!");
+    setType("maintenance");
+  };
+  const handleQuickWelcome = () => {
+    setEnabled(true);
+    setTitle("Welcome to FoodBite!");
+    setMessage("Explore authentic food creations, share your own tasty bites, and connect with fellow foodies!");
+    setType("info");
+  };
+  const handleTurnOff = async () => {
+    setIsSubmitting(true);
+    try {
+      const payload = {
+        enabled: false,
+        title,
+        message,
+        type
+      };
+      const res = await fetch("/api/announcement", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (data && data.success) {
+        setEnabled(false);
+        onSaveAnnouncement && onSaveAnnouncement(data.announcement);
+        showToast && showToast("Popup disabled for all visitors", "info");
+        onClose();
+      }
+    } catch (err) {
+      showToast && showToast("Failed to disable popup", "error");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  return React.createElement("div", {
+    className: "fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn"
+  }, React.createElement("div", {
+    className: "relative w-full max-w-lg bg-white rounded-3xl p-6 shadow-2xl border border-[#ece7dc] max-h-[90vh] overflow-y-auto"
+  }, React.createElement("div", {
+    className: "flex items-center justify-between pb-4 border-b border-[#f0ece1]"
+  }, React.createElement("div", {
+    className: "flex items-center space-x-2.5"
+  }, React.createElement("span", {
+    className: "text-xl"
+  }, "\uD83D\uDCE2"), React.createElement("div", null, React.createElement("h3", {
+    className: "text-base font-bold text-[#121214]"
+  }, "Broadcast & Maintenance Manager"), React.createElement("p", {
+    className: "text-[11px] text-[#736f68]"
+  }, "Configure the alert popup shown to all platform visitors"))), React.createElement("button", {
+    type: "button",
+    onClick: onClose,
+    className: "w-8 h-8 rounded-full hover:bg-[#f5f2eb] text-[#736f68] hover:text-[#121214] flex items-center justify-center text-sm font-bold cursor-pointer"
+  }, "\u2715")), React.createElement("form", {
+    onSubmit: handleSubmit,
+    className: "mt-4 space-y-4"
+  }, React.createElement("div", {
+    className: "p-3.5 rounded-2xl bg-[#faf8f5] border border-[#ece7dc] flex items-center justify-between"
+  }, React.createElement("div", null, React.createElement("div", {
+    className: "text-xs font-bold text-[#121214]"
+  }, "Popup Active Status"), React.createElement("div", {
+    className: "text-[11px] text-[#736f68]"
+  }, "When active, all visitors will see this popup modal")), React.createElement("label", {
+    className: "relative inline-flex items-center cursor-pointer"
+  }, React.createElement("input", {
+    type: "checkbox",
+    checked: enabled,
+    onChange: e => setEnabled(e.target.checked),
+    className: "sr-only peer"
+  }), React.createElement("div", {
+    className: "w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#f05a28]"
+  }))), React.createElement("div", null, React.createElement("label", {
+    className: "block text-xs font-bold text-[#121214] mb-1.5"
+  }, "Popup Title"), React.createElement("input", {
+    type: "text",
+    value: title,
+    onChange: e => setTitle(e.target.value),
+    placeholder: "e.g. Site Maintenance Notice",
+    className: "w-full px-3.5 py-2.5 rounded-xl border border-[#dcd7cb] focus:border-[#f05a28] focus:ring-2 focus:ring-[#f05a28]/20 text-xs font-medium outline-none transition-all",
+    required: true
+  })), React.createElement("div", null, React.createElement("div", {
+    className: "flex items-center justify-between mb-1.5"
+  }, React.createElement("label", {
+    className: "block text-xs font-bold text-[#121214]"
+  }, "Popup Message"), React.createElement("div", {
+    className: "flex items-center space-x-1"
+  }, React.createElement("button", {
+    type: "button",
+    onClick: handleQuickMaintenance,
+    className: "text-[10px] px-2 py-0.5 rounded bg-amber-100 text-amber-800 font-semibold hover:bg-amber-200 cursor-pointer"
+  }, "Quick Maintenance"), React.createElement("button", {
+    type: "button",
+    onClick: handleQuickWelcome,
+    className: "text-[10px] px-2 py-0.5 rounded bg-blue-100 text-blue-800 font-semibold hover:bg-blue-200 cursor-pointer"
+  }, "Quick Announcement"))), React.createElement("textarea", {
+    value: message,
+    onChange: e => setMessage(e.target.value),
+    rows: 4,
+    placeholder: "Enter message for visitors (e.g. Sorry, our site is under maintenance...)",
+    className: "w-full px-3.5 py-2.5 rounded-xl border border-[#dcd7cb] focus:border-[#f05a28] focus:ring-2 focus:ring-[#f05a28]/20 text-xs font-medium outline-none transition-all",
+    required: true
+  })), React.createElement("div", {
+    className: "grid grid-cols-2 gap-2.5"
+  }, React.createElement("button", {
+    type: "button",
+    onClick: () => setType("maintenance"),
+    className: `p-3 rounded-xl border text-left cursor-pointer transition-all ${type === "maintenance" ? "bg-amber-50 border-amber-400 ring-2 ring-amber-400/20" : "bg-white border-[#ece7dc] hover:bg-[#faf8f5]"}`
+  }, React.createElement("div", {
+    className: "text-sm font-bold text-[#121214] flex items-center space-x-1"
+  }, React.createElement("span", null, "\uD83D\uDEE0\uFE0F"), React.createElement("span", null, "Maintenance")), React.createElement("div", {
+    className: "text-[10px] text-[#736f68] mt-0.5"
+  }, "Amber warning theme")), React.createElement("button", {
+    type: "button",
+    onClick: () => setType("info"),
+    className: `p-3 rounded-xl border text-left cursor-pointer transition-all ${type === "info" ? "bg-blue-50 border-blue-400 ring-2 ring-blue-400/20" : "bg-white border-[#ece7dc] hover:bg-[#faf8f5]"}`
+  }, React.createElement("div", {
+    className: "text-sm font-bold text-[#121214] flex items-center space-x-1"
+  }, React.createElement("span", null, "\uD83D\uDCE2"), React.createElement("span", null, "Announcement")), React.createElement("div", {
+    className: "text-[10px] text-[#736f68] mt-0.5"
+  }, "Blue notice theme"))), React.createElement("div", {
+    className: "p-3 rounded-2xl border border-dashed border-[#dcd7cb] bg-[#faf8f5]"
+  }, React.createElement("div", {
+    className: "text-[10px] uppercase font-bold text-[#736f68] tracking-wider mb-1"
+  }, "Live Visitor Preview"), React.createElement("div", {
+    className: "text-xs font-bold text-[#121214]"
+  }, title || "Untitled Notice"), React.createElement("div", {
+    className: "text-[11px] text-[#55514b] mt-1 whitespace-pre-line"
+  }, message || "No message entered")), React.createElement("div", {
+    className: "flex items-center justify-end space-x-2 pt-2"
+  }, enabled && React.createElement("button", {
+    type: "button",
+    onClick: handleTurnOff,
+    disabled: isSubmitting,
+    className: "px-4 py-2 rounded-xl border border-red-200 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-semibold transition-colors cursor-pointer"
+  }, "Disable Popup"), React.createElement("button", {
+    type: "button",
+    onClick: onClose,
+    className: "px-4 py-2 rounded-xl border border-[#dcd7cb] bg-white hover:bg-[#fbf9f6] text-[#736f68] text-xs font-semibold transition-colors cursor-pointer"
+  }, "Cancel"), React.createElement("button", {
+    type: "submit",
+    disabled: isSubmitting,
+    className: "px-5 py-2 rounded-xl bg-[#f05a28] hover:bg-[#e04818] text-white text-xs font-bold shadow hover:shadow-md transition-all cursor-pointer flex items-center space-x-1.5"
+  }, React.createElement("span", null, isSubmitting ? "Saving..." : "Save & Broadcast 📢"))))));
+}
 function DesktopNavBar({
   activeTab,
   setActiveTab,
@@ -735,7 +964,9 @@ function DesktopNavBar({
   unreadCount,
   onTriggerInstall,
   currentUser,
-  onRefreshFeed
+  onRefreshFeed,
+  onTriggerBroadcast,
+  announcement
 }) {
   const streak = userProfile && userProfile.user ? userProfile.user.streak || 0 : 0;
   const avatarUrl = currentUser && (currentUser.avatar || currentUser.avatarUrl) || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&q=80";
@@ -792,7 +1023,14 @@ function DesktopNavBar({
     type: "button",
     onClick: onTriggerUpload,
     className: "px-4 py-2 rounded-xl bg-[#f05a28] hover:bg-[#e04818] text-white text-xs font-semibold tracking-wide shadow-sm hover:shadow active:scale-95 transition-all cursor-pointer flex items-center space-x-1.5"
-  }, React.createElement("span", null, "+"), React.createElement("span", null, "Share Food")), React.createElement("div", {
+  }, React.createElement("span", null, "+"), React.createElement("span", null, "Share Food")), currentUser && (currentUser.role === 'admin' || currentUser.username === 'sachin' || currentUser.id === 'usr-1') && React.createElement("button", {
+    type: "button",
+    onClick: onTriggerBroadcast,
+    className: `relative px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all cursor-pointer flex items-center space-x-1.5 ${announcement && announcement.enabled ? 'bg-amber-50 border-amber-300 text-amber-900 hover:bg-amber-100 ring-2 ring-amber-400/30' : 'bg-white border-[#e8e4dc] text-[#736f68] hover:text-[#121214] hover:bg-[#fbf9f6]'}`,
+    title: "Admin Announcement & Maintenance Broadcast Manager"
+  }, React.createElement("span", null, "\uD83D\uDCE2"), React.createElement("span", null, "Broadcast"), announcement && announcement.enabled && React.createElement("span", {
+    className: "w-2 h-2 rounded-full bg-amber-500 animate-ping"
+  })), React.createElement("div", {
     onClick: () => setActiveTab("profile"),
     className: "w-8 h-8 rounded-full border border-[#e8e4dc] overflow-hidden cursor-pointer hover:ring-2 hover:ring-[#f05a28]/20 transition-all"
   }, React.createElement("img", {
@@ -804,7 +1042,10 @@ function DesktopNavBar({
 function MobileTopBar({
   streak,
   onTriggerInstall,
-  onLogoClick
+  onLogoClick,
+  onTriggerBroadcast,
+  announcement,
+  currentUser
 }) {
   return React.createElement("header", {
     className: "md:hidden sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#e8e4dc] px-4 py-2.5 flex items-center justify-between"
@@ -826,7 +1067,12 @@ function MobileTopBar({
     onClick: onTriggerInstall,
     className: "p-1.5 rounded-lg border border-[#e8e4dc] bg-white text-xs",
     title: "Install App"
-  }, "\uD83D\uDCF1")));
+  }, "\uD83D\uDCF1"), currentUser && (currentUser.role === 'admin' || currentUser.username === 'sachin' || currentUser.id === 'usr-1') && React.createElement("button", {
+    type: "button",
+    onClick: onTriggerBroadcast,
+    className: `p-1.5 rounded-lg border text-xs transition-colors flex items-center justify-center ${announcement && announcement.enabled ? 'bg-amber-50 border-amber-300 text-amber-800' : 'border-[#e8e4dc] bg-white text-[#736f68]'}`,
+    title: "Admin Broadcast"
+  }, React.createElement("span", null, "\uD83D\uDCE2"))));
 }
 function MobileBottomNav({
   activeTab,
@@ -1321,7 +1567,9 @@ function ProfileView({
   userProfile,
   stories,
   onLogout,
-  onTriggerUpload
+  onTriggerUpload,
+  onTriggerBroadcast,
+  announcement
 }) {
   const user = userProfile && userProfile.user || currentUser || {};
   const streak = user.streak || 0;
@@ -1346,7 +1594,15 @@ function ProfileView({
     type: "button",
     onClick: onLogout,
     className: "px-3 py-1.5 rounded-lg border border-[#e8e4dc] hover:bg-rose-50 hover:text-rose-600 text-xs font-semibold transition-colors cursor-pointer"
-  }, "Sign Out")), React.createElement("div", {
+  }, "Sign Out")), (user.role === 'admin' || user.username === 'sachin' || user.id === 'usr-1') && React.createElement("div", {
+    className: "pt-2"
+  }, React.createElement("button", {
+    type: "button",
+    onClick: onTriggerBroadcast,
+    className: "w-full py-2.5 px-4 rounded-xl border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-900 text-xs font-bold transition-all flex items-center justify-center space-x-2 cursor-pointer shadow-xs"
+  }, React.createElement("span", null, "\uD83D\uDCE2"), React.createElement("span", null, "Manage Maintenance & Visitor Popup"), announcement && announcement.enabled && React.createElement("span", {
+    className: "px-2 py-0.5 rounded-full bg-amber-500 text-white text-[9px] font-extrabold uppercase tracking-wide"
+  }, "Live Active"))), React.createElement("div", {
     className: "flex items-center justify-center sm:justify-start space-x-4 pt-1"
   }, React.createElement("div", {
     className: "flex items-center space-x-1 text-xs"
@@ -1454,6 +1710,10 @@ function App() {
   const [comments, setComments] = useState({});
   const [savedPosts, setSavedPosts] = useState({});
   const [heartBursts, setHeartBursts] = useState({});
+  const [announcement, setAnnouncement] = useState(null);
+  const [showAnnouncementModal, setShowAnnouncementModal] = useState(false);
+  const [showBroadcastModal, setShowBroadcastModal] = useState(false);
+  const [dismissedAnnouncement, setDismissedAnnouncement] = useState(false);
   const showToast = (message, type = "info") => {
     const id = Date.now().toString(36) + Math.random().toString(36).substring(2, 5);
     setToasts(prev => [...prev, {
@@ -1506,6 +1766,12 @@ function App() {
           ...newComments,
           ...prev
         }));
+        if (data.announcement) {
+          setAnnouncement(data.announcement);
+          if (data.announcement.enabled) {
+            setShowAnnouncementModal(true);
+          }
+        }
       } else {
         if (!silent) setFeedError("Failed to fetch food feed.");
       }
@@ -1850,6 +2116,22 @@ function App() {
         fetchNotifications(uid);
       },
       showToast: showToast
+    }), React.createElement(AnnouncementModal, {
+      announcement: announcement,
+      isOpen: Boolean(announcement && announcement.enabled && !dismissedAnnouncement),
+      onClose: () => setDismissedAnnouncement(true)
+    }), React.createElement(AdminBroadcastModal, {
+      isOpen: showBroadcastModal,
+      onClose: () => setShowBroadcastModal(false),
+      announcement: announcement,
+      onSaveAnnouncement: updated => {
+        setAnnouncement(updated);
+        if (updated && updated.enabled) {
+          setDismissedAnnouncement(false);
+          setShowAnnouncementModal(true);
+        }
+      },
+      showToast: showToast
     }), React.createElement(ToastContainer, {
       toasts: toasts,
       removeToast: removeToast
@@ -1867,7 +2149,9 @@ function App() {
     unreadCount: notifications.length,
     onTriggerInstall: () => setShowInstallModal(true),
     currentUser: currentUser,
-    onRefreshFeed: () => fetchStories(true)
+    onRefreshFeed: () => fetchStories(true),
+    onTriggerBroadcast: () => setShowBroadcastModal(true),
+    announcement: announcement
   }), React.createElement(MobileTopBar, {
     streak: streakCount,
     onTriggerInstall: () => setShowInstallModal(true),
@@ -1878,7 +2162,10 @@ function App() {
         top: 0,
         behavior: "smooth"
       });
-    }
+    },
+    onTriggerBroadcast: () => setShowBroadcastModal(true),
+    announcement: announcement,
+    currentUser: currentUser
   }), React.createElement("main", {
     className: "flex-1 w-full"
   }, activeTab === "home" && React.createElement("div", {
@@ -1954,7 +2241,9 @@ function App() {
     userProfile: userProfile,
     stories: stories,
     onLogout: handleLogout,
-    onTriggerUpload: () => setStoryModalOpen(true)
+    onTriggerUpload: () => setStoryModalOpen(true),
+    onTriggerBroadcast: () => setShowBroadcastModal(true),
+    announcement: announcement
   })), React.createElement(MobileBottomNav, {
     activeTab: activeTab,
     setActiveTab: setActiveTab,
@@ -1994,6 +2283,21 @@ function App() {
     currentUser: currentUser,
     onToggleFollow: handleToggleFollow,
     followingList: followingList
+  }), React.createElement(AnnouncementModal, {
+    announcement: announcement,
+    isOpen: Boolean(announcement && announcement.enabled && !dismissedAnnouncement),
+    onClose: () => setDismissedAnnouncement(true)
+  }), React.createElement(AdminBroadcastModal, {
+    isOpen: showBroadcastModal,
+    onClose: () => setShowBroadcastModal(false),
+    announcement: announcement,
+    onSaveAnnouncement: updated => {
+      setAnnouncement(updated);
+      if (updated && updated.enabled) {
+        setDismissedAnnouncement(false);
+      }
+    },
+    showToast: showToast
   }), React.createElement(ToastContainer, {
     toasts: toasts,
     removeToast: removeToast

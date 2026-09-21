@@ -1,1 +1,85 @@
-[{"id": "post_1790010828136_910", "userId": "usr_test_friend", "username": "harsh", "userAvatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80", "mediaUrl": "/uploads/dish_1790010828136_7926.jpg", "mediaPath": "uploads/dish_1790010828136_7926.jpg", "mediaType": "image", "caption": "Harsh the iron man \u2022 It's very tasty, so don't try \u2014 \ud83d\udccd Ghaziabad", "duration": 0.0, "createdAt": 1790004724415, "expiresAt": 1790091124415},{"id": "post_1790002199050_578", "userId": "usr-muacmtus", "username": "anant", "userAvatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80", "mediaUrl": "/uploads/dish_1790002198781_7454.jpg", "mediaPath": "uploads/dish_1790002198781_7454.jpg", "mediaType": "image", "caption": "Pizza \u2022 Authentic Italian crust with fresh basil \u2014 \ud83d\udccd Crust & Co", "duration": 0.0, "createdAt": 1789997524415, "expiresAt": 1790083924415},{"id": "post_1790000052613_760", "userId": "usr-1790000005685", "username": "adi", "userAvatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80", "mediaUrl": "/uploads/dish_1790000052225_4905.jpg", "mediaPath": "uploads/dish_1790000052225_4905.jpg", "mediaType": "image", "caption": "TeA \u2022 Kulhad Chai breaks between lectures \u2014 \ud83d\udccd Galgotia University", "duration": 0.0, "createdAt": 1789993924415, "expiresAt": 1790080324415},{"id": "post_1789998755155_684", "userId": "usr-1789998667595", "username": "anish_cooks", "userAvatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80", "mediaUrl": "/uploads/dish_1789998754631_4331.jpg", "mediaPath": "uploads/dish_1789998754631_4331.jpg", "mediaType": "image", "caption": "Cake \u2022 It was our friend's birthday \u2014 \ud83d\udccd Cruffins", "duration": 0.0, "createdAt": 1789990324415, "expiresAt": 1790076724415},{"id": "post_1789998496181_703", "userId": "usr-1789993201137", "username": "a1", "userAvatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80", "mediaUrl": "/uploads/dish_1789998495727_7363.png", "mediaPath": "uploads/dish_1789998495727_7363.png", "mediaType": "image", "caption": "burger \u2022 Double patty smashed cheeseburger with caramelized onions", "duration": 0.0, "createdAt": 1789986724415, "expiresAt": 1790073124415}]
+[{
+    "id": "post_1790010828136_910",
+    "userId": "usr_test_friend",
+    "username": "harsh",
+    "userAvatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80",
+    "mediaUrl": "/uploads/dish_1790010828136_7926.jpg",
+    "mediaPath": "uploads/dish_1790010828136_7926.jpg",
+    "mediaType": "image",
+    "caption": "Harsh the iron man • It's very tasty, so don't try — 📍 Ghaziabad",
+    "duration": 0.0,
+    "createdAt": 1790005820050,
+    "expiresAt": 1790092220050
+  },{
+    "id": "post_1790002199050_578",
+    "userId": "usr-muacmtus",
+    "username": "anant",
+    "userAvatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80",
+    "mediaUrl": "/uploads/dish_1790002198781_7454.jpg",
+    "mediaPath": "uploads/dish_1790002198781_7454.jpg",
+    "mediaType": "image",
+    "caption": "Pizza • Authentic Italian crust with fresh basil — 📍 Crust & Co",
+    "duration": 0.0,
+    "createdAt": 1789998620050,
+    "expiresAt": 1790085020050
+  },{
+    "id": "post_1789980921759_222",
+    "userId": "usr-muadrpsx",
+    "username": "prakash",
+    "userAvatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80",
+    "mediaUrl": "/uploads/chillinoodles_1789972478_0.jpg",
+    "mediaPath": "uploads/chillinoodles_1789972478_0.jpg",
+    "mediaType": "image",
+    "caption": "Chilli noodles • Prepared with fresh ingredients and served hot.... — 📍 Street Food",
+    "duration": 0.0,
+    "createdAt": 1789995020050,
+    "expiresAt": 1790081420050
+  },{
+    "id": "post_1789995799569_111",
+    "userId": "usr-1789991004341",
+    "username": "hhuvui",
+    "userAvatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80",
+    "mediaUrl": "/uploads/dish_hhuvui_starbucks.jpg",
+    "mediaPath": "uploads/dish_hhuvui_starbucks.jpg",
+    "mediaType": "image",
+    "caption": "Delicious Coffee & Drinks creation • Starbucks sundae with Sachin — 📍 Starbucks",
+    "duration": 0.0,
+    "createdAt": 1789991420050,
+    "expiresAt": 1790077820050
+  },{
+    "id": "post_1790000052613_760",
+    "userId": "usr-1790000005685",
+    "username": "adi",
+    "userAvatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80",
+    "mediaUrl": "/uploads/dish_1790000052225_4905.jpg",
+    "mediaPath": "uploads/dish_1790000052225_4905.jpg",
+    "mediaType": "image",
+    "caption": "TeA • Kulhad Chai breaks between lectures — 📍 Galgotia University",
+    "duration": 0.0,
+    "createdAt": 1789987820050,
+    "expiresAt": 1790074220050
+  },{
+    "id": "post_1789998755155_684",
+    "userId": "usr-1789998667595",
+    "username": "anish_cooks",
+    "userAvatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80",
+    "mediaUrl": "/uploads/dish_1789998754631_4331.jpg",
+    "mediaPath": "uploads/dish_1789998754631_4331.jpg",
+    "mediaType": "image",
+    "caption": "Cake • It was our friend's birthday — 📍 Cruffins",
+    "duration": 0.0,
+    "createdAt": 1789984220050,
+    "expiresAt": 1790070620050
+  },{
+    "id": "post_1789998496181_703",
+    "userId": "usr-1789993201137",
+    "username": "a1",
+    "userAvatar": "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80",
+    "mediaUrl": "/uploads/dish_1789998495727_7363.png",
+    "mediaPath": "uploads/dish_1789998495727_7363.png",
+    "mediaType": "image",
+    "caption": "burger • Double patty smashed cheeseburger with caramelized onions",
+    "duration": 0.0,
+    "createdAt": 1789980620050,
+    "expiresAt": 1790067020050
+  }]

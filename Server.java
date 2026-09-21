@@ -47,6 +47,7 @@ public class Server {
             server.createContext("/api/notifications", new NotificationsHandler());
             server.createContext("/api/likes", new LikesHandler());
             server.createContext("/api/comments", new CommentsHandler());
+            server.createContext("/api/announcement", new AnnouncementHandler());
             server.createContext("/", new StaticFileHandler());
 
             java.util.concurrent.ScheduledExecutorService cleanupExecutor = Executors.newSingleThreadScheduledExecutor();
@@ -75,6 +76,7 @@ public class Server {
                     server8080.createContext("/api/notifications", new NotificationsHandler());
                     server8080.createContext("/api/likes", new LikesHandler());
                     server8080.createContext("/api/comments", new CommentsHandler());
+                    server8080.createContext("/api/announcement", new AnnouncementHandler());
                     server8080.createContext("/", new StaticFileHandler());
                     server8080.start();
                 } catch (Exception ignored) {}
@@ -727,7 +729,8 @@ public class Server {
             try {
                 purgeExpiredEphemeralPosts();
                 String enrichedPosts = getEnrichedStories();
-                String response = "{\"success\":true,\"posts\":" + enrichedPosts + "}";
+                String annJson = getAnnouncementJson();
+                String response = "{\"success\":true,\"posts\":" + enrichedPosts + ",\"announcement\":" + annJson + "}";
                 sendJsonResponse(exchange, 200, response);
             } catch (Exception e) {
                 sendJsonResponse(exchange, 500, "{\"error\":\"" + escapeJson(e.getMessage()) + "\"}");
@@ -1179,6 +1182,61 @@ public class Server {
             sendJsonResponse(exchange, 405, "{\"error\":\"Method not allowed\"}");
         }
     }
+
+    static class AnnouncementHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
+                sendCors(exchange);
+                return;
+            }
+            if ("GET".equalsIgnoreCase(exchange.getRequestMethod())) {
+                String ann = getAnnouncementJson();
+                sendJsonResponse(exchange, 200, "{\"success\":true,\"announcement\":" + ann + "}");
+                return;
+            }
+            if ("POST".equalsIgnoreCase(exchange.getRequestMethod())) {
+                try {
+                    InputStream is = exchange.getRequestBody();
+                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                    byte[] buf = new byte[8192];
+                    int read;
+                    while ((read = is.read(buf)) != -1) {
+                        baos.write(buf, 0, read);
+                    }
+                    String body = baos.toString(StandardCharsets.UTF_8).trim();
+                    boolean enabled = true;
+                    if (body.contains("\"enabled\":false") || body.contains("\"enabled\": false")) {
+                        enabled = false;
+                    }
+                    String title = extractJsonString(body, "title", "Site Maintenance Notice");
+                    String message = extractJsonString(body, "message", "");
+                    String type = extractJsonString(body, "type", "maintenance");
+                    long now = System.currentTimeMillis();
+                    String json = "{\"enabled\":" + enabled + ",\"title\":\"" + escapeJson(title) + "\",\"message\":\"" + escapeJson(message) + "\",\"type\":\"" + escapeJson(type) + "\",\"updatedAt\":" + now + ",\"updatedBy\":\"Sachin Bhandari (Admin)\"}";
+                    File dataDir = new File("data");
+                    if (!dataDir.exists()) dataDir.mkdirs();
+                    Files.write(new File("data/announcement.json").toPath(), json.getBytes(StandardCharsets.UTF_8));
+                    sendJsonResponse(exchange, 200, "{\"success\":true,\"announcement\":" + json + "}");
+                } catch (Exception e) {
+                    sendJsonResponse(exchange, 500, "{\"error\":\"" + escapeJson(e.getMessage()) + "\"}");
+                }
+                return;
+            }
+            sendJsonResponse(exchange, 405, "{\"error\":\"Method not allowed\"}");
+        }
+    }
+
+    private static synchronized String getAnnouncementJson() {
+        File annFile = new File("data/announcement.json");
+        if (annFile.exists()) {
+            try {
+                return new String(Files.readAllBytes(annFile.toPath()), StandardCharsets.UTF_8).trim();
+            } catch (Exception ignored) {}
+        }
+        return "{\"enabled\":false,\"title\":\"\",\"message\":\"\",\"type\":\"maintenance\",\"updatedAt\":" + System.currentTimeMillis() + "}";
+    }
+
 
     private static final String LIKES_FILE = "data/likes.json";
     private static final String COMMENTS_FILE = "data/comments.json";
