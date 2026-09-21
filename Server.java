@@ -13,6 +13,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.concurrent.Executors;
+import java.util.List;
+import java.util.ArrayList;
 
 public class Server {
     private static int port = 8080;
@@ -41,6 +43,8 @@ public class Server {
             server.createContext("/api/profile", new ProfileHandler());
             server.createContext("/api/auth/signup", new AuthSignupHandler());
             server.createContext("/api/auth/login", new AuthLoginHandler());
+            server.createContext("/api/follow", new FollowHandler());
+            server.createContext("/api/notifications", new NotificationsHandler());
             server.createContext("/", new StaticFileHandler());
 
             java.util.concurrent.ScheduledExecutorService cleanupExecutor = Executors.newSingleThreadScheduledExecutor();
@@ -65,6 +69,8 @@ public class Server {
                     server8080.createContext("/api/profile", new ProfileHandler());
                     server8080.createContext("/api/auth/signup", new AuthSignupHandler());
                     server8080.createContext("/api/auth/login", new AuthLoginHandler());
+                    server8080.createContext("/api/follow", new FollowHandler());
+                    server8080.createContext("/api/notifications", new NotificationsHandler());
                     server8080.createContext("/", new StaticFileHandler());
                     server8080.start();
                 } catch (Exception ignored) {}
@@ -724,6 +730,7 @@ public class Server {
                 String newPostJson = "{\"id\":\"" + postId + "\",\"userId\":\"" + userId + "\",\"username\":\"" + escapeJson(username) + "\",\"userAvatar\":\"" + avatar + "\",\"mediaUrl\":\"" + mediaUrl + "\",\"mediaPath\":\"" + mediaPath + "\",\"mediaType\":\"" + mediaType + "\",\"caption\":\"" + escapeJson(caption) + "\",\"duration\":" + duration + ",\"createdAt\":" + now + ",\"expiresAt\":" + expiresAt + "}";
 
                 saveStory(newPostJson);
+                notifyFollowersOfNewPost(userId, username, avatar, postId, now);
 
                 String resp = "{\"success\":true,\"post\":" + newPostJson + ",\"currentStreak\":" + streak + ",\"hoursRemaining\":24.0}";
                 sendJsonResponse(exchange, 201, resp);
@@ -880,6 +887,108 @@ public class Server {
             } catch (Exception e) {
                 sendJsonResponse(exchange, 500, "{\"success\":false,\"message\":\"" + escapeJson(e.getMessage()) + "\"}");
             }
+        }
+    }
+
+    static class FollowHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
+                sendCors(exchange);
+                return;
+            }
+
+            if ("GET".equalsIgnoreCase(exchange.getRequestMethod())) {
+                String query = exchange.getRequestURI().getQuery();
+                String userId = "usr-1";
+                if (query != null && query.contains("userId=")) {
+                    for (String part : query.split("&")) {
+                        if (part.startsWith("userId=")) {
+                            userId = part.substring("userId=".length()).trim();
+                        }
+                    }
+                }
+                List<String> following = getFollowingOf(userId);
+                List<String> followers = getFollowersOf(userId);
+                StringBuilder folJson = new StringBuilder("[");
+                for (int i = 0; i < following.size(); i++) {
+                    if (i > 0) folJson.append(",");
+                    folJson.append("\"").append(following.get(i)).append("\"");
+                }
+                folJson.append("]");
+
+                StringBuilder ferJson = new StringBuilder("[");
+                for (int i = 0; i < followers.size(); i++) {
+                    if (i > 0) ferJson.append(",");
+                    ferJson.append("\"").append(followers.get(i)).append("\"");
+                }
+                ferJson.append("]");
+
+                String resp = "{\"success\":true,\"following\":" + folJson + ",\"followers\":" + ferJson + "}";
+                sendJsonResponse(exchange, 200, resp);
+                return;
+            }
+
+            if ("POST".equalsIgnoreCase(exchange.getRequestMethod())) {
+                try {
+                    InputStream is = exchange.getRequestBody();
+                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                    byte[] buf = new byte[8192];
+                    int read;
+                    while ((read = is.read(buf)) != -1) {
+                        baos.write(buf, 0, read);
+                    }
+                    String body = baos.toString(StandardCharsets.UTF_8).trim();
+
+                    String followerId = extractJsonString(body, "followerId", "").trim();
+                    String followingId = extractJsonString(body, "followingId", "").trim();
+                    String action = extractJsonString(body, "action", "toggle").trim();
+
+                    if (followerId.isEmpty() || followingId.isEmpty() || followerId.equals(followingId)) {
+                        sendJsonResponse(exchange, 400, "{\"success\":false,\"message\":\"Invalid follower or target id\"}");
+                        return;
+                    }
+
+                    boolean nowFollowing = toggleFollow(followerId, followingId, action);
+                    int count = getFollowersOf(followingId).size();
+                    String resp = "{\"success\":true,\"isFollowing\":" + nowFollowing + ",\"followerCount\":" + count + "}";
+                    sendJsonResponse(exchange, 200, resp);
+                } catch (Exception e) {
+                    sendJsonResponse(exchange, 500, "{\"success\":false,\"message\":\"" + escapeJson(e.getMessage()) + "\"}");
+                }
+                return;
+            }
+
+            sendJsonResponse(exchange, 405, "{\"error\":\"Method not allowed\"}");
+        }
+    }
+
+    static class NotificationsHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            if ("OPTIONS".equalsIgnoreCase(exchange.getRequestMethod())) {
+                sendCors(exchange);
+                return;
+            }
+
+            if (!"GET".equalsIgnoreCase(exchange.getRequestMethod())) {
+                sendJsonResponse(exchange, 405, "{\"error\":\"Method not allowed\"}");
+                return;
+            }
+
+            String query = exchange.getRequestURI().getQuery();
+            String userId = "usr-1";
+            if (query != null && query.contains("userId=")) {
+                for (String part : query.split("&")) {
+                    if (part.startsWith("userId=")) {
+                        userId = part.substring("userId=".length()).trim();
+                    }
+                }
+            }
+
+            String notifs = getNotificationsForUser(userId);
+            String resp = "{\"success\":true,\"notifications\":" + notifs + "}";
+            sendJsonResponse(exchange, 200, resp);
         }
     }
 
@@ -1042,6 +1151,186 @@ public class Server {
             }
             userPosts.append("]");
             return userPosts.toString();
+        } catch (Exception ignored) {
+            return "[]";
+        }
+    }
+
+    private static final String FOLLOWS_FILE = "data/follows.json";
+    private static final String NOTIFS_FILE = "data/notifications.json";
+
+    private static synchronized List<String> getFollowingOf(String userId) {
+        List<String> list = new ArrayList<>();
+        if (userId == null || userId.isEmpty()) return list;
+        try {
+            File f = new File(FOLLOWS_FILE);
+            if (!f.exists()) return list;
+            byte[] bytes = Files.readAllBytes(f.toPath());
+            String s = new String(bytes, StandardCharsets.UTF_8).trim();
+            if (!s.startsWith("[")) return list;
+            int idx = 0;
+            while ((idx = s.indexOf("{", idx)) != -1) {
+                int end = s.indexOf("}", idx);
+                if (end == -1) break;
+                String obj = s.substring(idx, end + 1);
+                String follower = extractJsonString(obj, "followerId", "");
+                String following = extractJsonString(obj, "followingId", "");
+                if (follower.equals(userId) && !following.isEmpty() && !list.contains(following)) {
+                    list.add(following);
+                }
+                idx = end + 1;
+            }
+        } catch (Exception ignored) {}
+        return list;
+    }
+
+    private static synchronized List<String> getFollowersOf(String userId) {
+        List<String> list = new ArrayList<>();
+        if (userId == null || userId.isEmpty()) return list;
+        try {
+            File f = new File(FOLLOWS_FILE);
+            if (!f.exists()) return list;
+            byte[] bytes = Files.readAllBytes(f.toPath());
+            String s = new String(bytes, StandardCharsets.UTF_8).trim();
+            if (!s.startsWith("[")) return list;
+            int idx = 0;
+            while ((idx = s.indexOf("{", idx)) != -1) {
+                int end = s.indexOf("}", idx);
+                if (end == -1) break;
+                String obj = s.substring(idx, end + 1);
+                String follower = extractJsonString(obj, "followerId", "");
+                String following = extractJsonString(obj, "followingId", "");
+                if (following.equals(userId) && !follower.isEmpty() && !list.contains(follower)) {
+                    list.add(follower);
+                }
+                idx = end + 1;
+            }
+        } catch (Exception ignored) {}
+        return list;
+    }
+
+    private static synchronized boolean isFollowing(String followerId, String followingId) {
+        if (followerId == null || followingId == null) return false;
+        List<String> following = getFollowingOf(followerId);
+        return following.contains(followingId);
+    }
+
+    private static synchronized boolean toggleFollow(String followerId, String followingId, String action) {
+        if (followerId == null || followingId == null || followerId.equals(followingId)) return false;
+        try {
+            File dir = new File("data");
+            if (!dir.exists()) dir.mkdirs();
+            File f = new File(FOLLOWS_FILE);
+            String s = "[]";
+            if (f.exists()) {
+                byte[] bytes = Files.readAllBytes(f.toPath());
+                s = new String(bytes, StandardCharsets.UTF_8).trim();
+                if (!s.startsWith("[")) s = "[]";
+            }
+            List<String> records = new ArrayList<>();
+            boolean exists = false;
+            int idx = 0;
+            while ((idx = s.indexOf("{", idx)) != -1) {
+                int end = s.indexOf("}", idx);
+                if (end == -1) break;
+                String obj = s.substring(idx, end + 1);
+                String f1 = extractJsonString(obj, "followerId", "");
+                String f2 = extractJsonString(obj, "followingId", "");
+                if (f1.equals(followerId) && f2.equals(followingId)) {
+                    exists = true;
+                } else {
+                    records.add(obj);
+                }
+                idx = end + 1;
+            }
+
+            boolean shouldFollow = false;
+            if ("follow".equalsIgnoreCase(action)) {
+                shouldFollow = true;
+            } else if ("unfollow".equalsIgnoreCase(action)) {
+                shouldFollow = false;
+            } else {
+                shouldFollow = !exists;
+            }
+
+            if (shouldFollow) {
+                String newRecord = "{\"followerId\":\"" + escapeJson(followerId) + "\",\"followingId\":\"" + escapeJson(followingId) + "\",\"createdAt\":" + System.currentTimeMillis() + "}";
+                records.add(newRecord);
+            }
+
+            StringBuilder sb = new StringBuilder("[");
+            for (int i = 0; i < records.size(); i++) {
+                if (i > 0) sb.append(",");
+                sb.append(records.get(i));
+            }
+            sb.append("]");
+            Files.write(f.toPath(), sb.toString().getBytes(StandardCharsets.UTF_8));
+            return shouldFollow;
+        } catch (Exception ignored) {
+            return false;
+        }
+    }
+
+    private static synchronized void appendNotification(String notifJson) {
+        try {
+            File dir = new File("data");
+            if (!dir.exists()) dir.mkdirs();
+            File f = new File(NOTIFS_FILE);
+            String s = "[]";
+            if (f.exists()) {
+                byte[] bytes = Files.readAllBytes(f.toPath());
+                s = new String(bytes, StandardCharsets.UTF_8).trim();
+                if (!s.startsWith("[")) s = "[]";
+            }
+            String updated;
+            if (s.equals("[]") || s.isEmpty()) {
+                updated = "[" + notifJson + "]";
+            } else {
+                updated = "[" + notifJson + "," + s.substring(1);
+            }
+            Files.write(f.toPath(), updated.getBytes(StandardCharsets.UTF_8));
+        } catch (Exception ignored) {}
+    }
+
+    private static synchronized void notifyFollowersOfNewPost(String authorId, String authorName, String authorAvatar, String postId, long now) {
+        try {
+            List<String> followers = getFollowersOf(authorId);
+            for (String followerId : followers) {
+                if (followerId.equals(authorId)) continue;
+                String notifId = "notif_" + now + "_" + (int)(Math.random() * 10000);
+                String notifJson = "{\"id\":\"" + notifId + "\",\"recipientId\":\"" + escapeJson(followerId) + "\",\"senderId\":\"" + escapeJson(authorId) + "\",\"senderName\":\"" + escapeJson(authorName) + "\",\"senderAvatar\":\"" + escapeJson(authorAvatar) + "\",\"postId\":\"" + escapeJson(postId) + "\",\"type\":\"new_post\",\"message\":\"" + escapeJson(authorName) + " just posted a new daily food story.\",\"createdAt\":" + now + ",\"read\":false}";
+                appendNotification(notifJson);
+            }
+        } catch (Exception ignored) {}
+    }
+
+    private static synchronized String getNotificationsForUser(String userId) {
+        if (userId == null || userId.isEmpty()) return "[]";
+        try {
+            File f = new File(NOTIFS_FILE);
+            if (!f.exists()) return "[]";
+            byte[] bytes = Files.readAllBytes(f.toPath());
+            String s = new String(bytes, StandardCharsets.UTF_8).trim();
+            if (!s.startsWith("[")) return "[]";
+            StringBuilder sb = new StringBuilder("[");
+            boolean first = true;
+            int idx = 0;
+            int count = 0;
+            while ((idx = s.indexOf("{", idx)) != -1 && count < 50) {
+                int end = s.indexOf("}", idx);
+                if (end == -1) break;
+                String obj = s.substring(idx, end + 1);
+                String recipient = extractJsonString(obj, "recipientId", "");
+                if (recipient.equals(userId)) {
+                    if (!first) sb.append(",");
+                    sb.append(obj);
+                    first = false;
+                    count++;
+                }
+                idx = end + 1;
+            }
+            sb.append("]");
+            return sb.toString();
         } catch (Exception ignored) {
             return "[]";
         }
