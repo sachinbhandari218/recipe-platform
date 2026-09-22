@@ -1,4 +1,4 @@
-const CACHE_NAME = 'foodbite-pwa-v11';
+const CACHE_NAME = 'foodbite-editorial-v13';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
@@ -25,6 +25,6 @@ self.addEventListener('fetch', (event) => {
   }
   if (event.request.method !== 'GET') return;
   event.respondWith(
-    fetch(event.request, { cache: 'no-cache' }).catch(() => caches.match(event.request))
+    fetch(event.request, { cache: 'no-store' }).catch(() => caches.match(event.request))
   );
 });
