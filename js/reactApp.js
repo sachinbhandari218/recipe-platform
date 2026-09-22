@@ -1401,14 +1401,19 @@ function ExploreView({
       key: c.userId,
       className: "flex-shrink-0 w-48 p-4 recipe-card flex flex-col items-center text-center space-y-2.5 group hover:border-cyan-400"
     }, React.createElement("div", {
-      className: `w-15 h-15 rounded-full p-[2.5px] bg-gradient-to-tr ${ringGrad} shadow-sm group-hover:scale-108 transition-transform`
+      className: `story-ring-box relative rounded-full p-[2.5px] bg-gradient-to-tr ${ringGrad} shadow-sm group-hover:scale-108 transition-transform`
     }, React.createElement("div", {
-      className: "w-full h-full rounded-full p-[1.5px] bg-white dark:bg-[#1C1C1C]"
+      className: "w-full h-full rounded-full p-[1.5px] bg-white dark:bg-[#1C1C1C] overflow-hidden"
     }, React.createElement("img", {
       src: c.avatar,
       alt: c.username,
       onError: e => {
         e.currentTarget.src = "/uploads/avatars/sachin.svg";
+      },
+      style: {
+        width: "100%",
+        height: "100%",
+        objectFit: "cover"
       },
       className: "w-full h-full rounded-full object-cover"
     }))), React.createElement("div", null, React.createElement("h4", {
