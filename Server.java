@@ -506,26 +506,33 @@ public class Server {
                 String base64Data = "";
                 String extension = ".jpg";
 
-                if (rawBody.startsWith("{") && rawBody.contains("\"image\"")) {
-                    int keyIdx = rawBody.indexOf("\"image\"");
-                    int colonIdx = rawBody.indexOf(":", keyIdx);
-                    int quoteStart = rawBody.indexOf("\"", colonIdx);
-                    int quoteEnd = -1;
-                    if (quoteStart != -1) {
-                        for (int i = quoteStart + 1; i < rawBody.length(); i++) {
-                            char c = rawBody.charAt(i);
-                            if (c == '\\') {
-                                i++;
-                            } else if (c == '"') {
-                                quoteEnd = i;
-                                break;
+                if (rawBody.startsWith("{")) {
+                    String[] possibleKeys = new String[]{"\"image\"", "\"mediaBase64\"", "\"media\""};
+                    for (String key : possibleKeys) {
+                        int keyIdx = rawBody.indexOf(key);
+                        if (keyIdx != -1) {
+                            int colonIdx = rawBody.indexOf(":", keyIdx);
+                            int quoteStart = rawBody.indexOf("\"", colonIdx);
+                            int quoteEnd = -1;
+                            if (quoteStart != -1) {
+                                for (int i = quoteStart + 1; i < rawBody.length(); i++) {
+                                    char c = rawBody.charAt(i);
+                                    if (c == '\\') {
+                                        i++;
+                                    } else if (c == '"') {
+                                        quoteEnd = i;
+                                        break;
+                                    }
+                                }
+                                if (quoteEnd != -1) {
+                                    base64Data = rawBody.substring(quoteStart + 1, quoteEnd);
+                                    break;
+                                }
                             }
                         }
-                        if (quoteEnd != -1) {
-                            base64Data = rawBody.substring(quoteStart + 1, quoteEnd);
-                        }
                     }
-                } else {
+                }
+                if (base64Data == null || base64Data.isEmpty()) {
                     base64Data = rawBody;
                 }
 
@@ -555,6 +562,26 @@ public class Server {
                 Files.write(targetFile.toPath(), imageBytes);
 
                 String fileUrl = "/uploads/" + filename;
+
+                if (rawBody.contains("\"caption\"") || rawBody.contains("\"userId\"")) {
+                    long now = System.currentTimeMillis();
+                    long expiresAt = now + 86400000L;
+                    String userId = extractJsonString(rawBody, "userId", "usr-1");
+                    String username = extractJsonString(rawBody, "username", "chef");
+                    String avatar = extractJsonString(rawBody, "userAvatar", "/uploads/avatars/sachin.svg");
+                    String category = extractJsonString(rawBody, "category", "dinner");
+                    String caption = extractJsonString(rawBody, "caption", "");
+                    double duration = extractJsonDouble(rawBody, "duration", 0.0);
+                    int streak = updateStreak(userId, now);
+                    String postId = "post_" + now + "_" + (int)(Math.random() * 1000);
+                    String newPostJson = "{\"id\":\"" + postId + "\",\"userId\":\"" + userId + "\",\"username\":\"" + escapeJson(username) + "\",\"userAvatar\":\"" + avatar + "\",\"mediaUrl\":\"" + fileUrl + "\",\"mediaPath\":\"uploads/" + filename + "\",\"mediaType\":\"" + (extension.equals(".mp4") ? "video" : "image") + "\",\"category\":\"" + escapeJson(category) + "\",\"caption\":\"" + escapeJson(caption) + "\",\"duration\":" + duration + ",\"createdAt\":" + now + ",\"expiresAt\":" + expiresAt + "}";
+                    saveStory(newPostJson);
+                    notifyFollowersOfNewPost(userId, username, avatar, postId, now);
+                    String jsonResponse = "{\"success\":true,\"url\":\"" + fileUrl + "\",\"filename\":\"" + filename + "\",\"post\":" + newPostJson + ",\"currentStreak\":" + streak + "}";
+                    sendJsonResponse(exchange, 200, jsonResponse);
+                    return;
+                }
+
                 String jsonResponse = "{\"success\":true,\"url\":\"" + fileUrl + "\",\"filename\":\"" + filename + "\"}";
                 sendJsonResponse(exchange, 200, jsonResponse);
             } catch (Exception e) {
@@ -795,6 +822,7 @@ public class Server {
                 String mediaUrl = extractJsonString(body, "mediaUrl", "");
                 String mediaPath = extractJsonString(body, "mediaPath", "");
                 String mediaType = extractJsonString(body, "mediaType", "image");
+                String category = extractJsonString(body, "category", "dinner");
                 String caption = extractJsonString(body, "caption", "");
                 double duration = extractJsonDouble(body, "duration", 0.0);
 
@@ -806,7 +834,7 @@ public class Server {
                 int streak = updateStreak(userId, now);
 
                 String postId = "post_" + now + "_" + (int)(Math.random() * 1000);
-                String newPostJson = "{\"id\":\"" + postId + "\",\"userId\":\"" + userId + "\",\"username\":\"" + escapeJson(username) + "\",\"userAvatar\":\"" + avatar + "\",\"mediaUrl\":\"" + mediaUrl + "\",\"mediaPath\":\"" + mediaPath + "\",\"mediaType\":\"" + mediaType + "\",\"caption\":\"" + escapeJson(caption) + "\",\"duration\":" + duration + ",\"createdAt\":" + now + ",\"expiresAt\":" + expiresAt + "}";
+                String newPostJson = "{\"id\":\"" + postId + "\",\"userId\":\"" + userId + "\",\"username\":\"" + escapeJson(username) + "\",\"userAvatar\":\"" + avatar + "\",\"mediaUrl\":\"" + mediaUrl + "\",\"mediaPath\":\"" + mediaPath + "\",\"mediaType\":\"" + mediaType + "\",\"category\":\"" + escapeJson(category) + "\",\"caption\":\"" + escapeJson(caption) + "\",\"duration\":" + duration + ",\"createdAt\":" + now + ",\"expiresAt\":" + expiresAt + "}";
 
                 saveStory(newPostJson);
                 notifyFollowersOfNewPost(userId, username, avatar, postId, now);

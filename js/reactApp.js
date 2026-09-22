@@ -2045,32 +2045,58 @@ function CreateRecipeModal({
       const uid = currentUser ? currentUser.id || currentUser.uid : "usr-1";
       const uname = currentUser ? currentUser.username || currentUser.name || "chef" : "chef";
       const uavatar = currentUser ? currentUser.avatar || currentUser.avatarUrl || "/uploads/avatars/sachin.svg" : "/uploads/avatars/sachin.svg";
-      const resp = await fetch("/api/upload", {
+      const uploadResp = await fetch("/api/upload", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
+          image: imagePreview,
+          mediaBase64: imagePreview,
           userId: uid,
           username: uname,
           userAvatar: uavatar,
           caption: fullCaption,
-          category: category,
-          mediaBase64: imagePreview,
-          mediaType: "image",
-          expiresInHours: 24
+          category: category
         })
       });
-      const resData = await resp.json();
-      if (resp.ok && resData && resData.success) {
-        if (showToast) showToast("Recipe published successfully! Live for 24 hours ✨", "success");
-        onStoryUploaded && onStoryUploaded();
-        onClose();
-      } else {
-        if (showToast) showToast(resData && resData.error || "Failed to publish recipe", "error");
+      const uploadData = await uploadResp.json();
+      if (!uploadResp.ok || !uploadData || !uploadData.url && !uploadData.success) {
+        throw new Error(uploadData && uploadData.error || "Image upload failed");
       }
+      if (!uploadData.post) {
+        const postResp = await fetch("/api/posts", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            userId: uid,
+            username: uname,
+            userAvatar: uavatar,
+            mediaUrl: uploadData.url,
+            mediaPath: uploadData.filename ? "uploads/" + uploadData.filename : "",
+            mediaType: "image",
+            category: category,
+            caption: fullCaption,
+            duration: 0.0
+          })
+        });
+        const postData = await postResp.json();
+        if (!postResp.ok || !postData || !postData.success) {
+          throw new Error(postData && postData.error || "Failed to publish recipe");
+        }
+      }
+      if (showToast) showToast("Recipe published successfully! Live for 24 hours ✨", "success");
+      setImagePreview(null);
+      setImageFile(null);
+      setDishTitle("");
+      setCaption("");
+      setLocationTag("");
+      onStoryUploaded && onStoryUploaded();
+      onClose();
     } catch (err) {
-      if (showToast) showToast("Network error publishing recipe", "error");
+      if (showToast) showToast(err.message || "Failed to publish recipe", "error");
     } finally {
       setIsSubmitting(false);
     }
