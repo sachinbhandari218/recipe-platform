@@ -3,13 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <meta name="theme-color" content="#11110F">
+  <meta name="theme-color" content="#FFF9F3" id="theme-color-meta">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="FoodBite">
   <meta name="application-name" content="FoodBite">
-  <meta name="msapplication-TileColor" content="#11110F">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
   <link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192.png">
@@ -17,29 +16,51 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <meta name="author" content="Sachin Bhandari">
-  <title>FOODBITE® — DISCOVER. SHARE. CRAVE. — Editorial Food Publication</title>
+  <title>FoodBite — Discover, Share &amp; Crave Recipes</title>
+  <script>
+    (function() {
+      try {
+        var savedTheme = localStorage.getItem('foodbite_theme');
+        var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      } catch (e) {}
+    })();
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
+      darkMode: 'class',
       theme: {
         extend: {
           fontFamily: {
-            display: ['Bebas Neue', 'Space Grotesk', 'sans-serif'],
-            grotesk: ['Space Grotesk', 'sans-serif'],
-            sans: ['Inter', 'sans-serif']
+            sans: ['Plus Jakarta Sans', 'Inter', 'sans-serif'],
+            heading: ['Plus Jakarta Sans', 'sans-serif'],
+            inter: ['Inter', 'sans-serif']
           },
           colors: {
-            fbDark: '#11110F',
-            fbSurface: '#181714',
-            fbCream: '#F2EBDD',
-            fbOrange: '#FF5428',
-            fbMutedOrange: '#C94325',
-            fbMuted: '#85817A',
-            fbWhite: '#F7F4ED',
-            fbBorder: '#262420'
+            lightBg: '#FFF9F3',
+            lightCard: '#FFFFFF',
+            lightElevated: '#FDF5ED',
+            lightText: '#1F2937',
+            lightMuted: '#6B7280',
+            lightBorder: '#E5E7EB',
+            darkBg: '#111111',
+            darkCard: '#1C1C1C',
+            darkElevated: '#242424',
+            darkText: '#F9FAFB',
+            darkMuted: '#A1A1AA',
+            darkBorder: '#2F2F2F',
+            primaryOrange: '#F97316',
+            primaryOrangeHover: '#EA580C',
+            darkOrange: '#FB923C',
+            darkOrangeHover: '#F97316'
           }
         }
       }
@@ -48,27 +69,27 @@
   <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <link rel="stylesheet" href="css/style.css?v=20260923_hackinhills_03">
+  <link rel="stylesheet" href="css/style.css?v=20260923_modern_01">
 </head>
-<body class="min-h-screen flex flex-col bg-[#11110F] text-[#F2EBDD] font-sans antialiased selection:bg-[#FF5428] selection:text-white">
+<body class="min-h-screen flex flex-col bg-[#FFF9F3] text-[#1F2937] dark:bg-[#111111] dark:text-[#F9FAFB] font-sans antialiased selection:bg-[#F97316] selection:text-white transition-colors duration-200">
 
   <div id="root">
-    <div class="min-h-screen flex items-center justify-center bg-[#11110F] p-4 text-[#F2EBDD]">
-      <div class="text-center max-w-sm mx-auto p-6 space-y-4">
-        <div class="inline-flex items-center space-x-2 px-3 py-1 border border-[#262420] bg-[#181714] text-[10px] uppercase font-mono tracking-widest text-[#FF5428]">
-          <span>01 / DISCOVER</span>
+    <div class="min-h-screen flex items-center justify-center bg-[#FFF9F3] dark:bg-[#111111] p-4 text-[#1F2937] dark:text-[#F9FAFB]">
+      <div class="text-center max-w-sm mx-auto p-8 rounded-3xl bg-white dark:bg-[#1C1C1C] border border-[#E5E7EB] dark:border-[#2F2F2F] shadow-sm space-y-4">
+        <div class="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-tr from-[#F97316] to-[#FB923C] text-white flex items-center justify-center text-2xl shadow-md shadow-[#F97316]/25">
+          🍲
         </div>
-        <h2 class="text-4xl sm:text-5xl font-black text-[#F7F4ED] tracking-tighter uppercase font-display leading-none">
-          FOODBITE®
+        <h2 class="text-2xl font-extrabold text-[#1F2937] dark:text-[#F9FAFB] tracking-tight font-heading leading-tight">
+          FoodBite
         </h2>
-        <p class="text-[11px] text-[#85817A] uppercase tracking-widest font-mono">
-          DISCOVER. SHARE. CRAVE.
+        <p class="text-xs text-[#6B7280] dark:text-[#A1A1AA] font-medium">
+          Discover. Share. Crave.
         </p>
-        <div class="w-32 h-[2px] bg-[#262420] mx-auto overflow-hidden">
-          <div class="w-full h-full bg-[#FF5428] animate-pulse"></div>
+        <div class="w-28 h-1 bg-[#E5E7EB] dark:bg-[#2F2F2F] mx-auto rounded-full overflow-hidden">
+          <div class="w-full h-full bg-[#F97316] rounded-full animate-pulse"></div>
         </div>
         <div id="splash-failsafe" class="mt-4 hidden">
-          <button type="button" onclick="if(window.caches){caches.keys().then(k=>Promise.all(k.map(c=>caches.delete(c))));} if(navigator.serviceWorker){navigator.serviceWorker.getRegistrations().then(r=>r.forEach(x=>x.unregister()));} window.location.reload(true);" class="px-4 py-2 border border-[#FF5428] bg-[#FF5428] hover:bg-[#C94325] text-white text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer">
+          <button type="button" onclick="if(window.caches){caches.keys().then(k=>Promise.all(k.map(c=>caches.delete(c))));} if(navigator.serviceWorker){navigator.serviceWorker.getRegistrations().then(r=>r.forEach(x=>x.unregister()));} window.location.reload(true);" class="px-4 py-2 rounded-xl border border-[#F97316] bg-[#F97316] hover:bg-[#EA580C] text-white text-xs font-bold transition-all cursor-pointer">
             Reload Platform
           </button>
         </div>
@@ -84,7 +105,7 @@
     window.auth = auth;
     window.searchOnlineDishPhoto = searchOnlineDishPhoto;
   </script>
-  <script defer src="js/reactApp.js?v=20260923_hackinhills_03"></script>
+  <script defer src="js/reactApp.js?v=20260923_modern_01"></script>
   <script>
     setTimeout(function() {
       var fs = document.getElementById('splash-failsafe');
@@ -92,18 +113,9 @@
     }, 2500);
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js?v=20260923_03').then((reg) => {
+        navigator.serviceWorker.register('./sw.js?v=20260923_modern_01').then((reg) => {
           reg.update();
         }).catch(() => {});
-      });
-    }
-    if ('caches' in window) {
-      caches.keys().then((keys) => {
-        keys.forEach((k) => {
-          if (k !== 'foodbite-editorial-v13') {
-            caches.delete(k);
-          }
-        });
       });
     }
   </script>
