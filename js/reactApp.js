@@ -521,16 +521,23 @@ function StoriesTray({
   onViewStory
 }) {
   const currentUid = currentUser ? currentUser.id || currentUser.uid : "";
+  const myStory = useMemo(() => {
+    if (!stories || !currentUser) return null;
+    const uid = currentUser.id || currentUser.uid;
+    const uname = (currentUser.username || currentUser.name || "").toLowerCase();
+    return stories.find(s => s.userId && s.userId === uid || s.username && s.username.toLowerCase() === uname);
+  }, [stories, currentUser]);
   const uniqueUsers = useMemo(() => {
     if (!stories) return [];
     const map = new Map();
     stories.forEach(s => {
+      if (currentUid && s.userId === currentUid) return;
       if (!map.has(s.userId)) {
         map.set(s.userId, s);
       }
     });
     return Array.from(map.values());
-  }, [stories]);
+  }, [stories, currentUid]);
   return React.createElement("section", {
     className: "w-full bg-white dark:bg-[#1C1C1C] border-b border-[#E5E7EB] dark:border-[#2F2F2F] py-5 px-4 sm:px-6 lg:px-8 text-left transition-colors"
   }, React.createElement("div", {
@@ -550,21 +557,45 @@ function StoriesTray({
   }, stories ? stories.length : 0, " active bites")), React.createElement("div", {
     className: "flex items-center space-x-4 overflow-x-auto scrollbar-none pb-1 pt-1"
   }, React.createElement("div", {
-    onClick: onTriggerUpload,
+    onClick: myStory ? () => onViewStory(myStory) : onTriggerUpload,
     className: "flex flex-col items-center space-y-1.5 flex-shrink-0 cursor-pointer group select-none"
   }, React.createElement("div", {
-    className: "relative w-15 h-15 rounded-full p-[2px] border-2 border-dashed border-rose-400 group-hover:border-rose-600 transition-colors flex items-center justify-center bg-rose-50 dark:bg-rose-950/30"
-  }, React.createElement("img", {
-    src: currentUser && (currentUser.avatar || currentUser.avatarUrl) || "/uploads/avatars/sachin.svg",
+    className: `story-ring-box relative rounded-full p-[2.5px] ${myStory ? "bg-gradient-to-tr from-rose-500 to-amber-500" : "border-2 border-dashed border-rose-400 group-hover:border-rose-600 bg-rose-50 dark:bg-rose-950/30"} transition-all flex items-center justify-center`
+  }, React.createElement("div", {
+    className: "w-full h-full rounded-full p-[1.5px] bg-white dark:bg-[#1C1C1C] overflow-hidden flex items-center justify-center"
+  }, myStory && myStory.mediaType === "video" ? React.createElement("video", {
+    src: myStory.mediaUrl,
+    muted: true,
+    playsInline: true,
+    autoPlay: true,
+    loop: true,
+    style: {
+      width: "100%",
+      height: "100%",
+      objectFit: "cover"
+    },
+    className: "w-full h-full rounded-full object-cover pointer-events-none"
+  }) : React.createElement("img", {
+    src: myStory && myStory.mediaUrl || currentUser && (currentUser.avatar || currentUser.avatarUrl) || "/uploads/dish_1790010828136_7926.jpg",
     alt: "Your story",
     onError: e => {
-      e.currentTarget.src = "/uploads/avatars/sachin.svg";
+      e.currentTarget.src = "/uploads/dish_1790010828136_7926.jpg";
+    },
+    style: {
+      width: "100%",
+      height: "100%",
+      objectFit: "cover"
     },
     className: "w-full h-full rounded-full object-cover"
-  }), React.createElement("span", {
-    className: "absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-gradient-to-tr from-rose-500 to-amber-500 text-white flex items-center justify-center text-xs font-bold shadow-xs"
+  })), React.createElement("span", {
+    onClick: e => {
+      e.stopPropagation();
+      onTriggerUpload();
+    },
+    className: "absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-gradient-to-tr from-rose-500 to-amber-500 text-white flex items-center justify-center text-xs font-bold shadow-xs hover:scale-110 transition-transform",
+    title: "Share new story"
   }, "+")), React.createElement("span", {
-    className: "text-[11px] font-semibold text-[#1F2937] dark:text-[#F9FAFB] max-w-[68px] truncate"
+    className: "text-[11px] font-semibold text-[#1F2937] dark:text-[#F9FAFB] max-w-[68px] truncate text-center"
   }, "Your Story")), uniqueUsers.map((story, idx) => {
     const isCurrentUser = story.userId === currentUid;
     const ringGradient = STORY_RINGS[idx % STORY_RINGS.length];
@@ -573,18 +604,35 @@ function StoriesTray({
       onClick: () => onViewStory(story),
       className: "flex flex-col items-center space-y-1.5 flex-shrink-0 cursor-pointer group select-none"
     }, React.createElement("div", {
-      className: `w-15 h-15 rounded-full p-[2.5px] bg-gradient-to-tr ${ringGradient} group-hover:scale-108 transition-transform duration-200 shadow-sm`
+      className: `story-ring-box relative rounded-full p-[2.5px] bg-gradient-to-tr ${ringGradient} group-hover:scale-108 transition-transform duration-200 shadow-sm`
     }, React.createElement("div", {
-      className: "w-full h-full rounded-full p-[1.5px] bg-white dark:bg-[#1C1C1C]"
-    }, React.createElement("img", {
-      src: story.userAvatar || "/uploads/avatars/" + (story.username || "sachin") + ".svg",
-      alt: story.username,
+      className: "w-full h-full rounded-full p-[1.5px] bg-white dark:bg-[#1C1C1C] overflow-hidden flex items-center justify-center"
+    }, story.mediaType === "video" ? React.createElement("video", {
+      src: story.mediaUrl,
+      muted: true,
+      playsInline: true,
+      autoPlay: true,
+      loop: true,
+      style: {
+        width: "100%",
+        height: "100%",
+        objectFit: "cover"
+      },
+      className: "w-full h-full rounded-full object-cover pointer-events-none"
+    }) : React.createElement("img", {
+      src: story.mediaUrl || "/uploads/dish_1790010828136_7926.jpg",
+      alt: story.caption || story.username,
       onError: e => {
-        e.currentTarget.src = "/uploads/avatars/sachin.svg";
+        e.currentTarget.src = "/uploads/dish_1790010828136_7926.jpg";
+      },
+      style: {
+        width: "100%",
+        height: "100%",
+        objectFit: "cover"
       },
       className: "w-full h-full rounded-full object-cover"
     }))), React.createElement("span", {
-      className: "text-[11px] font-medium text-[#6B7280] dark:text-[#A1A1AA] group-hover:text-rose-500 max-w-[68px] truncate transition-colors"
+      className: "text-[11px] font-medium text-[#6B7280] dark:text-[#A1A1AA] group-hover:text-rose-500 max-w-[68px] truncate transition-colors text-center"
     }, isCurrentUser ? "You" : story.username));
   }))));
 }
