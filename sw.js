@@ -1,4 +1,4 @@
-const CACHE_NAME = 'foodbite-modern-v15';
+const CACHE_NAME = 'foodbite-modern-v16';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();

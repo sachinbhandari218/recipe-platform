@@ -15,6 +15,7 @@ import java.nio.file.Paths;
 import java.util.concurrent.Executors;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Base64;
 
 public class Server {
     private static int port = 8080;
@@ -573,8 +574,9 @@ public class Server {
                     String caption = extractJsonString(rawBody, "caption", "");
                     double duration = extractJsonDouble(rawBody, "duration", 0.0);
                     int streak = updateStreak(userId, now);
+                    String safeB64 = (base64Data != null && base64Data.length() < 350000) ? escapeJson(base64Data) : "";
                     String postId = "post_" + now + "_" + (int)(Math.random() * 1000);
-                    String newPostJson = "{\"id\":\"" + postId + "\",\"userId\":\"" + userId + "\",\"username\":\"" + escapeJson(username) + "\",\"userAvatar\":\"" + avatar + "\",\"mediaUrl\":\"" + fileUrl + "\",\"mediaPath\":\"uploads/" + filename + "\",\"mediaType\":\"" + (extension.equals(".mp4") ? "video" : "image") + "\",\"category\":\"" + escapeJson(category) + "\",\"caption\":\"" + escapeJson(caption) + "\",\"duration\":" + duration + ",\"createdAt\":" + now + ",\"expiresAt\":" + expiresAt + "}";
+                    String newPostJson = "{\"id\":\"" + postId + "\",\"userId\":\"" + userId + "\",\"username\":\"" + escapeJson(username) + "\",\"userAvatar\":\"" + avatar + "\",\"mediaUrl\":\"" + fileUrl + "\",\"mediaPath\":\"uploads/" + filename + "\",\"mediaType\":\"" + (extension.equals(".mp4") ? "video" : "image") + "\",\"mediaBase64\":\"" + safeB64 + "\",\"category\":\"" + escapeJson(category) + "\",\"caption\":\"" + escapeJson(caption) + "\",\"duration\":" + duration + ",\"createdAt\":" + now + ",\"expiresAt\":" + expiresAt + "}";
                     saveStory(newPostJson);
                     notifyFollowersOfNewPost(userId, username, avatar, postId, now);
                     String jsonResponse = "{\"success\":true,\"url\":\"" + fileUrl + "\",\"filename\":\"" + filename + "\",\"post\":" + newPostJson + ",\"currentStreak\":" + streak + "}";
@@ -813,6 +815,44 @@ public class Server {
                 }
                 String body = baos.toString(StandardCharsets.UTF_8).trim();
 
+                if (body.contains("\"sync\"") || body.contains("\"posts\"")) {
+                    int sCount = 0;
+                    int pIdx = body.indexOf("\"posts\"");
+                    if (pIdx != -1) {
+                        int arrStart = body.indexOf("[", pIdx);
+                        if (arrStart != -1) {
+                            int cur = arrStart + 1;
+                            while ((cur = body.indexOf("{", cur)) != -1) {
+                                int curEnd = findMatchingBrace(body, cur);
+                                if (curEnd == -1) break;
+                                String pJson = body.substring(cur, curEnd + 1);
+                                String mPath = extractJsonString(pJson, "mediaPath", "");
+                                String mB64 = extractJsonString(pJson, "mediaBase64", "");
+                                if (!mPath.isEmpty() && !mB64.isEmpty()) {
+                                    File f = new File(mPath);
+                                    if (!f.exists()) {
+                                        try {
+                                            String b64 = mB64;
+                                            int comma = b64.indexOf(",");
+                                            if (comma != -1) b64 = b64.substring(comma + 1);
+                                            byte[] imgBytes = Base64.getDecoder().decode(b64.trim());
+                                            if (f.getParentFile() != null && !f.getParentFile().exists()) {
+                                                f.getParentFile().mkdirs();
+                                            }
+                                            Files.write(f.toPath(), imgBytes);
+                                        } catch (Exception ignored) {}
+                                    }
+                                }
+                                saveStory(pJson);
+                                sCount++;
+                                cur = curEnd + 1;
+                            }
+                        }
+                    }
+                    sendJsonResponse(exchange, 200, "{\"success\":true,\"synced\":" + sCount + "}");
+                    return;
+                }
+
                 long now = System.currentTimeMillis();
                 long expiresAt = now + 86400000L;
 
@@ -822,6 +862,8 @@ public class Server {
                 String mediaUrl = extractJsonString(body, "mediaUrl", "");
                 String mediaPath = extractJsonString(body, "mediaPath", "");
                 String mediaType = extractJsonString(body, "mediaType", "image");
+                String mediaBase64 = extractJsonString(body, "mediaBase64", "");
+                String safeB64 = (mediaBase64 != null && mediaBase64.length() < 350000) ? escapeJson(mediaBase64) : "";
                 String category = extractJsonString(body, "category", "dinner");
                 String caption = extractJsonString(body, "caption", "");
                 double duration = extractJsonDouble(body, "duration", 0.0);
@@ -834,7 +876,7 @@ public class Server {
                 int streak = updateStreak(userId, now);
 
                 String postId = "post_" + now + "_" + (int)(Math.random() * 1000);
-                String newPostJson = "{\"id\":\"" + postId + "\",\"userId\":\"" + userId + "\",\"username\":\"" + escapeJson(username) + "\",\"userAvatar\":\"" + avatar + "\",\"mediaUrl\":\"" + mediaUrl + "\",\"mediaPath\":\"" + mediaPath + "\",\"mediaType\":\"" + mediaType + "\",\"category\":\"" + escapeJson(category) + "\",\"caption\":\"" + escapeJson(caption) + "\",\"duration\":" + duration + ",\"createdAt\":" + now + ",\"expiresAt\":" + expiresAt + "}";
+                String newPostJson = "{\"id\":\"" + postId + "\",\"userId\":\"" + userId + "\",\"username\":\"" + escapeJson(username) + "\",\"userAvatar\":\"" + avatar + "\",\"mediaUrl\":\"" + mediaUrl + "\",\"mediaPath\":\"" + mediaPath + "\",\"mediaType\":\"" + mediaType + "\",\"mediaBase64\":\"" + safeB64 + "\",\"category\":\"" + escapeJson(category) + "\",\"caption\":\"" + escapeJson(caption) + "\",\"duration\":" + duration + ",\"createdAt\":" + now + ",\"expiresAt\":" + expiresAt + "}";
 
                 saveStory(newPostJson);
                 notifyFollowersOfNewPost(userId, username, avatar, postId, now);
@@ -1284,10 +1326,27 @@ public class Server {
             boolean first = true;
             int idx = 0;
             while ((idx = data.indexOf("{", idx)) != -1) {
-                int end = data.indexOf("}", idx);
+                int end = findMatchingBrace(data, idx);
                 if (end == -1) break;
                 String postJson = data.substring(idx, end + 1);
                 String postId = extractJsonString(postJson, "id", "");
+                String mediaPath = extractJsonString(postJson, "mediaPath", "");
+                String mediaBase64 = extractJsonString(postJson, "mediaBase64", "");
+                if (!mediaPath.isEmpty() && !mediaBase64.isEmpty()) {
+                    File imgFile = new File(mediaPath);
+                    if (!imgFile.exists()) {
+                        try {
+                            String b64 = mediaBase64;
+                            int comma = b64.indexOf(",");
+                            if (comma != -1) b64 = b64.substring(comma + 1);
+                            byte[] imgBytes = Base64.getDecoder().decode(b64.trim());
+                            if (imgFile.getParentFile() != null && !imgFile.getParentFile().exists()) {
+                                imgFile.getParentFile().mkdirs();
+                            }
+                            Files.write(imgFile.toPath(), imgBytes);
+                        } catch (Exception ignored) {}
+                    }
+                }
 
                 List<String> postLikes = likesMap.getOrDefault(postId, new ArrayList<>());
                 String likesArrayStr = "[" + String.join(",", postLikes) + "]";
@@ -1520,7 +1579,7 @@ public class Server {
                     List<String> kept = new ArrayList<>();
                     int idx = 0;
                     while ((idx = s.indexOf("{", idx)) != -1) {
-                        int end = s.indexOf("}", idx);
+                        int end = findMatchingBrace(s, idx);
                         if (end == -1) break;
                         String obj = s.substring(idx, end + 1);
                         if (!postId.equals(extractJsonString(obj, "postId", ""))) {
@@ -1539,7 +1598,7 @@ public class Server {
                     List<String> kept = new ArrayList<>();
                     int idx = 0;
                     while ((idx = s.indexOf("{", idx)) != -1) {
-                        int end = s.indexOf("}", idx);
+                        int end = findMatchingBrace(s, idx);
                         if (end == -1) break;
                         String obj = s.substring(idx, end + 1);
                         if (!postId.equals(extractJsonString(obj, "postId", ""))) {
@@ -1567,7 +1626,7 @@ public class Server {
 
             int idx = 0;
             while ((idx = content.indexOf("{", idx)) != -1) {
-                int end = content.indexOf("}", idx);
+                int end = findMatchingBrace(content, idx);
                 if (end == -1) break;
                 String obj = content.substring(idx, end + 1);
                 long expiresAt = 0;
@@ -1620,6 +1679,10 @@ public class Server {
                 data = new String(bytes, StandardCharsets.UTF_8).trim();
             }
             if (!data.startsWith("[")) data = "[]";
+            String postId = extractJsonString(postJson, "id", "");
+            if (!postId.isEmpty() && data.contains("\"" + postId + "\"")) {
+                return;
+            }
             String updated;
             if (data.equals("[]") || data.isEmpty()) {
                 updated = "[" + postJson + "]";
@@ -1644,7 +1707,7 @@ public class Server {
 
             int idx = 0;
             while ((idx = content.indexOf("{", idx)) != -1) {
-                int end = content.indexOf("}", idx);
+                int end = findMatchingBrace(content, idx);
                 if (end == -1) break;
                 String obj = content.substring(idx, end + 1);
 
@@ -2041,5 +2104,36 @@ public class Server {
     private static String escapeJson(String s) {
         if (s == null) return "";
         return s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "");
+    }
+
+    private static int findMatchingBrace(String s, int startIdx) {
+        if (s == null || startIdx < 0 || startIdx >= s.length()) return -1;
+        int depth = 0;
+        boolean inStr = false;
+        boolean esc = false;
+        for (int i = startIdx; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (esc) {
+                esc = false;
+                continue;
+            }
+            if (c == '\\') {
+                if (inStr) esc = true;
+                continue;
+            }
+            if (c == '"') {
+                inStr = !inStr;
+                continue;
+            }
+            if (!inStr) {
+                if (c == '{') {
+                    depth++;
+                } else if (c == '}') {
+                    depth--;
+                    if (depth == 0) return i;
+                }
+            }
+        }
+        return -1;
     }
 }

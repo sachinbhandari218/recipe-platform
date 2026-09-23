@@ -579,7 +579,11 @@ function StoriesTray({
     src: myStory && myStory.mediaUrl || currentUser && (currentUser.avatar || currentUser.avatarUrl) || "/uploads/dish_1790010828136_7926.jpg",
     alt: "Your story",
     onError: e => {
-      e.currentTarget.src = "/uploads/dish_1790010828136_7926.jpg";
+      if (myStory && myStory.mediaBase64) {
+        e.currentTarget.src = myStory.mediaBase64.startsWith("data:") ? myStory.mediaBase64 : "data:image/png;base64," + myStory.mediaBase64;
+      } else {
+        e.currentTarget.src = "/uploads/dish_1790010828136_7926.jpg";
+      }
     },
     style: {
       width: "100%",
@@ -623,7 +627,11 @@ function StoriesTray({
       src: story.mediaUrl || "/uploads/dish_1790010828136_7926.jpg",
       alt: story.caption || story.username,
       onError: e => {
-        e.currentTarget.src = "/uploads/dish_1790010828136_7926.jpg";
+        if (story && story.mediaBase64) {
+          e.currentTarget.src = story.mediaBase64.startsWith("data:") ? story.mediaBase64 : "data:image/png;base64," + story.mediaBase64;
+        } else {
+          e.currentTarget.src = "/uploads/dish_1790010828136_7926.jpg";
+        }
       },
       style: {
         width: "100%",
@@ -935,7 +943,11 @@ function RecipeCard({
     src: post.mediaUrl,
     alt: post.caption || "Recipe photograph",
     onError: e => {
-      e.currentTarget.src = "/uploads/dish_1790010828136_7926.jpg";
+      if (post && post.mediaBase64) {
+        e.currentTarget.src = post.mediaBase64.startsWith("data:") ? post.mediaBase64 : "data:image/png;base64," + post.mediaBase64;
+      } else {
+        e.currentTarget.src = "/uploads/dish_1790010828136_7926.jpg";
+      }
     },
     className: "relative z-10 w-full h-full object-cover object-center group-hover/img:scale-104 transition-transform duration-500",
     loading: "lazy"
@@ -1848,7 +1860,11 @@ function RecipeDetailModal({
     src: recipe.mediaUrl,
     alt: dishTitle,
     onError: e => {
-      e.currentTarget.src = "/uploads/dish_1790010828136_7926.jpg";
+      if (recipe && recipe.mediaBase64) {
+        e.currentTarget.src = recipe.mediaBase64.startsWith("data:") ? recipe.mediaBase64 : "data:image/png;base64," + recipe.mediaBase64;
+      } else {
+        e.currentTarget.src = "/uploads/dish_1790010828136_7926.jpg";
+      }
     },
     className: "w-full h-full object-cover"
   }), React.createElement("span", {
@@ -2087,6 +2103,34 @@ function CreateRecipeModal({
           throw new Error(postData && postData.error || "Failed to publish recipe");
         }
       }
+      const createdPost = uploadData.post || {
+        id: "post_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
+        userId: uid,
+        username: uname,
+        userAvatar: uavatar,
+        mediaUrl: uploadData.url,
+        mediaPath: uploadData.filename ? "uploads/" + uploadData.filename : "",
+        mediaType: "image",
+        mediaBase64: imagePreview,
+        category: category,
+        caption: fullCaption,
+        duration: 0.0,
+        createdAt: Date.now(),
+        expiresAt: Date.now() + 86400000
+      };
+      if (!createdPost.mediaBase64 && imagePreview) {
+        createdPost.mediaBase64 = imagePreview;
+      }
+      try {
+        const savedRaw = localStorage.getItem("foodbite_saved_stories") || "[]";
+        let savedList = JSON.parse(savedRaw);
+        if (!Array.isArray(savedList)) savedList = [];
+        savedList = savedList.filter(s => s.id !== createdPost.id);
+        savedList.unshift(createdPost);
+        const curTime = Date.now();
+        savedList = savedList.filter(s => !s.expiresAt || s.expiresAt > curTime);
+        localStorage.setItem("foodbite_saved_stories", JSON.stringify(savedList.slice(0, 30)));
+      } catch (e) {}
       if (showToast) showToast("Recipe published successfully! Live for 24 hours ✨", "success");
       setImagePreview(null);
       setImageFile(null);
@@ -2278,7 +2322,11 @@ function StoryViewerModal({
     src: story.mediaUrl,
     alt: story.caption,
     onError: e => {
-      e.currentTarget.src = "/uploads/dish_1790010828136_7926.jpg";
+      if (story && story.mediaBase64) {
+        e.currentTarget.src = story.mediaBase64.startsWith("data:") ? story.mediaBase64 : "data:image/png;base64," + story.mediaBase64;
+      } else {
+        e.currentTarget.src = "/uploads/dish_1790010828136_7926.jpg";
+      }
     },
     className: "w-full h-full object-cover object-center"
   })), React.createElement("div", {
@@ -2542,13 +2590,56 @@ function App() {
     if (!silent) setIsLoadingFeed(true);
     setFeedError(null);
     try {
+      let localCached = [];
+      try {
+        const rawLocal = localStorage.getItem("foodbite_saved_stories");
+        if (rawLocal) {
+          const parsed = JSON.parse(rawLocal);
+          const curTime = Date.now();
+          localCached = Array.isArray(parsed) ? parsed.filter(p => !p.expiresAt || p.expiresAt > curTime) : [];
+        }
+      } catch (e) {}
+      if (localCached.length > 0) {
+        setStories(prev => prev && prev.length > 0 ? prev : localCached);
+      }
       const res = await fetch("/api/feed?_t=" + Date.now(), {
         cache: "no-store"
       });
       const data = await res.json();
       if (data && data.success) {
-        const posts = data.posts || [];
+        const serverPosts = Array.isArray(data.posts) ? data.posts : [];
+        const serverIds = new Set(serverPosts.map(p => p.id));
+        const missingOnServer = localCached.filter(p => !serverIds.has(p.id));
+        if (missingOnServer.length > 0) {
+          fetch("/api/posts", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              sync: true,
+              posts: missingOnServer
+            })
+          }).catch(() => {});
+        }
+        const mergedMap = new Map();
+        [...localCached, ...serverPosts].forEach(p => {
+          if (p && p.id) {
+            if (!mergedMap.has(p.id)) {
+              mergedMap.set(p.id, p);
+            } else {
+              const existing = mergedMap.get(p.id);
+              if (!existing.mediaBase64 && p.mediaBase64) existing.mediaBase64 = p.mediaBase64;
+              if (p.likes && p.likes.length > (existing.likes ? existing.likes.length : 0)) existing.likes = p.likes;
+              if (p.comments && p.comments.length > (existing.comments ? existing.comments.length : 0)) existing.comments = p.comments;
+            }
+          }
+        });
+        const posts = Array.from(mergedMap.values());
         setStories(posts);
+        try {
+          localStorage.setItem("foodbite_saved_stories", JSON.stringify(posts.slice(0, 30)));
+        } catch (e) {}
         const newLikes = {};
         const newCounts = {};
         const newPostLikes = {};
@@ -2586,6 +2677,18 @@ function App() {
         if (!silent) setFeedError("Failed to retrieve recipes.");
       }
     } catch (err) {
+      try {
+        const rawLocal = localStorage.getItem("foodbite_saved_stories");
+        if (rawLocal) {
+          const parsed = JSON.parse(rawLocal);
+          const curTime = Date.now();
+          const fallbackPosts = Array.isArray(parsed) ? parsed.filter(p => !p.expiresAt || p.expiresAt > curTime) : [];
+          if (fallbackPosts.length > 0) {
+            setStories(fallbackPosts);
+            return;
+          }
+        }
+      } catch (e) {}
       if (!silent) setFeedError("Network interface disruption.");
     } finally {
       if (!silent) setIsLoadingFeed(false);
@@ -2721,6 +2824,14 @@ function App() {
       const data = await resp.json();
       if (data && data.success) {
         setStories(prev => prev.filter(p => p.id !== postId));
+        try {
+          const rawLocal = localStorage.getItem("foodbite_saved_stories");
+          if (rawLocal) {
+            const parsed = JSON.parse(rawLocal);
+            const filtered = Array.isArray(parsed) ? parsed.filter(p => p.id !== postId) : [];
+            localStorage.setItem("foodbite_saved_stories", JSON.stringify(filtered));
+          }
+        } catch (e) {}
         showToast("Recipe removed successfully", "info");
         fetchProfile(uid);
       } else {
