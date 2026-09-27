@@ -1,1 +1,43 @@
-[]
+[{
+    "id": "rec-1",
+    "userId": "usr-2",
+    "username": "aarav",
+    "userAvatar": "/uploads/avatars/aarav.svg",
+    "mediaUrl": "/uploads/dish_1790010828136_7926.jpg",
+    "mediaPath": "uploads/dish_1790010828136_7926.jpg",
+    "mediaType": "image",
+    "mediaBase64": "",
+    "category": "dinner",
+    "caption": "Authentic Shahi Paneer with Saffron Cream \u2022 Royal cottage cheese cubes simmered in a velvety gravy of cashews, tomatoes, and aromatic Indian spices.",
+    "duration": 0.0,
+    "createdAt": 1790504605064,
+    "expiresAt": 1791714205064
+  },{
+    "id": "rec-2",
+    "userId": "usr-1",
+    "username": "sachin",
+    "userAvatar": "/uploads/avatars/sachin.svg",
+    "mediaUrl": "/uploads/pizza_1789972478_1.jpg",
+    "mediaPath": "uploads/pizza_1789972478_1.jpg",
+    "mediaType": "image",
+    "mediaBase64": "",
+    "category": "dinner",
+    "caption": "Classic Wood-Fired Margherita Pizza \u2022 Crispy 48-hour fermented sourdough crust topped with San Marzano tomatoes, fresh buffalo mozzarella, and basil.",
+    "duration": 0.0,
+    "createdAt": 1790504605064,
+    "expiresAt": 1791714205064
+  },{
+    "id": "rec-3",
+    "userId": "usr-3",
+    "username": "priya",
+    "userAvatar": "/uploads/avatars/priya.svg",
+    "mediaUrl": "/uploads/chillinoodles_1789972478_0.jpg",
+    "mediaPath": "uploads/chillinoodles_1789972478_0.jpg",
+    "mediaType": "image",
+    "mediaBase64": "",
+    "category": "quick",
+    "caption": "Fiery Garlic Sesame Chili Noodles \u2022 Springy hand-pulled noodles tossed with scorching hot chili oil, scallions, toasted sesame, and soy.",
+    "duration": 0.0,
+    "createdAt": 1790504605064,
+    "expiresAt": 1791714205064
+  }]

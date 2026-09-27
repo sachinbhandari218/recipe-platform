@@ -1070,10 +1070,12 @@ function DesktopNavBar({
   announcement,
   onTriggerInstall,
   theme,
-  onToggleTheme
+  onToggleTheme,
+  onSwitchRole
 }) {
-  const streak = userProfile && userProfile.user ? userProfile.user.streak || 0 : 0;
+  const streak = userProfile && userProfile.user ? userProfile.user.streak || 0 : currentUser ? currentUser.streak || 0 : 0;
   const avatarUrl = currentUser && (currentUser.avatar || currentUser.avatarUrl) || "/uploads/avatars/sachin.svg";
+  const isAdmin = currentUser && (currentUser.role === "admin" || currentUser.username === "sachin" || currentUser.id === "usr-1");
   const NAV_ITEMS = [{
     id: "home",
     label: "Home",
@@ -1085,6 +1087,11 @@ function DesktopNavBar({
     icon: "🔍",
     activeClass: "text-cyan-600 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-950/50 border border-cyan-200 dark:border-cyan-800"
   }, {
+    id: "myrecipes",
+    label: "My Recipes",
+    icon: "📋",
+    activeClass: "text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800"
+  }, {
     id: "saved",
     label: "Saved",
     icon: "📑",
@@ -1095,6 +1102,14 @@ function DesktopNavBar({
     icon: "👤",
     activeClass: "text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-950/50 border border-violet-200 dark:border-violet-800"
   }];
+  if (isAdmin) {
+    NAV_ITEMS.splice(3, 0, {
+      id: "admin",
+      label: "Admin Console",
+      icon: "🛡️",
+      activeClass: "text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800"
+    });
+  }
   return React.createElement("header", {
     className: "hidden md:block sticky top-0 z-40 bg-white/95 dark:bg-[#1C1C1C]/95 backdrop-blur-md border-b border-[#E5E7EB] dark:border-[#2F2F2F] transition-colors"
   }, React.createElement("div", {
@@ -1138,9 +1153,16 @@ function DesktopNavBar({
     }, tab.icon), React.createElement("span", null, tab.label));
   }))), React.createElement("div", {
     className: "flex items-center space-x-3"
-  }, React.createElement("div", {
+  }, onSwitchRole && React.createElement("button", {
+    type: "button",
+    onClick: () => onSwitchRole(isAdmin ? "user" : "admin"),
+    className: `px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shadow-xs border ${isAdmin ? "bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-700 hover:bg-amber-100" : "bg-cyan-50 dark:bg-cyan-950/40 text-cyan-800 dark:text-cyan-300 border-cyan-300 dark:border-cyan-700 hover:bg-cyan-100"}`,
+    title: isAdmin ? "Switch to User Demo (Aarav Sharma)" : "Switch to Administrator Demo (Sachin Bhandari)"
+  }, React.createElement("span", null, isAdmin ? "🛡️ Admin" : "👨‍🍳 User"), React.createElement("span", {
+    className: "text-[10px] text-[#6B7280] dark:text-[#A1A1AA]"
+  }, "\u21C4 Switch")), React.createElement("div", {
     className: "flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-400 to-rose-500 text-white text-xs font-bold shadow-xs"
-  }, React.createElement("span", null, "\uD83D\uDD25"), React.createElement("span", null, streak, "d Streak")), React.createElement(ThemeToggle, {
+  }, React.createElement("span", null, "\uD83D\uDD25"), React.createElement("span", null, streak, "d")), React.createElement(ThemeToggle, {
     theme: theme,
     onToggleTheme: onToggleTheme
   }), onTriggerInstall && React.createElement("button", {
@@ -1148,22 +1170,22 @@ function DesktopNavBar({
     onClick: onTriggerInstall,
     className: "p-2 rounded-full border border-[#E5E7EB] dark:border-[#2F2F2F] bg-white dark:bg-[#1C1C1C] hover:border-cyan-400 text-[#6B7280] dark:text-[#A1A1AA] hover:text-cyan-500 transition-colors cursor-pointer w-9 h-9 flex items-center justify-center text-sm",
     title: "Install App"
-  }, "\uD83D\uDCF1"), currentUser && (currentUser.role === "admin" || currentUser.username === "sachin" || currentUser.id === "usr-1") && React.createElement("button", {
+  }, "\uD83D\uDCF1"), isAdmin && React.createElement("button", {
     type: "button",
     onClick: onTriggerBroadcast,
     className: `px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center space-x-1.5 shadow-xs ${announcement && announcement.enabled ? "bg-gradient-to-r from-rose-500 to-red-600 text-white animate-pulse" : "bg-white dark:bg-[#1C1C1C] border border-[#E5E7EB] dark:border-[#2F2F2F] text-[#6B7280] dark:text-[#A1A1AA] hover:text-rose-500 hover:border-rose-400"}`,
     title: "Broadcast & Maintenance Settings"
-  }, React.createElement("span", null, "\uD83D\uDCE2"), React.createElement("span", null, "Broadcast")), React.createElement("button", {
+  }, React.createElement("span", null, "\uD83D\uDCE2"), React.createElement("span", null, "Notice")), React.createElement("button", {
     type: "button",
     onClick: onTriggerUpload,
     className: "px-4 py-2 btn-colorful rounded-full text-xs sm:text-sm font-bold flex items-center space-x-1.5 shadow-md shadow-rose-500/25 cursor-pointer hover:scale-103 transition-transform"
   }, React.createElement("span", null, "+"), React.createElement("span", null, "Share Recipe")), React.createElement("div", {
     onClick: () => setActiveTab("profile"),
     className: "w-10 h-10 rounded-full ring-2 ring-rose-400/50 hover:ring-rose-500 overflow-hidden cursor-pointer transition-all flex-shrink-0 bg-rose-50 dark:bg-rose-950/40",
-    title: "Your Profile"
+    title: "Profile"
   }, React.createElement("img", {
     src: avatarUrl,
-    alt: "Avatar",
+    alt: currentUser ? currentUser.username || "Chef" : "User",
     onError: e => {
       e.currentTarget.src = "/uploads/avatars/sachin.svg";
     },
@@ -1171,15 +1193,17 @@ function DesktopNavBar({
   })))));
 }
 function MobileTopBar({
-  streak,
-  onTriggerInstall,
   onLogoClick,
-  onTriggerBroadcast,
-  announcement,
+  userProfile,
   currentUser,
   theme,
-  onToggleTheme
+  onToggleTheme,
+  onTriggerBroadcast,
+  announcement,
+  onSwitchRole
 }) {
+  const streak = userProfile && userProfile.user ? userProfile.user.streak || 0 : currentUser ? currentUser.streak || 0 : 0;
+  const isAdmin = currentUser && (currentUser.role === "admin" || currentUser.username === "sachin" || currentUser.id === "usr-1");
   return React.createElement("header", {
     className: "md:hidden sticky top-0 z-40 bg-white/95 dark:bg-[#1C1C1C]/95 backdrop-blur-md border-b border-[#E5E7EB] dark:border-[#2F2F2F] px-4 py-3 flex items-center justify-between text-left transition-colors"
   }, React.createElement("div", {
@@ -1195,12 +1219,16 @@ function MobileTopBar({
     className: "text-[9px] font-semibold text-rose-500/80 uppercase block leading-none"
   }, "Discover. Share. Crave."))), React.createElement("div", {
     className: "flex items-center space-x-2"
-  }, React.createElement("div", {
+  }, onSwitchRole && React.createElement("button", {
+    type: "button",
+    onClick: () => onSwitchRole(isAdmin ? "user" : "admin"),
+    className: "px-2 py-1 rounded-full text-[10px] font-bold border border-[#E5E7EB] dark:border-[#2F2F2F] bg-gray-50 dark:bg-[#242424]"
+  }, isAdmin ? "🛡️ Admin" : "👨‍🍳 User"), React.createElement("div", {
     className: "flex items-center space-x-1 px-2.5 py-1 rounded-full bg-gradient-to-r from-amber-400 to-rose-500 text-white text-[11px] font-bold shadow-xs"
   }, React.createElement("span", null, "\uD83D\uDD25"), React.createElement("span", null, streak, "d")), React.createElement(ThemeToggle, {
     theme: theme,
     onToggleTheme: onToggleTheme
-  }), currentUser && (currentUser.role === "admin" || currentUser.username === "sachin" || currentUser.id === "usr-1") && React.createElement("button", {
+  }), isAdmin && React.createElement("button", {
     type: "button",
     onClick: onTriggerBroadcast,
     className: `p-1.5 rounded-full border text-xs cursor-pointer ${announcement && announcement.enabled ? "bg-rose-500 text-white border-rose-500" : "border-[#E5E7EB] dark:border-[#2F2F2F] bg-white dark:bg-[#1C1C1C] text-[#6B7280] dark:text-[#A1A1AA]"}`,
@@ -1211,10 +1239,12 @@ function MobileBottomNav({
   activeTab,
   setActiveTab,
   onTriggerUpload,
-  onRefreshFeed
+  onRefreshFeed,
+  currentUser
 }) {
+  const isAdmin = currentUser && (currentUser.role === "admin" || currentUser.username === "sachin" || currentUser.id === "usr-1");
   return React.createElement("nav", {
-    className: "md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-[#1C1C1C]/95 backdrop-blur-md border-t border-[#E5E7EB] dark:border-[#2F2F2F] px-3 py-2 flex items-center justify-around shadow-2xl transition-colors"
+    className: "md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-[#1C1C1C]/95 backdrop-blur-md border-t border-[#E5E7EB] dark:border-[#2F2F2F] px-2 py-2 flex items-center justify-around shadow-2xl transition-colors"
   }, React.createElement("button", {
     type: "button",
     onClick: () => {
@@ -1225,9 +1255,9 @@ function MobileBottomNav({
         behavior: "smooth"
       });
     },
-    className: `flex flex-col items-center py-1 px-2 text-[10px] font-bold transition-colors cursor-pointer ${activeTab === "home" ? "text-rose-500" : "text-[#6B7280] dark:text-[#A1A1AA]"}`
+    className: `flex flex-col items-center py-1 px-1.5 text-[9px] font-bold transition-colors cursor-pointer ${activeTab === "home" ? "text-rose-500" : "text-[#6B7280] dark:text-[#A1A1AA]"}`
   }, React.createElement("span", {
-    className: "text-xl"
+    className: "text-lg"
   }, "\uD83C\uDFE0"), React.createElement("span", null, "Home")), React.createElement("button", {
     type: "button",
     onClick: () => {
@@ -1237,27 +1267,39 @@ function MobileBottomNav({
         behavior: "smooth"
       });
     },
-    className: `flex flex-col items-center py-1 px-2 text-[10px] font-bold transition-colors cursor-pointer ${activeTab === "explore" ? "text-cyan-500" : "text-[#6B7280] dark:text-[#A1A1AA]"}`
+    className: `flex flex-col items-center py-1 px-1.5 text-[9px] font-bold transition-colors cursor-pointer ${activeTab === "explore" ? "text-cyan-500" : "text-[#6B7280] dark:text-[#A1A1AA]"}`
   }, React.createElement("span", {
-    className: "text-xl"
+    className: "text-lg"
   }, "\uD83D\uDD0D"), React.createElement("span", null, "Explore")), React.createElement("button", {
     type: "button",
     onClick: onTriggerUpload,
-    className: "w-12 h-12 rounded-full btn-colorful text-white font-bold flex items-center justify-center text-2xl shadow-lg shadow-rose-500/40 active:scale-95 cursor-pointer -mt-5 transition-transform",
+    className: "w-11 h-11 rounded-full btn-colorful text-white font-bold flex items-center justify-center text-xl shadow-lg shadow-rose-500/40 active:scale-95 cursor-pointer -mt-4 transition-transform",
     title: "Share Recipe"
   }, "+"), React.createElement("button", {
     type: "button",
     onClick: () => {
-      setActiveTab("saved");
+      setActiveTab("myrecipes");
       window.scrollTo({
         top: 0,
         behavior: "smooth"
       });
     },
-    className: `flex flex-col items-center py-1 px-2 text-[10px] font-bold transition-colors cursor-pointer ${activeTab === "saved" ? "text-emerald-500" : "text-[#6B7280] dark:text-[#A1A1AA]"}`
+    className: `flex flex-col items-center py-1 px-1.5 text-[9px] font-bold transition-colors cursor-pointer ${activeTab === "myrecipes" ? "text-amber-500" : "text-[#6B7280] dark:text-[#A1A1AA]"}`
   }, React.createElement("span", {
-    className: "text-xl"
-  }, "\uD83D\uDCD1"), React.createElement("span", null, "Saved")), React.createElement("button", {
+    className: "text-lg"
+  }, "\uD83D\uDCCB"), React.createElement("span", null, "Recipes")), isAdmin ? React.createElement("button", {
+    type: "button",
+    onClick: () => {
+      setActiveTab("admin");
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+      });
+    },
+    className: `flex flex-col items-center py-1 px-1.5 text-[9px] font-bold transition-colors cursor-pointer ${activeTab === "admin" ? "text-amber-600" : "text-[#6B7280] dark:text-[#A1A1AA]"}`
+  }, React.createElement("span", {
+    className: "text-lg"
+  }, "\uD83D\uDEE1\uFE0F"), React.createElement("span", null, "Admin")) : React.createElement("button", {
     type: "button",
     onClick: () => {
       setActiveTab("profile");
@@ -1266,13 +1308,14 @@ function MobileBottomNav({
         behavior: "smooth"
       });
     },
-    className: `flex flex-col items-center py-1 px-2 text-[10px] font-bold transition-colors cursor-pointer ${activeTab === "profile" ? "text-violet-500" : "text-[#6B7280] dark:text-[#A1A1AA]"}`
+    className: `flex flex-col items-center py-1 px-1.5 text-[9px] font-bold transition-colors cursor-pointer ${activeTab === "profile" ? "text-violet-500" : "text-[#6B7280] dark:text-[#A1A1AA]"}`
   }, React.createElement("span", {
-    className: "text-xl"
+    className: "text-lg"
   }, "\uD83D\uDC64"), React.createElement("span", null, "Profile")));
 }
 function ExploreView({
   stories,
+  allRecipes,
   onOpenRecipe,
   onTriggerUpload,
   onToggleFollow,
@@ -1289,6 +1332,8 @@ function ExploreView({
 }) {
   const [exploreSearch, setExploreSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedCookTime, setSelectedCookTime] = useState("all");
+  const [selectedDietary, setSelectedDietary] = useState("all");
   const CHEF_SPECIALTIES = ["⭐ Master Chef", "🌶️ Spice King", "🥖 Artisan Baker", "🥗 Green Guru", "🥩 Grill Master", "🍰 Pastry Prodigy", "🍜 Noodle Artisan"];
   const creators = useMemo(() => {
     if (!stories) return [];
@@ -1305,42 +1350,34 @@ function ExploreView({
     });
     return Array.from(map.values());
   }, [stories]);
-  const moodCollections = [{
-    title: "Weekend Comforts",
-    desc: "Warm stews, rich curries & crusty sourdough",
-    icon: "🍲",
-    tag: "dinner",
-    gradient: "from-amber-500/15 via-orange-500/10 to-rose-500/10",
-    borderColor: "border-amber-300 dark:border-amber-700/60",
-    badgeColor: "bg-amber-100 text-amber-900 dark:bg-amber-950/70 dark:text-amber-300"
-  }, {
-    title: "Under 20 Minutes",
-    desc: "Fast, high-flavor meals for busy foodies",
-    icon: "⚡",
-    tag: "quick",
-    gradient: "from-violet-500/15 via-purple-500/10 to-indigo-500/10",
-    borderColor: "border-violet-300 dark:border-violet-700/60",
-    badgeColor: "bg-violet-100 text-violet-900 dark:bg-violet-950/70 dark:text-violet-300"
-  }, {
-    title: "Sweet Delights",
-    desc: "Decadent cakes, warm cookies & pastries",
-    icon: "🍰",
-    tag: "desserts",
-    gradient: "from-pink-500/15 via-rose-500/10 to-red-500/10",
-    borderColor: "border-pink-300 dark:border-pink-700/60",
-    badgeColor: "bg-pink-100 text-pink-900 dark:bg-pink-950/70 dark:text-pink-300"
-  }, {
-    title: "Plant Powered",
-    desc: "Fresh garden bowls, crispy tofu & herbs",
-    icon: "🌱",
-    tag: "vegetarian",
-    gradient: "from-emerald-500/15 via-teal-500/10 to-lime-500/10",
-    borderColor: "border-emerald-300 dark:border-emerald-700/60",
-    badgeColor: "bg-emerald-100 text-emerald-900 dark:bg-emerald-950/70 dark:text-emerald-300"
-  }];
+  const combinedRecipes = useMemo(() => {
+    const list = [...(stories || [])];
+    const existingIds = new Set(list.map(s => s.id));
+    (allRecipes || []).forEach(r => {
+      if (r.status === "approved" && !existingIds.has(r.id || r.recipe_id)) {
+        list.push({
+          id: r.id || r.recipe_id,
+          userId: r.author_uid || r.author_id,
+          username: r.username || r.author_name || "chef",
+          userAvatar: "/uploads/avatars/" + (r.username || "sachin") + ".svg",
+          mediaUrl: r.image_url || r.photos?.[0] || "/uploads/pizza_1789972478_1.jpg",
+          category: r.category || r.meal_type || "dinner",
+          caption: (r.title || "") + " • " + (r.description || ""),
+          dietary: r.dietary || [],
+          cookTime: r.cooking_time || r.cookTime || "25 mins",
+          servings: r.servings ? r.servings + " servings" : "4 servings",
+          difficulty: r.difficulty || "Medium",
+          ingredients: r.ingredients || [],
+          instructions: r.instructions || "",
+          createdAt: r.created_at ? new Date(r.created_at).getTime() : Date.now(),
+          expiresAt: Date.now() + 86400000 * 30
+        });
+      }
+    });
+    return list;
+  }, [stories, allRecipes]);
   const filtered = useMemo(() => {
-    if (!stories) return [];
-    let list = [...stories];
+    let list = [...combinedRecipes];
     if (exploreSearch.trim()) {
       const q = exploreSearch.trim().toLowerCase();
       list = list.filter(s => {
@@ -1356,21 +1393,40 @@ function ExploreView({
         return cat.includes(needle) || cap.includes(needle);
       });
     }
+    if (selectedCookTime !== "all") {
+      list = list.filter(s => {
+        const timeStr = String(s.cookTime || s.cooking_time || s.caption || "");
+        const match = timeStr.match(/(\d+)/);
+        const mins = match ? parseInt(match[1]) : 25;
+        if (selectedCookTime === "under15") return mins <= 15;
+        if (selectedCookTime === "under30") return mins <= 30;
+        if (selectedCookTime === "under60") return mins <= 60;
+        return true;
+      });
+    }
+    if (selectedDietary !== "all") {
+      const dNeedle = selectedDietary.toLowerCase();
+      list = list.filter(s => {
+        const dArr = Array.isArray(s.dietary) ? s.dietary.map(x => x.toLowerCase()) : [];
+        const cap = (s.caption || "").toLowerCase();
+        return dArr.some(x => x.includes(dNeedle)) || cap.includes(dNeedle);
+      });
+    }
     return list;
-  }, [stories, exploreSearch, selectedCategory]);
+  }, [combinedRecipes, exploreSearch, selectedCategory, selectedCookTime, selectedDietary]);
   return React.createElement("div", {
     className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-28 md:pb-16 space-y-8 text-left animate-fade-in"
   }, React.createElement("div", {
     className: "space-y-4"
   }, React.createElement("div", null, React.createElement("span", {
     className: "px-3 py-1 rounded-full bg-gradient-to-r from-rose-500 to-amber-500 text-white text-xs font-bold tracking-wide inline-block mb-1.5 shadow-xs"
-  }, "\uD83D\uDD0D Explore Recipes & Creators"), React.createElement("h1", {
+  }, "\uD83D\uDD0D Discover & Search Recipes"), React.createElement("h1", {
     className: "text-3xl sm:text-4xl font-extrabold text-[#1F2937] dark:text-[#F9FAFB] font-heading tracking-tight leading-tight"
   }, "Find Your Next ", React.createElement("span", {
     className: "text-gradient-rainbow"
   }, "Culinary Craving")), React.createElement("p", {
     className: "text-sm text-[#6B7280] dark:text-[#A1A1AA] pt-1"
-  }, "Search hundreds of community recipes, follow top home chefs, and explore curated seasonal mood collections.")), React.createElement("div", {
+  }, "Search hundreds of verified community recipes by title, ingredients, category, cooking time, and dietary preferences.")), React.createElement("div", {
     className: "relative w-full max-w-2xl"
   }, React.createElement("span", {
     className: "absolute left-4 top-1/2 -translate-y-1/2 text-base text-cyan-500"
@@ -1385,93 +1441,74 @@ function ExploreView({
     onClick: () => setExploreSearch(""),
     className: "absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-[#6B7280] dark:text-[#A1A1AA] hover:text-[#1F2937] dark:hover:text-[#F9FAFB] p-1 rounded-full cursor-pointer"
   }, "\u2715")), React.createElement("div", {
-    className: "flex items-center space-x-2.5 overflow-x-auto scrollbar-none pb-1 pt-1"
+    className: "space-y-2"
+  }, React.createElement("div", {
+    className: "flex items-center space-x-2 overflow-x-auto scrollbar-none pb-1"
   }, CATEGORIES.map(cat => {
     const isActive = selectedCategory === cat.id;
     return React.createElement("button", {
       key: cat.id,
       type: "button",
       onClick: () => setSelectedCategory(cat.id),
-      className: `flex-shrink-0 px-4 py-2 rounded-2xl text-xs font-bold tracking-wide transition-all cursor-pointer flex items-center space-x-1.5 ${isActive ? cat.chipActive : "bg-white dark:bg-[#1C1C1C] text-[#6B7280] dark:text-[#A1A1AA] hover:text-[#1F2937] dark:hover:text-[#F9FAFB] border border-[#E5E7EB] dark:border-[#2F2F2F] hover:border-cyan-300"}`
+      className: `flex-shrink-0 px-3.5 py-1.5 rounded-2xl text-xs font-bold tracking-wide transition-all cursor-pointer flex items-center space-x-1.5 ${isActive ? cat.chipActive : "bg-white dark:bg-[#1C1C1C] text-[#6B7280] dark:text-[#A1A1AA] hover:text-[#1F2937] dark:hover:text-[#F9FAFB] border border-[#E5E7EB] dark:border-[#2F2F2F]"}`
     }, React.createElement("span", null, cat.icon), React.createElement("span", null, cat.label));
-  }))), creators.length > 0 && React.createElement("section", {
-    className: "space-y-3"
-  }, React.createElement("div", {
-    className: "flex items-center justify-between"
-  }, React.createElement("h2", {
-    className: "text-base sm:text-lg font-bold text-[#1F2937] dark:text-[#F9FAFB] font-heading tracking-tight flex items-center space-x-2"
-  }, React.createElement("span", null, "Top Food Creators & Chefs"), React.createElement("span", {
-    className: "text-base"
-  }, "\uD83D\uDC68\u200D\uD83C\uDF73"))), React.createElement("div", {
-    className: "flex items-center space-x-4 overflow-x-auto scrollbar-none pb-2 pt-1"
-  }, creators.map((c, idx) => {
-    const isFollowing = followingList && followingList.includes(c.userId);
-    const isSelf = currentUser && (currentUser.id || currentUser.uid) === c.userId;
-    const ringGrad = STORY_RINGS[idx % STORY_RINGS.length];
-    const specialty = CHEF_SPECIALTIES[idx % CHEF_SPECIALTIES.length];
-    return React.createElement("div", {
-      key: c.userId,
-      className: "flex-shrink-0 w-48 p-4 recipe-card flex flex-col items-center text-center space-y-2.5 group hover:border-cyan-400"
-    }, React.createElement("div", {
-      className: `story-ring-box relative rounded-full p-[2.5px] bg-gradient-to-tr ${ringGrad} shadow-sm group-hover:scale-108 transition-transform`
-    }, React.createElement("div", {
-      className: "w-full h-full rounded-full p-[1.5px] bg-white dark:bg-[#1C1C1C] overflow-hidden"
-    }, React.createElement("img", {
-      src: c.avatar,
-      alt: c.username,
-      onError: e => {
-        e.currentTarget.src = "/uploads/avatars/sachin.svg";
-      },
-      style: {
-        width: "100%",
-        height: "100%",
-        objectFit: "cover"
-      },
-      className: "w-full h-full rounded-full object-cover"
-    }))), React.createElement("div", null, React.createElement("h4", {
-      className: "text-xs sm:text-sm font-bold text-[#1F2937] dark:text-[#F9FAFB] truncate"
-    }, "@", c.username), React.createElement("span", {
-      className: "text-[10px] text-cyan-600 dark:text-cyan-400 font-semibold block pt-0.5"
-    }, specialty), React.createElement("span", {
-      className: "text-[11px] text-[#6B7280] dark:text-[#A1A1AA]"
-    }, c.recipeCount, " ", c.recipeCount === 1 ? "recipe" : "recipes")), !isSelf && onToggleFollow && React.createElement("button", {
-      type: "button",
-      onClick: () => onToggleFollow(c.userId, c.username),
-      className: `w-full py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${isFollowing ? "bg-gray-100 dark:bg-[#2A2A2A] text-[#6B7280] dark:text-[#A1A1AA] hover:bg-gray-200" : "bg-cyan-50 dark:bg-cyan-950/40 text-cyan-600 dark:text-cyan-400 border border-cyan-200 dark:border-cyan-800 hover:bg-cyan-500 hover:text-white"}`
-    }, isFollowing ? "Following" : "+ Follow"));
-  }))), React.createElement("section", {
-    className: "space-y-3"
-  }, React.createElement("h2", {
-    className: "text-base sm:text-lg font-bold text-[#1F2937] dark:text-[#F9FAFB] font-heading tracking-tight flex items-center space-x-2"
-  }, React.createElement("span", null, "Curated Meal Moods"), React.createElement("span", {
-    className: "text-base"
-  }, "\u2728")), React.createElement("div", {
-    className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
-  }, moodCollections.map((m, idx) => React.createElement("div", {
-    key: idx,
-    onClick: () => setSelectedCategory(m.tag),
-    className: `p-4 recipe-card bg-gradient-to-br ${m.gradient} border ${m.borderColor} text-left space-y-2 cursor-pointer group hover:scale-[1.02] transition-transform`
-  }, React.createElement("div", {
-    className: "w-10 h-10 rounded-2xl bg-white/80 dark:bg-[#1C1C1C]/80 text-xl flex items-center justify-center shadow-xs group-hover:scale-110 transition-transform"
-  }, m.icon), React.createElement("h3", {
-    className: "text-sm font-bold text-[#1F2937] dark:text-[#F9FAFB] group-hover:text-rose-500 transition-colors leading-tight"
-  }, m.title), React.createElement("p", {
-    className: "text-xs text-[#6B7280] dark:text-[#A1A1AA] line-clamp-2"
-  }, m.desc), React.createElement("span", {
-    className: `px-2 py-0.5 rounded text-[10px] font-bold uppercase inline-block ${m.badgeColor}`
-  }, m.tag))))), React.createElement("section", {
+  })), React.createElement("div", {
+    className: "flex flex-wrap items-center gap-2 pt-1 text-xs"
+  }, React.createElement("span", {
+    className: "font-bold text-[#6B7280] dark:text-[#A1A1AA]"
+  }, "\u23F1\uFE0F Time:"), [{
+    id: "all",
+    label: "Any Time"
+  }, {
+    id: "under15",
+    label: "≤ 15 mins"
+  }, {
+    id: "under30",
+    label: "≤ 30 mins"
+  }, {
+    id: "under60",
+    label: "≤ 60 mins"
+  }].map(t => React.createElement("button", {
+    key: t.id,
+    type: "button",
+    onClick: () => setSelectedCookTime(t.id),
+    className: `px-3 py-1 rounded-xl font-semibold transition-all cursor-pointer ${selectedCookTime === t.id ? "bg-cyan-500 text-white shadow-xs" : "bg-white dark:bg-[#1C1C1C] border border-[#E5E7EB] dark:border-[#2F2F2F] text-[#6B7280] dark:text-[#A1A1AA]"}`
+  }, t.label)), React.createElement("span", {
+    className: "font-bold text-[#6B7280] dark:text-[#A1A1AA] pl-3"
+  }, "\uD83C\uDF31 Diet:"), [{
+    id: "all",
+    label: "All Diets"
+  }, {
+    id: "vegetarian",
+    label: "Vegetarian"
+  }, {
+    id: "vegan",
+    label: "Vegan"
+  }, {
+    id: "gluten",
+    label: "Gluten-Free"
+  }].map(d => React.createElement("button", {
+    key: d.id,
+    type: "button",
+    onClick: () => setSelectedDietary(d.id),
+    className: `px-3 py-1 rounded-xl font-semibold transition-all cursor-pointer ${selectedDietary === d.id ? "bg-emerald-500 text-white shadow-xs" : "bg-white dark:bg-[#1C1C1C] border border-[#E5E7EB] dark:border-[#2F2F2F] text-[#6B7280] dark:text-[#A1A1AA]"}`
+  }, d.label))))), React.createElement("div", {
     className: "space-y-4"
   }, React.createElement("div", {
-    className: "flex items-center justify-between"
+    className: "flex items-center justify-between border-b border-[#E5E7EB] dark:border-[#2F2F2F] pb-3"
   }, React.createElement("h2", {
-    className: "text-base sm:text-lg font-bold text-[#1F2937] dark:text-[#F9FAFB] font-heading tracking-tight"
-  }, "Matching Recipes (", filtered.length, ")")), filtered.length === 0 ? React.createElement(EmptyState, {
+    className: "text-lg font-bold text-[#1F2937] dark:text-[#F9FAFB] font-heading"
+  }, "Matching Recipes (", filtered.length, ")"), React.createElement("span", {
+    className: "text-xs text-[#6B7280] dark:text-[#A1A1AA]"
+  }, "Showing approved public dishes")), filtered.length === 0 ? React.createElement(EmptyState, {
     title: "No Recipes Found",
-    message: "We couldn't find any dishes matching your search query or filters. Try searching for other ingredients or categories.",
-    actionLabel: "Reset Filters",
+    message: "No recipes match your current search and filter criteria. Try adjusting filters or search keywords.",
+    actionLabel: "Reset All Filters",
     onAction: () => {
       setExploreSearch("");
       setSelectedCategory("all");
+      setSelectedCookTime("all");
+      setSelectedDietary("all");
     }
   }) : React.createElement("div", {
     className: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
@@ -1486,7 +1523,6 @@ function ExploreView({
     isLiked: likes && !likes[dish.id],
     likeCount: dish.likeCount || (dish.likes ? dish.likes.length : 0),
     postLikes: dish.likes,
-    onShowLikes: onShowLikes,
     comments: dish.comments,
     onAddComment: onAddComment,
     onShare: onShare,
@@ -1497,28 +1533,26 @@ function ExploreView({
   })))));
 }
 function SavedView({
-  stories,
-  savedPosts,
+  savedStories,
   onOpenRecipe,
   onLike,
+  likes,
+  savedPosts,
   onSave,
   onShare,
   onAddComment,
-  likes,
-  currentUser,
   followingList,
   onToggleFollow,
+  currentUser,
   setActiveTab
 }) {
-  const savedStories = useMemo(() => {
-    if (!stories || !savedPosts) return [];
-    return stories.filter(s => savedPosts[s.id]);
-  }, [stories, savedPosts]);
   return React.createElement("div", {
-    className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-28 md:pb-16 space-y-6 text-left animate-fade-in"
-  }, React.createElement("div", null, React.createElement("span", {
-    className: "px-3 py-1 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs font-bold tracking-wide inline-block mb-1.5 shadow-xs"
-  }, "\uD83D\uDCD1 Your Recipe Bookmarks"), React.createElement("h1", {
+    className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-28 md:pb-16 space-y-8 text-left animate-fade-in"
+  }, React.createElement("div", {
+    className: "space-y-2"
+  }, React.createElement("span", {
+    className: "px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 text-xs font-bold inline-block shadow-xs"
+  }, "\uD83D\uDCD1 Personal Cookbook"), React.createElement("h1", {
     className: "text-3xl sm:text-4xl font-extrabold text-[#1F2937] dark:text-[#F9FAFB] font-heading tracking-tight leading-tight"
   }, "Saved Recipes (", React.createElement("span", {
     className: "text-emerald-500"
@@ -1566,12 +1600,14 @@ function ProfileView({
   onShare,
   onAddComment,
   followingList,
-  onToggleFollow
+  onToggleFollow,
+  onSwitchRole
 }) {
   const [activeProfileTab, setActiveProfileTab] = useState("recipes");
   const user = userProfile && userProfile.user || currentUser || {};
   const streak = user.streak || 0;
   const currentUid = user.id || user.uid;
+  const isAdmin = user.role === "admin" || user.username === "sachin" || user.id === "usr-1";
   const userStories = (stories || []).filter(s => s.userId === currentUid);
   const savedStories = (stories || []).filter(s => savedPosts && savedPosts[s.id]);
   const likedStories = (stories || []).filter(s => likes && likes[s.id]);
@@ -1587,11 +1623,17 @@ function ProfileView({
     className: "text-base text-rose-500"
   }, "\uD83D\uDC64"), React.createElement("span", {
     className: "text-xs font-bold uppercase tracking-wider text-[#6B7280] dark:text-[#A1A1AA]"
-  }, "Chef Profile & Cookbook")), React.createElement("button", {
+  }, "Chef Profile & Cookbook")), React.createElement("div", {
+    className: "flex items-center space-x-2"
+  }, onSwitchRole && React.createElement("button", {
+    type: "button",
+    onClick: () => onSwitchRole(isAdmin ? "user" : "admin"),
+    className: "px-3.5 py-1.5 rounded-full border border-amber-300 bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 text-xs font-bold transition-all cursor-pointer"
+  }, isAdmin ? "⇄ Switch to User View" : "⇄ Switch to Admin View"), React.createElement("button", {
     type: "button",
     onClick: onLogout,
     className: "px-4 py-1.5 rounded-full border border-[#E5E7EB] dark:border-[#2F2F2F] hover:border-rose-500 hover:text-rose-500 text-xs font-semibold text-[#6B7280] dark:text-[#A1A1AA] transition-colors cursor-pointer"
-  }, "Sign Out \u2192")), React.createElement("div", {
+  }, "Sign Out \u2192"))), React.createElement("div", {
     className: "flex flex-col sm:flex-row items-center sm:items-start gap-6"
   }, React.createElement("div", {
     className: "relative flex-shrink-0"
@@ -1608,13 +1650,17 @@ function ProfileView({
     className: "absolute -bottom-2 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full bg-gradient-to-r from-amber-400 to-rose-500 text-white text-[11px] font-bold tracking-wide shadow-xs flex items-center space-x-1"
   }, React.createElement("span", null, "\uD83D\uDD25"), React.createElement("span", null, streak, "d"))), React.createElement("div", {
     className: "space-y-3 text-center sm:text-left flex-1"
-  }, React.createElement("div", null, React.createElement("h1", {
+  }, React.createElement("div", null, React.createElement("div", {
+    className: "flex items-center justify-center sm:justify-start space-x-2"
+  }, React.createElement("h1", {
     className: "text-2xl sm:text-3xl font-extrabold text-[#1F2937] dark:text-[#F9FAFB] font-heading tracking-tight leading-tight"
   }, user.name || user.username || "Chef"), React.createElement("span", {
+    className: `px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${isAdmin ? "bg-amber-100 text-amber-800 border border-amber-300" : "bg-cyan-100 text-cyan-800 border border-cyan-300"}`
+  }, user.role || "user")), React.createElement("span", {
     className: "text-xs sm:text-sm font-bold text-rose-500 block pt-0.5"
   }, "@", user.username || "chef")), React.createElement("p", {
     className: "text-xs sm:text-sm text-[#6B7280] dark:text-[#A1A1AA] leading-relaxed max-w-xl"
-  }, "Home cook & food explorer sharing authentic recipes, kitchen experiments, and food stories on FoodBite."), React.createElement("div", {
+  }, user.bio || "Home cook & food explorer sharing authentic recipes, kitchen experiments, and food stories on FoodBite."), React.createElement("div", {
     className: "grid grid-cols-3 gap-3 pt-3 border-t border-[#E5E7EB] dark:border-[#2F2F2F] text-center"
   }, React.createElement("div", {
     className: "p-3 rounded-2xl bg-rose-50/60 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/40"
@@ -1634,7 +1680,7 @@ function ProfileView({
     className: "text-lg font-extrabold text-emerald-600 dark:text-emerald-400"
   }, userProfile && userProfile.followingCount || 0), React.createElement("div", {
     className: "text-[11px] font-bold text-emerald-700/70 dark:text-emerald-300/70"
-  }, "Following"))), (user.role === "admin" || user.username === "sachin" || user.id === "usr-1") && React.createElement("div", {
+  }, "Following"))), isAdmin && React.createElement("div", {
     className: "pt-2"
   }, React.createElement("button", {
     type: "button",
@@ -1738,11 +1784,1741 @@ function ProfileView({
     onOpenRecipe: onOpenRecipe
   }))))));
 }
+function UserDashboardView({
+  currentUser,
+  allRecipes,
+  allReviews,
+  allActivities,
+  onOpenRecipe,
+  onTriggerUpload,
+  showToast,
+  onSwitchToAdmin,
+  activeTab,
+  setActiveTab
+}) {
+  const [activeSubTab, setActiveSubTab] = useState("my-recipes");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [searchFilter, setSearchFilter] = useState("");
+  const [deletingRecipe, setDeletingRecipe] = useState(null);
+  const [editingRecipe, setEditingRecipe] = useState(null);
+  const [shareTitle, setShareTitle] = useState("");
+  const [shareCategory, setShareCategory] = useState("dinner");
+  const [shareCookTime, setShareCookTime] = useState("25 mins");
+  const [sharePrepTime, setSharePrepTime] = useState("15 mins");
+  const [shareServings, setShareServings] = useState("4 servings");
+  const [shareDifficulty, setShareDifficulty] = useState("Medium");
+  const [shareDietary, setShareDietary] = useState([]);
+  const [shareIngredients, setShareIngredients] = useState(["300g Main core ingredient", "2 tbsp Olive oil or butter", "2 Cloves garlic, minced", "Pinch of sea salt & black pepper"]);
+  const [newIngredient, setNewIngredient] = useState("");
+  const [shareInstructions, setShareInstructions] = useState("");
+  const [shareImagePreview, setShareImagePreview] = useState(null);
+  const [isSubmittingRecipe, setIsSubmittingRecipe] = useState(false);
+  const [profileName, setProfileName] = useState(currentUser && (currentUser.name || currentUser.display_name) || "");
+  const [profileEmail, setProfileEmail] = useState(currentUser && currentUser.email || "");
+  const [profilePassword, setProfilePassword] = useState(currentUser && currentUser.password || "");
+  const [profileBio, setProfileBio] = useState(currentUser && currentUser.bio || "Passionate home chef discovering and sharing vibrant authentic recipes.");
+  const [profileAvatar, setProfileAvatar] = useState(currentUser && (currentUser.avatar || currentUser.avatar_url) || "");
+  const currentUid = currentUser && (currentUser.id || currentUser.uid) || "usr-2";
+  const currentUname = currentUser && (currentUser.name || currentUser.display_name || currentUser.username) || "Aarav Sharma";
+  const myRecipes = useMemo(() => {
+    return (allRecipes || []).filter(r => r.author_uid === currentUid || r.author_id === currentUid || r.userId === currentUid);
+  }, [allRecipes, currentUid]);
+  const approvedCount = myRecipes.filter(r => r.status === "approved").length;
+  const pendingCount = myRecipes.filter(r => r.status === "pending").length;
+  const rejectedCount = myRecipes.filter(r => r.status === "rejected").length;
+  const myReviews = useMemo(() => {
+    return (allReviews || []).filter(rev => rev.author_uid === currentUid || rev.user_id === currentUid);
+  }, [allReviews, currentUid]);
+  const filteredMyRecipes = useMemo(() => {
+    let list = [...myRecipes];
+    if (filterStatus !== "all") {
+      list = list.filter(r => r.status === filterStatus);
+    }
+    if (searchFilter.trim()) {
+      const q = searchFilter.trim().toLowerCase();
+      list = list.filter(r => ((r.title || "") + " " + (r.category || "")).toLowerCase().includes(q));
+    }
+    return list;
+  }, [myRecipes, filterStatus, searchFilter]);
+  const handleStartEdit = recipe => {
+    setEditingRecipe(recipe);
+    setShareTitle(recipe.title || "");
+    setShareCategory(recipe.category || recipe.meal_type || "dinner");
+    setShareCookTime(recipe.cooking_time || recipe.cookTime || "25 mins");
+    setSharePrepTime(recipe.prep_time ? recipe.prep_time + " mins" : "15 mins");
+    setShareServings(recipe.servings ? recipe.servings + " servings" : "4 servings");
+    setShareDifficulty(recipe.difficulty || "Medium");
+    setShareDietary(Array.isArray(recipe.dietary) ? recipe.dietary : []);
+    setShareIngredients(Array.isArray(recipe.ingredients) && recipe.ingredients.length > 0 ? recipe.ingredients : ["Main ingredient"]);
+    setShareInstructions(recipe.instructions || recipe.description || "");
+    setShareImagePreview(recipe.image_url || recipe.mediaUrl || null);
+    setActiveSubTab("share-recipe");
+  };
+  const handleResetForm = () => {
+    setEditingRecipe(null);
+    setShareTitle("");
+    setShareCategory("dinner");
+    setShareCookTime("25 mins");
+    setSharePrepTime("15 mins");
+    setShareServings("4 servings");
+    setShareDifficulty("Medium");
+    setShareDietary([]);
+    setShareIngredients(["300g Main core ingredient", "2 tbsp Olive oil or butter", "2 Cloves garlic, minced", "Pinch of sea salt & black pepper"]);
+    setNewIngredient("");
+    setShareInstructions("");
+    setShareImagePreview(null);
+  };
+  const handleAddIngredient = e => {
+    e.preventDefault();
+    if (!newIngredient.trim()) return;
+    setShareIngredients(prev => [...prev, newIngredient.trim()]);
+    setNewIngredient("");
+  };
+  const handleRemoveIngredient = index => {
+    setShareIngredients(prev => prev.filter((_, idx) => idx !== index));
+  };
+  const handleToggleDietary = item => {
+    setShareDietary(prev => prev.includes(item) ? prev.filter(x => x !== item) : [...prev, item]);
+  };
+  const handleImageFileChange = async e => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    try {
+      const b64 = await compressImageFile(file, 1600, 0.85);
+      setShareImagePreview(b64);
+    } catch (err) {
+      if (showToast) showToast("Error processing photograph", "error");
+    }
+  };
+  const handleSaveRecipe = async e => {
+    e.preventDefault();
+    if (!shareTitle.trim()) {
+      if (showToast) showToast("Please provide a recipe title", "error");
+      return;
+    }
+    if (!shareInstructions.trim()) {
+      if (showToast) showToast("Please provide step-by-step instructions", "error");
+      return;
+    }
+    setIsSubmittingRecipe(true);
+    try {
+      const photoToUse = shareImagePreview || "/uploads/pizza_1789972478_1.jpg";
+      if (editingRecipe) {
+        if (window.store) {
+          window.store.updateRecipe(editingRecipe.id || editingRecipe.recipe_id, {
+            title: shareTitle.trim(),
+            category: shareCategory,
+            meal_type: shareCategory,
+            cooking_time: shareCookTime,
+            cookTime: shareCookTime,
+            prep_time: parseInt(sharePrepTime) || 15,
+            servings: parseInt(shareServings) || 4,
+            difficulty: shareDifficulty,
+            dietary: shareDietary,
+            ingredients: shareIngredients,
+            instructions: shareInstructions.trim(),
+            description: shareInstructions.trim().substring(0, 140) + "...",
+            image_url: photoToUse,
+            photos: [photoToUse],
+            status: "pending",
+            rejection_reason: null
+          });
+        }
+        if (showToast) showToast("Recipe updated successfully! Resubmitted for administrator review.", "success");
+      } else {
+        if (window.store) {
+          window.store.addRecipe({
+            title: shareTitle.trim(),
+            author_uid: currentUid,
+            author_id: currentUid,
+            author_name: currentUname,
+            category: shareCategory,
+            meal_type: shareCategory,
+            cooking_time: shareCookTime,
+            cookTime: shareCookTime,
+            prep_time: parseInt(sharePrepTime) || 15,
+            servings: parseInt(shareServings) || 4,
+            difficulty: shareDifficulty,
+            dietary: shareDietary,
+            ingredients: shareIngredients,
+            instructions: shareInstructions.trim(),
+            description: shareInstructions.trim().substring(0, 140) + "...",
+            image_url: photoToUse,
+            photos: [photoToUse],
+            status: "pending"
+          });
+        }
+        if (showToast) showToast("Recipe submitted successfully! It is now pending administrator review.", "success");
+      }
+      handleResetForm();
+      setActiveSubTab("my-recipes");
+    } catch (err) {
+      if (showToast) showToast("Failed to save recipe", "error");
+    } finally {
+      setIsSubmittingRecipe(false);
+    }
+  };
+  const handleConfirmDelete = () => {
+    if (!deletingRecipe) return;
+    try {
+      if (window.store) {
+        window.store.deleteRecipe(deletingRecipe.id || deletingRecipe.recipe_id);
+      }
+      if (showToast) showToast("Recipe deleted successfully from platform.", "success");
+    } catch (err) {
+      if (showToast) showToast("Failed to delete recipe", "error");
+    } finally {
+      setDeletingRecipe(null);
+    }
+  };
+  const handleDeleteReview = revId => {
+    try {
+      if (window.store) {
+        window.store.deleteReview(revId);
+      }
+      if (showToast) showToast("Review removed successfully.", "success");
+    } catch (err) {
+      if (showToast) showToast("Could not remove review", "error");
+    }
+  };
+  const handleSaveProfile = e => {
+    e.preventDefault();
+    try {
+      if (window.store) {
+        window.store.updateUser(currentUid, {
+          name: profileName.trim(),
+          display_name: profileName.trim(),
+          email: profileEmail.trim().toLowerCase(),
+          password: profilePassword,
+          bio: profileBio.trim(),
+          avatar: profileAvatar || "/uploads/avatars/anant.svg",
+          avatar_url: profileAvatar || "/uploads/avatars/anant.svg"
+        });
+      }
+      if (showToast) showToast("Profile details updated successfully!", "success");
+    } catch (err) {
+      if (showToast) showToast("Failed to update profile", "error");
+    }
+  };
+  return React.createElement("div", {
+    className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-28 md:pb-16 space-y-8 text-left animate-fade-in"
+  }, React.createElement("div", {
+    className: "flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-[#E5E7EB] dark:border-[#2F2F2F] pb-6"
+  }, React.createElement("div", null, React.createElement("div", {
+    className: "flex items-center space-x-2"
+  }, React.createElement("span", {
+    className: "px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-300 uppercase tracking-wider"
+  }, "Dedicated User Dashboard"), React.createElement("span", {
+    className: "text-xs text-[#6B7280] dark:text-[#A1A1AA]"
+  }, "\u2022"), React.createElement("span", {
+    className: "text-xs text-[#6B7280] dark:text-[#A1A1AA]"
+  }, "Chef Workspace")), React.createElement("h1", {
+    className: "text-2xl sm:text-3xl font-extrabold text-[#1F2937] dark:text-[#F9FAFB] tracking-tight font-heading mt-1"
+  }, "My Recipes & Studio"), React.createElement("p", {
+    className: "text-xs sm:text-sm text-[#6B7280] dark:text-[#A1A1AA] pt-1"
+  }, "Manage your submitted recipes, check live approval status, share new culinary creations, and interact with community reviews.")), React.createElement("div", {
+    className: "flex items-center space-x-3"
+  }, onSwitchToAdmin && React.createElement("button", {
+    type: "button",
+    onClick: onSwitchToAdmin,
+    className: "px-3.5 py-2 rounded-2xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white shadow-sm transition-all cursor-pointer flex items-center space-x-1.5",
+    title: "Test Administrator Dashboard"
+  }, React.createElement("span", null, "\uD83D\uDEE1\uFE0F"), React.createElement("span", null, "Switch to Admin Mode")), React.createElement("button", {
+    type: "button",
+    onClick: () => {
+      handleResetForm();
+      setActiveSubTab("share-recipe");
+    },
+    className: "px-4 py-2 rounded-2xl text-xs font-bold btn-colorful text-white shadow-md shadow-rose-500/20 cursor-pointer flex items-center space-x-1.5"
+  }, React.createElement("span", null, "+"), React.createElement("span", null, "Share New Recipe")))), React.createElement("div", {
+    className: "grid grid-cols-2 sm:grid-cols-4 gap-4"
+  }, React.createElement("div", {
+    className: "p-4 rounded-3xl bg-white dark:bg-[#1C1C1C] border border-[#E5E7EB] dark:border-[#2F2F2F] shadow-xs flex items-center justify-between"
+  }, React.createElement("div", null, React.createElement("span", {
+    className: "text-[10px] font-bold text-[#6B7280] dark:text-[#A1A1AA] uppercase tracking-wider block"
+  }, "My Recipes"), React.createElement("span", {
+    className: "text-2xl font-black text-[#1F2937] dark:text-[#F9FAFB] mt-0.5 block"
+  }, myRecipes.length), React.createElement("span", {
+    className: "text-[10px] text-cyan-600 dark:text-cyan-400 font-semibold block"
+  }, "Total creations")), React.createElement("div", {
+    className: "w-10 h-10 rounded-2xl bg-cyan-50 dark:bg-cyan-950/40 text-cyan-600 dark:text-cyan-400 flex items-center justify-center text-lg"
+  }, "\uD83D\uDCD6")), React.createElement("div", {
+    className: "p-4 rounded-3xl bg-white dark:bg-[#1C1C1C] border border-[#E5E7EB] dark:border-[#2F2F2F] shadow-xs flex items-center justify-between"
+  }, React.createElement("div", null, React.createElement("span", {
+    className: "text-[10px] font-bold text-[#6B7280] dark:text-[#A1A1AA] uppercase tracking-wider block"
+  }, "Approved Live"), React.createElement("span", {
+    className: "text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-0.5 block"
+  }, approvedCount), React.createElement("span", {
+    className: "text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold block"
+  }, "In public gallery")), React.createElement("div", {
+    className: "w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-lg"
+  }, "\u2713")), React.createElement("div", {
+    className: "p-4 rounded-3xl bg-white dark:bg-[#1C1C1C] border border-[#E5E7EB] dark:border-[#2F2F2F] shadow-xs flex items-center justify-between"
+  }, React.createElement("div", null, React.createElement("span", {
+    className: "text-[10px] font-bold text-[#6B7280] dark:text-[#A1A1AA] uppercase tracking-wider block"
+  }, "Pending Review"), React.createElement("span", {
+    className: "text-2xl font-black text-amber-600 dark:text-amber-400 mt-0.5 block"
+  }, pendingCount), React.createElement("span", {
+    className: "text-[10px] text-amber-600 dark:text-amber-400 font-semibold block"
+  }, "Moderation queue")), React.createElement("div", {
+    className: "w-10 h-10 rounded-2xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 flex items-center justify-center text-lg"
+  }, "\u23F3")), React.createElement("div", {
+    className: "p-4 rounded-3xl bg-white dark:bg-[#1C1C1C] border border-[#E5E7EB] dark:border-[#2F2F2F] shadow-xs flex items-center justify-between"
+  }, React.createElement("div", null, React.createElement("span", {
+    className: "text-[10px] font-bold text-[#6B7280] dark:text-[#A1A1AA] uppercase tracking-wider block"
+  }, "My Reviews"), React.createElement("span", {
+    className: "text-2xl font-black text-violet-600 dark:text-violet-400 mt-0.5 block"
+  }, myReviews.length), React.createElement("span", {
+    className: "text-[10px] text-violet-600 dark:text-violet-400 font-semibold block"
+  }, "Ratings submitted")), React.createElement("div", {
+    className: "w-10 h-10 rounded-2xl bg-violet-50 dark:bg-violet-950/40 text-violet-600 dark:text-violet-400 flex items-center justify-center text-lg"
+  }, "\u2B50"))), React.createElement("div", {
+    className: "flex border-b border-[#E5E7EB] dark:border-[#2F2F2F] space-x-2 sm:space-x-6 overflow-x-auto scrollbar-none"
+  }, [{
+    id: "my-recipes",
+    label: "My Recipes & Status",
+    count: myRecipes.length,
+    icon: "📋"
+  }, {
+    id: "share-recipe",
+    label: editingRecipe ? "Edit Recipe" : "Recipe Sharing Form",
+    icon: "✍️"
+  }, {
+    id: "my-reviews",
+    label: "My Ratings & Comments",
+    count: myReviews.length,
+    icon: "⭐"
+  }, {
+    id: "profile-manage",
+    label: "Profile Management",
+    icon: "👤"
+  }].map(tab => {
+    const isActive = activeSubTab === tab.id;
+    return React.createElement("button", {
+      key: tab.id,
+      type: "button",
+      onClick: () => setActiveSubTab(tab.id),
+      className: `pb-3 px-2 text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap flex items-center space-x-2 border-b-2 ${isActive ? "border-rose-500 text-rose-600 dark:text-rose-400" : "border-transparent text-[#6B7280] dark:text-[#A1A1AA] hover:text-[#1F2937] dark:hover:text-[#F9FAFB]"}`
+    }, React.createElement("span", null, tab.icon), React.createElement("span", null, tab.label), typeof tab.count === "number" && React.createElement("span", {
+      className: `px-2 py-0.5 rounded-full text-[10px] font-bold ${isActive ? "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300" : "bg-gray-100 dark:bg-[#242424] text-[#6B7280] dark:text-[#A1A1AA]"}`
+    }, tab.count));
+  })), activeSubTab === "my-recipes" && React.createElement("div", {
+    className: "space-y-6"
+  }, React.createElement("div", {
+    className: "flex flex-col sm:flex-row items-center justify-between gap-4"
+  }, React.createElement("div", {
+    className: "flex items-center space-x-2 overflow-x-auto w-full sm:w-auto pb-1"
+  }, [{
+    id: "all",
+    label: "All Recipes"
+  }, {
+    id: "approved",
+    label: "Approved"
+  }, {
+    id: "pending",
+    label: "Pending Review"
+  }, {
+    id: "rejected",
+    label: "Needs Revision"
+  }].map(btn => React.createElement("button", {
+    key: btn.id,
+    type: "button",
+    onClick: () => setFilterStatus(btn.id),
+    className: `px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${filterStatus === btn.id ? "bg-rose-500 text-white shadow-xs" : "bg-white dark:bg-[#1C1C1C] border border-[#E5E7EB] dark:border-[#2F2F2F] text-[#6B7280] dark:text-[#A1A1AA] hover:text-[#1F2937] dark:hover:text-[#F9FAFB]"}`
+  }, btn.label))), React.createElement("div", {
+    className: "relative w-full sm:w-64"
+  }, React.createElement("span", {
+    className: "absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[#6B7280]"
+  }, "\uD83D\uDD0D"), React.createElement("input", {
+    type: "text",
+    value: searchFilter,
+    onChange: e => setSearchFilter(e.target.value),
+    placeholder: "Search my recipes...",
+    className: "w-full pl-8 pr-3 py-2 rounded-xl bg-white dark:bg-[#1C1C1C] border border-[#E5E7EB] dark:border-[#2F2F2F] text-xs text-[#1F2937] dark:text-[#F9FAFB] focus:outline-none focus:border-rose-400"
+  }))), filteredMyRecipes.length === 0 ? React.createElement("div", {
+    className: "text-center py-16 bg-white dark:bg-[#1C1C1C] rounded-3xl border border-[#E5E7EB] dark:border-[#2F2F2F] p-8 space-y-4"
+  }, React.createElement("div", {
+    className: "w-14 h-14 rounded-2xl bg-rose-50 dark:bg-rose-950/40 text-rose-500 flex items-center justify-center text-2xl mx-auto"
+  }, "\uD83C\uDF73"), React.createElement("h3", {
+    className: "text-lg font-bold text-[#1F2937] dark:text-[#F9FAFB]"
+  }, "No Recipes Found"), React.createElement("p", {
+    className: "text-xs text-[#6B7280] dark:text-[#A1A1AA] max-w-sm mx-auto"
+  }, filterStatus !== "all" ? `You do not have any recipes currently marked as "${filterStatus}".` : "You haven't submitted any recipes yet. Click the button below to share your culinary creation!"), React.createElement("button", {
+    type: "button",
+    onClick: () => {
+      handleResetForm();
+      setActiveSubTab("share-recipe");
+    },
+    className: "px-5 py-2.5 rounded-2xl text-xs font-bold btn-colorful text-white cursor-pointer shadow-md shadow-rose-500/25"
+  }, "+ Share First Recipe")) : React.createElement("div", {
+    className: "bg-white dark:bg-[#1C1C1C] rounded-3xl border border-[#E5E7EB] dark:border-[#2F2F2F] overflow-hidden shadow-xs"
+  }, React.createElement("div", {
+    className: "overflow-x-auto"
+  }, React.createElement("table", {
+    className: "w-full text-left text-xs"
+  }, React.createElement("thead", {
+    className: "bg-gray-50 dark:bg-[#242424] text-[#6B7280] dark:text-[#A1A1AA] font-bold uppercase tracking-wider border-b border-[#E5E7EB] dark:border-[#2F2F2F]"
+  }, React.createElement("tr", null, React.createElement("th", {
+    className: "px-5 py-3.5"
+  }, "Recipe Details"), React.createElement("th", {
+    className: "px-4 py-3.5"
+  }, "Category & Cook Time"), React.createElement("th", {
+    className: "px-4 py-3.5"
+  }, "Servings"), React.createElement("th", {
+    className: "px-4 py-3.5"
+  }, "Moderation Status"), React.createElement("th", {
+    className: "px-4 py-3.5"
+  }, "Date Submitted"), React.createElement("th", {
+    className: "px-5 py-3.5 text-right"
+  }, "Actions"))), React.createElement("tbody", {
+    className: "divide-y divide-[#E5E7EB] dark:divide-[#2F2F2F]"
+  }, filteredMyRecipes.map(r => {
+    const img = r.image_url || r.mediaUrl || "/uploads/pizza_1789972478_1.jpg";
+    const isPending = r.status === "pending";
+    const isApproved = r.status === "approved";
+    const isRejected = r.status === "rejected";
+    return React.createElement("tr", {
+      key: r.id || r.recipe_id,
+      className: "hover:bg-gray-50/50 dark:hover:bg-[#222222] transition-colors"
+    }, React.createElement("td", {
+      className: "px-5 py-3.5"
+    }, React.createElement("div", {
+      className: "flex items-center space-x-3"
+    }, React.createElement("img", {
+      src: img,
+      alt: r.title,
+      onError: e => {
+        e.currentTarget.src = "/uploads/dish_1790010828136_7926.jpg";
+      },
+      className: "w-12 h-12 rounded-xl object-cover flex-shrink-0 bg-gray-100 dark:bg-[#242424]"
+    }), React.createElement("div", null, React.createElement("h4", {
+      className: "font-bold text-[#1F2937] dark:text-[#F9FAFB] text-xs leading-tight line-clamp-1"
+    }, r.title), React.createElement("span", {
+      className: "text-[11px] text-[#6B7280] dark:text-[#A1A1AA] line-clamp-1"
+    }, r.description || "Fresh culinary recipe")))), React.createElement("td", {
+      className: "px-4 py-3.5 font-medium text-[#1F2937] dark:text-[#F9FAFB] capitalize"
+    }, r.category || r.meal_type || "Dinner", " \u2022 ", r.cooking_time || r.cookTime || "25m"), React.createElement("td", {
+      className: "px-4 py-3.5 text-[#6B7280] dark:text-[#A1A1AA]"
+    }, r.servings ? r.servings + " servings" : "4 servings"), React.createElement("td", {
+      className: "px-4 py-3.5"
+    }, isApproved && React.createElement("span", {
+      className: "inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300"
+    }, "\u2713 Approved - Live"), isPending && React.createElement("span", {
+      className: "inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300"
+    }, "\u23F3 Pending Moderation"), isRejected && React.createElement("div", {
+      className: "space-y-1"
+    }, React.createElement("span", {
+      className: "inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-300"
+    }, "\u2715 Needs Revision"), r.rejection_reason && React.createElement("p", {
+      className: "text-[10px] text-rose-600 dark:text-rose-400 font-medium max-w-xs"
+    }, "Note: ", r.rejection_reason))), React.createElement("td", {
+      className: "px-4 py-3.5 text-[#6B7280] dark:text-[#A1A1AA] whitespace-nowrap"
+    }, r.created_at ? new Date(r.created_at).toLocaleDateString() : "Recent"), React.createElement("td", {
+      className: "px-5 py-3.5 text-right whitespace-nowrap"
+    }, React.createElement("div", {
+      className: "flex items-center justify-end space-x-2"
+    }, React.createElement("button", {
+      type: "button",
+      onClick: () => onOpenRecipe && onOpenRecipe(r),
+      className: "p-1.5 rounded-lg border border-[#E5E7EB] dark:border-[#2F2F2F] text-[#6B7280] dark:text-[#A1A1AA] hover:text-cyan-500 hover:border-cyan-400 transition-colors cursor-pointer",
+      title: "Preview Recipe"
+    }, "\uD83D\uDC41\uFE0F"), React.createElement("button", {
+      type: "button",
+      onClick: () => handleStartEdit(r),
+      className: "p-1.5 rounded-lg border border-[#E5E7EB] dark:border-[#2F2F2F] text-[#6B7280] dark:text-[#A1A1AA] hover:text-amber-500 hover:border-amber-400 transition-colors cursor-pointer",
+      title: "Edit Recipe"
+    }, "\u270F\uFE0F"), React.createElement("button", {
+      type: "button",
+      onClick: () => setDeletingRecipe(r),
+      className: "p-1.5 rounded-lg border border-[#E5E7EB] dark:border-[#2F2F2F] text-[#6B7280] dark:text-[#A1A1AA] hover:text-rose-500 hover:border-rose-400 transition-colors cursor-pointer",
+      title: "Delete Recipe"
+    }, "\uD83D\uDDD1\uFE0F"))));
+  })))))), activeSubTab === "share-recipe" && React.createElement("div", {
+    className: "bg-white dark:bg-[#1C1C1C] rounded-3xl border border-[#E5E7EB] dark:border-[#2F2F2F] p-6 sm:p-8 space-y-6"
+  }, React.createElement("div", {
+    className: "flex items-center justify-between border-b border-[#E5E7EB] dark:border-[#2F2F2F] pb-4"
+  }, React.createElement("div", null, React.createElement("h2", {
+    className: "text-xl font-bold text-[#1F2937] dark:text-[#F9FAFB] font-heading"
+  }, editingRecipe ? "Edit Recipe Details" : "Share a Comprehensive Recipe"), React.createElement("p", {
+    className: "text-xs text-[#6B7280] dark:text-[#A1A1AA] pt-0.5"
+  }, "Input title, ingredients, step-by-step instructions, and food photographs for administrator review.")), editingRecipe && React.createElement("button", {
+    type: "button",
+    onClick: handleResetForm,
+    className: "text-xs text-rose-500 hover:underline cursor-pointer"
+  }, "Cancel Edit")), React.createElement("form", {
+    onSubmit: handleSaveRecipe,
+    className: "space-y-5"
+  }, React.createElement("div", {
+    className: "grid grid-cols-1 sm:grid-cols-2 gap-4"
+  }, React.createElement("div", {
+    className: "space-y-1.5"
+  }, React.createElement("label", {
+    className: "text-xs font-bold text-[#1F2937] dark:text-[#F9FAFB] uppercase tracking-wider"
+  }, "Recipe Title *"), React.createElement("input", {
+    type: "text",
+    required: true,
+    value: shareTitle,
+    onChange: e => setShareTitle(e.target.value),
+    placeholder: "e.g. Authentic Shahi Paneer with Saffron Cream",
+    className: "w-full px-3.5 py-2.5 rounded-xl bg-gray-50/50 dark:bg-[#242424] border border-[#E5E7EB] dark:border-[#2F2F2F] text-xs sm:text-sm text-[#1F2937] dark:text-[#F9FAFB] focus:outline-none focus:border-rose-400"
+  })), React.createElement("div", {
+    className: "space-y-1.5"
+  }, React.createElement("label", {
+    className: "text-xs font-bold text-[#1F2937] dark:text-[#F9FAFB] uppercase tracking-wider"
+  }, "Category *"), React.createElement("select", {
+    value: shareCategory,
+    onChange: e => setShareCategory(e.target.value),
+    className: "w-full px-3.5 py-2.5 rounded-xl bg-gray-50/50 dark:bg-[#242424] border border-[#E5E7EB] dark:border-[#2F2F2F] text-xs sm:text-sm text-[#1F2937] dark:text-[#F9FAFB] focus:outline-none focus:border-rose-400 capitalize"
+  }, React.createElement("option", {
+    value: "breakfast"
+  }, "Breakfast"), React.createElement("option", {
+    value: "lunch"
+  }, "Lunch"), React.createElement("option", {
+    value: "dinner"
+  }, "Dinner"), React.createElement("option", {
+    value: "dessert"
+  }, "Dessert"), React.createElement("option", {
+    value: "snacks"
+  }, "Snacks"), React.createElement("option", {
+    value: "quick"
+  }, "Quick 15-Min Meals"), React.createElement("option", {
+    value: "beverages"
+  }, "Beverages & Drinks")))), React.createElement("div", {
+    className: "grid grid-cols-2 sm:grid-cols-4 gap-3"
+  }, React.createElement("div", {
+    className: "space-y-1.5"
+  }, React.createElement("label", {
+    className: "text-[11px] font-bold text-[#1F2937] dark:text-[#F9FAFB] uppercase"
+  }, "Cook Time"), React.createElement("input", {
+    type: "text",
+    value: shareCookTime,
+    onChange: e => setShareCookTime(e.target.value),
+    placeholder: "e.g. 25 mins",
+    className: "w-full px-3 py-2 rounded-xl bg-gray-50/50 dark:bg-[#242424] border border-[#E5E7EB] dark:border-[#2F2F2F] text-xs text-[#1F2937] dark:text-[#F9FAFB] focus:outline-none focus:border-rose-400"
+  })), React.createElement("div", {
+    className: "space-y-1.5"
+  }, React.createElement("label", {
+    className: "text-[11px] font-bold text-[#1F2937] dark:text-[#F9FAFB] uppercase"
+  }, "Prep Time"), React.createElement("input", {
+    type: "text",
+    value: sharePrepTime,
+    onChange: e => setSharePrepTime(e.target.value),
+    placeholder: "e.g. 15 mins",
+    className: "w-full px-3 py-2 rounded-xl bg-gray-50/50 dark:bg-[#242424] border border-[#E5E7EB] dark:border-[#2F2F2F] text-xs text-[#1F2937] dark:text-[#F9FAFB] focus:outline-none focus:border-rose-400"
+  })), React.createElement("div", {
+    className: "space-y-1.5"
+  }, React.createElement("label", {
+    className: "text-[11px] font-bold text-[#1F2937] dark:text-[#F9FAFB] uppercase"
+  }, "Servings"), React.createElement("input", {
+    type: "text",
+    value: shareServings,
+    onChange: e => setShareServings(e.target.value),
+    placeholder: "e.g. 4 servings",
+    className: "w-full px-3 py-2 rounded-xl bg-gray-50/50 dark:bg-[#242424] border border-[#E5E7EB] dark:border-[#2F2F2F] text-xs text-[#1F2937] dark:text-[#F9FAFB] focus:outline-none focus:border-rose-400"
+  })), React.createElement("div", {
+    className: "space-y-1.5"
+  }, React.createElement("label", {
+    className: "text-[11px] font-bold text-[#1F2937] dark:text-[#F9FAFB] uppercase"
+  }, "Difficulty"), React.createElement("select", {
+    value: shareDifficulty,
+    onChange: e => setShareDifficulty(e.target.value),
+    className: "w-full px-3 py-2 rounded-xl bg-gray-50/50 dark:bg-[#242424] border border-[#E5E7EB] dark:border-[#2F2F2F] text-xs text-[#1F2937] dark:text-[#F9FAFB] focus:outline-none focus:border-rose-400"
+  }, React.createElement("option", {
+    value: "Easy"
+  }, "Easy"), React.createElement("option", {
+    value: "Medium"
+  }, "Medium"), React.createElement("option", {
+    value: "Hard"
+  }, "Hard / Advanced")))), React.createElement("div", {
+    className: "space-y-2"
+  }, React.createElement("label", {
+    className: "text-xs font-bold text-[#1F2937] dark:text-[#F9FAFB] uppercase tracking-wider block"
+  }, "Dietary Preferences"), React.createElement("div", {
+    className: "flex flex-wrap gap-2"
+  }, ["Vegetarian", "Vegan", "Gluten-Free", "Dairy-Free", "Low-Carb", "Nut-Free"].map(tag => {
+    const isChecked = shareDietary.includes(tag);
+    return React.createElement("button", {
+      key: tag,
+      type: "button",
+      onClick: () => handleToggleDietary(tag),
+      className: `px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${isChecked ? "bg-emerald-500 text-white shadow-xs" : "bg-gray-100 dark:bg-[#242424] text-[#6B7280] dark:text-[#A1A1AA] hover:text-[#1F2937] dark:hover:text-[#F9FAFB]"}`
+    }, isChecked ? "✓ " : "+ ", tag);
+  }))), React.createElement("div", {
+    className: "space-y-2"
+  }, React.createElement("label", {
+    className: "text-xs font-bold text-[#1F2937] dark:text-[#F9FAFB] uppercase tracking-wider block"
+  }, "Ingredients List (", shareIngredients.length, ")"), React.createElement("div", {
+    className: "space-y-1.5"
+  }, shareIngredients.map((ing, idx) => React.createElement("div", {
+    key: idx,
+    className: "flex items-center space-x-2"
+  }, React.createElement("span", {
+    className: "w-5 text-center text-xs text-[#6B7280] dark:text-[#A1A1AA] font-bold"
+  }, idx + 1, "."), React.createElement("span", {
+    className: "flex-1 px-3 py-1.5 bg-gray-50/50 dark:bg-[#242424] border border-[#E5E7EB] dark:border-[#2F2F2F] rounded-xl text-xs text-[#1F2937] dark:text-[#F9FAFB]"
+  }, ing), React.createElement("button", {
+    type: "button",
+    onClick: () => handleRemoveIngredient(idx),
+    className: "p-1.5 text-xs text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg cursor-pointer",
+    title: "Remove Ingredient"
+  }, "\u2715")))), React.createElement("div", {
+    className: "flex items-center space-x-2 pt-1"
+  }, React.createElement("input", {
+    type: "text",
+    value: newIngredient,
+    onChange: e => setNewIngredient(e.target.value),
+    onKeyDown: e => {
+      if (e.key === "Enter") handleAddIngredient(e);
+    },
+    placeholder: "e.g. 1 tsp Smoked paprika",
+    className: "flex-1 px-3.5 py-2 rounded-xl bg-gray-50/50 dark:bg-[#242424] border border-[#E5E7EB] dark:border-[#2F2F2F] text-xs text-[#1F2937] dark:text-[#F9FAFB] focus:outline-none focus:border-rose-400"
+  }), React.createElement("button", {
+    type: "button",
+    onClick: handleAddIngredient,
+    className: "px-4 py-2 bg-gray-100 dark:bg-[#2A2A2A] hover:bg-gray-200 dark:hover:bg-[#333333] text-[#1F2937] dark:text-[#F9FAFB] rounded-xl text-xs font-bold transition-all cursor-pointer"
+  }, "+ Add"))), React.createElement("div", {
+    className: "space-y-1.5"
+  }, React.createElement("label", {
+    className: "text-xs font-bold text-[#1F2937] dark:text-[#F9FAFB] uppercase tracking-wider"
+  }, "Step-by-Step Instructions *"), React.createElement("textarea", {
+    required: true,
+    rows: 5,
+    value: shareInstructions,
+    onChange: e => setShareInstructions(e.target.value),
+    placeholder: "1. Prepare aromatics and saut\xE9 in heated oil...\n2. Add main protein or vegetables and simmer on medium flame...\n3. Garnish with fresh herbs and serve hot.",
+    className: "w-full px-3.5 py-2.5 rounded-xl bg-gray-50/50 dark:bg-[#242424] border border-[#E5E7EB] dark:border-[#2F2F2F] text-xs sm:text-sm text-[#1F2937] dark:text-[#F9FAFB] focus:outline-none focus:border-rose-400 leading-relaxed font-sans"
+  })), React.createElement("div", {
+    className: "space-y-2"
+  }, React.createElement("label", {
+    className: "text-xs font-bold text-[#1F2937] dark:text-[#F9FAFB] uppercase tracking-wider block"
+  }, "Recipe Photograph"), React.createElement("div", {
+    className: "flex flex-col sm:flex-row items-center gap-4"
+  }, React.createElement("label", {
+    className: "cursor-pointer px-4 py-2.5 rounded-xl border border-dashed border-rose-300 dark:border-rose-700 bg-rose-50/30 dark:bg-rose-950/20 text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-all flex items-center space-x-2"
+  }, React.createElement("span", null, "\uD83D\uDCF7"), React.createElement("span", null, "Choose Food Photo File"), React.createElement("input", {
+    type: "file",
+    accept: "image/png,image/jpeg,image/webp,image/gif",
+    onChange: handleImageFileChange,
+    className: "hidden"
+  })), shareImagePreview && React.createElement("div", {
+    className: "flex items-center space-x-3"
+  }, React.createElement("img", {
+    src: shareImagePreview,
+    alt: "Preview",
+    className: "w-14 h-14 rounded-xl object-cover border border-[#E5E7EB] dark:border-[#2F2F2F]"
+  }), React.createElement("button", {
+    type: "button",
+    onClick: () => setShareImagePreview(null),
+    className: "text-xs text-rose-500 hover:underline cursor-pointer"
+  }, "Remove Photo")))), React.createElement("div", {
+    className: "pt-4 border-t border-[#E5E7EB] dark:border-[#2F2F2F] flex items-center justify-end space-x-3"
+  }, React.createElement("button", {
+    type: "button",
+    onClick: handleResetForm,
+    className: "px-5 py-2.5 rounded-2xl border border-[#E5E7EB] dark:border-[#2F2F2F] text-xs font-bold text-[#6B7280] dark:text-[#A1A1AA] hover:text-[#1F2937] dark:hover:text-[#F9FAFB] transition-colors cursor-pointer"
+  }, "Reset"), React.createElement("button", {
+    type: "submit",
+    disabled: isSubmittingRecipe,
+    className: "px-6 py-2.5 rounded-2xl text-xs sm:text-sm font-bold btn-colorful text-white shadow-md shadow-rose-500/25 cursor-pointer disabled:opacity-50"
+  }, isSubmittingRecipe ? "Submitting..." : editingRecipe ? "Update Recipe" : "Submit Recipe for Review")))), activeSubTab === "my-reviews" && React.createElement("div", {
+    className: "space-y-4"
+  }, React.createElement("div", {
+    className: "border-b border-[#E5E7EB] dark:border-[#2F2F2F] pb-3"
+  }, React.createElement("h3", {
+    className: "text-base font-bold text-[#1F2937] dark:text-[#F9FAFB] font-heading"
+  }, "My Ratings and Comments History (", myReviews.length, ")"), React.createElement("p", {
+    className: "text-xs text-[#6B7280] dark:text-[#A1A1AA] pt-0.5"
+  }, "Review and manage your culinary comments, ratings, and recommendations given to fellow chefs.")), myReviews.length === 0 ? React.createElement("div", {
+    className: "text-center py-16 bg-white dark:bg-[#1C1C1C] rounded-3xl border border-[#E5E7EB] dark:border-[#2F2F2F] p-8 space-y-3"
+  }, React.createElement("span", {
+    className: "text-3xl block"
+  }, "\u2B50"), React.createElement("h4", {
+    className: "font-bold text-sm text-[#1F2937] dark:text-[#F9FAFB]"
+  }, "No Reviews Given Yet"), React.createElement("p", {
+    className: "text-xs text-[#6B7280] dark:text-[#A1A1AA] max-w-sm mx-auto"
+  }, "Explore recipes in the community feed or explore tab, try them out, and leave 1-5 star ratings and reviews."), React.createElement("button", {
+    type: "button",
+    onClick: () => setActiveTab && setActiveTab("explore"),
+    className: "px-4 py-2 rounded-xl text-xs font-bold bg-rose-500 text-white cursor-pointer"
+  }, "Explore Recipes")) : React.createElement("div", {
+    className: "grid grid-cols-1 md:grid-cols-2 gap-4"
+  }, myReviews.map(rev => {
+    const targetRecipe = (allRecipes || []).find(r => r.id === rev.recipe_id || r.recipe_id === rev.recipe_id);
+    const stars = Array(5).fill(0).map((_, i) => i < (rev.rating || 5));
+    return React.createElement("div", {
+      key: rev.id,
+      className: "p-4 rounded-2xl bg-white dark:bg-[#1C1C1C] border border-[#E5E7EB] dark:border-[#2F2F2F] shadow-xs space-y-2.5"
+    }, React.createElement("div", {
+      className: "flex items-center justify-between"
+    }, React.createElement("div", {
+      className: "flex items-center space-x-1"
+    }, stars.map((filled, i) => React.createElement("span", {
+      key: i,
+      className: `text-sm ${filled ? "text-amber-400" : "text-gray-300 dark:text-[#444444]"}`
+    }, "\u2605"))), React.createElement("span", {
+      className: "text-[10px] text-[#6B7280] dark:text-[#A1A1AA]"
+    }, rev.created_at ? new Date(rev.created_at).toLocaleDateString() : "Recent")), React.createElement("p", {
+      className: "text-xs text-[#1F2937] dark:text-[#F9FAFB] leading-relaxed italic"
+    }, "\"", rev.comment || rev.text || "Delicious preparation!", "\""), React.createElement("div", {
+      className: "flex items-center justify-between pt-2 border-t border-[#E5E7EB] dark:border-[#2F2F2F]"
+    }, React.createElement("span", {
+      className: "text-[11px] font-bold text-rose-500"
+    }, "Dish: ", targetRecipe ? targetRecipe.title : "Community Recipe"), React.createElement("button", {
+      type: "button",
+      onClick: () => handleDeleteReview(rev.id),
+      className: "text-[11px] text-rose-500 hover:underline cursor-pointer"
+    }, "Delete Review")));
+  }))), activeSubTab === "profile-manage" && React.createElement("div", {
+    className: "bg-white dark:bg-[#1C1C1C] rounded-3xl border border-[#E5E7EB] dark:border-[#2F2F2F] p-6 sm:p-8 space-y-6 max-w-2xl"
+  }, React.createElement("div", {
+    className: "border-b border-[#E5E7EB] dark:border-[#2F2F2F] pb-4"
+  }, React.createElement("h2", {
+    className: "text-xl font-bold text-[#1F2937] dark:text-[#F9FAFB] font-heading"
+  }, "Personal Profile Management"), React.createElement("p", {
+    className: "text-xs text-[#6B7280] dark:text-[#A1A1AA] pt-0.5"
+  }, "Update your personal chef identity, display name, email credentials, and biography.")), React.createElement("form", {
+    onSubmit: handleSaveProfile,
+    className: "space-y-4"
+  }, React.createElement("div", {
+    className: "space-y-1.5"
+  }, React.createElement("label", {
+    className: "text-xs font-bold text-[#1F2937] dark:text-[#F9FAFB] uppercase tracking-wider"
+  }, "Full Display Name *"), React.createElement("input", {
+    type: "text",
+    required: true,
+    value: profileName,
+    onChange: e => setProfileName(e.target.value),
+    className: "w-full px-3.5 py-2.5 rounded-xl bg-gray-50/50 dark:bg-[#242424] border border-[#E5E7EB] dark:border-[#2F2F2F] text-xs sm:text-sm text-[#1F2937] dark:text-[#F9FAFB] focus:outline-none focus:border-rose-400"
+  })), React.createElement("div", {
+    className: "space-y-1.5"
+  }, React.createElement("label", {
+    className: "text-xs font-bold text-[#1F2937] dark:text-[#F9FAFB] uppercase tracking-wider"
+  }, "Email Address *"), React.createElement("input", {
+    type: "email",
+    required: true,
+    value: profileEmail,
+    onChange: e => setProfileEmail(e.target.value),
+    className: "w-full px-3.5 py-2.5 rounded-xl bg-gray-50/50 dark:bg-[#242424] border border-[#E5E7EB] dark:border-[#2F2F2F] text-xs sm:text-sm text-[#1F2937] dark:text-[#F9FAFB] focus:outline-none focus:border-rose-400"
+  })), React.createElement("div", {
+    className: "space-y-1.5"
+  }, React.createElement("label", {
+    className: "text-xs font-bold text-[#1F2937] dark:text-[#F9FAFB] uppercase tracking-wider"
+  }, "Password"), React.createElement("input", {
+    type: "password",
+    value: profilePassword,
+    onChange: e => setProfilePassword(e.target.value),
+    className: "w-full px-3.5 py-2.5 rounded-xl bg-gray-50/50 dark:bg-[#242424] border border-[#E5E7EB] dark:border-[#2F2F2F] text-xs sm:text-sm text-[#1F2937] dark:text-[#F9FAFB] focus:outline-none focus:border-rose-400"
+  })), React.createElement("div", {
+    className: "space-y-1.5"
+  }, React.createElement("label", {
+    className: "text-xs font-bold text-[#1F2937] dark:text-[#F9FAFB] uppercase tracking-wider"
+  }, "Chef Bio / Cooking Philosophy"), React.createElement("textarea", {
+    rows: 3,
+    value: profileBio,
+    onChange: e => setProfileBio(e.target.value),
+    className: "w-full px-3.5 py-2.5 rounded-xl bg-gray-50/50 dark:bg-[#242424] border border-[#E5E7EB] dark:border-[#2F2F2F] text-xs sm:text-sm text-[#1F2937] dark:text-[#F9FAFB] focus:outline-none focus:border-rose-400"
+  })), React.createElement("div", {
+    className: "pt-3"
+  }, React.createElement("button", {
+    type: "submit",
+    className: "px-6 py-2.5 rounded-2xl text-xs sm:text-sm font-bold btn-colorful text-white shadow-md shadow-rose-500/25 cursor-pointer"
+  }, "Save Profile Changes")))), deletingRecipe && React.createElement("div", {
+    className: "fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
+  }, React.createElement("div", {
+    className: "bg-white dark:bg-[#1C1C1C] rounded-3xl border border-[#E5E7EB] dark:border-[#2F2F2F] max-w-sm w-full p-6 text-center space-y-4 shadow-2xl"
+  }, React.createElement("div", {
+    className: "w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-950/40 text-rose-500 flex items-center justify-center text-xl mx-auto"
+  }, "\uD83D\uDDD1\uFE0F"), React.createElement("h3", {
+    className: "text-base font-bold text-[#1F2937] dark:text-[#F9FAFB]"
+  }, "Delete Recipe?"), React.createElement("p", {
+    className: "text-xs text-[#6B7280] dark:text-[#A1A1AA]"
+  }, "Are you sure you want to delete ", React.createElement("span", {
+    className: "font-bold text-[#1F2937] dark:text-[#F9FAFB]"
+  }, "\"", deletingRecipe.title, "\""), "? This action cannot be undone."), React.createElement("div", {
+    className: "flex items-center justify-center space-x-3 pt-2"
+  }, React.createElement("button", {
+    type: "button",
+    onClick: () => setDeletingRecipe(null),
+    className: "px-4 py-2 rounded-xl border border-[#E5E7EB] dark:border-[#2F2F2F] text-xs font-semibold text-[#6B7280] dark:text-[#A1A1AA] cursor-pointer"
+  }, "Cancel"), React.createElement("button", {
+    type: "button",
+    onClick: handleConfirmDelete,
+    className: "px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-md cursor-pointer"
+  }, "Confirm Delete")))));
+}
+function AdminDashboardView({
+  currentUser,
+  allUsers,
+  allRecipes,
+  allReviews,
+  allActivities,
+  allSettings,
+  onOpenRecipe,
+  showToast,
+  onSwitchToUser
+}) {
+  const [activeAdminTab, setActiveAdminTab] = useState("users");
+  const [userSearch, setUserSearch] = useState("");
+  const [userRoleFilter, setUserRoleFilter] = useState("all");
+  const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
+  const [newUserName, setNewUserName] = useState("");
+  const [newUserEmail, setNewUserEmail] = useState("");
+  const [newUserPassword, setNewUserPassword] = useState("password123");
+  const [newUserRole, setNewUserRole] = useState("user");
+  const [editingUser, setEditingUser] = useState(null);
+  const [editUserName, setEditUserName] = useState("");
+  const [editUserEmail, setEditUserEmail] = useState("");
+  const [editUserRole, setEditUserRole] = useState("user");
+  const [deletingUser, setDeletingUser] = useState(null);
+  const [recipeFilterStatus, setRecipeFilterStatus] = useState("all");
+  const [recipeSearch, setRecipeSearch] = useState("");
+  const [rejectingRecipe, setRejectingRecipe] = useState(null);
+  const [rejectionReasonText, setRejectionReasonText] = useState("");
+  const [deletingRecipe, setDeletingRecipe] = useState(null);
+  const [platformName, setPlatformName] = useState(allSettings && allSettings.platformName || "Online Recipe Sharing Platform");
+  const [contactEmail, setContactEmail] = useState(allSettings && allSettings.contactEmail || "admin@recipes.com");
+  const [maxPhotos, setMaxPhotos] = useState(allSettings && allSettings.maxPhotosPerRecipe || 5);
+  const [maintenanceMode, setMaintenanceMode] = useState(Boolean(allSettings && allSettings.maintenanceMode));
+  const [autoApprove, setAutoApprove] = useState(Boolean(allSettings && allSettings.autoApproveVerified));
+  const [allowUploads, setAllowUploads] = useState(allSettings ? allSettings.allowPhotoUploads !== false : true);
+  const [contentMod, setContentMod] = useState(allSettings ? allSettings.contentModeration !== false : true);
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+  useEffect(() => {
+    if (allSettings) {
+      if (allSettings.platformName) setPlatformName(allSettings.platformName);
+      if (allSettings.contactEmail) setContactEmail(allSettings.contactEmail);
+      if (typeof allSettings.maxPhotosPerRecipe === "number") setMaxPhotos(allSettings.maxPhotosPerRecipe);
+      setMaintenanceMode(Boolean(allSettings.maintenanceMode));
+      setAutoApprove(Boolean(allSettings.autoApproveVerified));
+      if (typeof allSettings.allowPhotoUploads === "boolean") setAllowUploads(allSettings.allowPhotoUploads);
+      if (typeof allSettings.contentModeration === "boolean") setContentMod(allSettings.contentModeration);
+    }
+  }, [allSettings]);
+  const usersList = allUsers || [];
+  const recipesList = allRecipes || [];
+  const reviewsList = allReviews || [];
+  const activitiesList = allActivities || [];
+  const approvedRecipes = recipesList.filter(r => r.status === "approved");
+  const pendingRecipes = recipesList.filter(r => r.status === "pending");
+  const rejectedRecipes = recipesList.filter(r => r.status === "rejected");
+  const filteredUsers = useMemo(() => {
+    let list = [...usersList];
+    if (userRoleFilter !== "all") {
+      list = list.filter(u => u.role === userRoleFilter);
+    }
+    if (userSearch.trim()) {
+      const q = userSearch.trim().toLowerCase();
+      list = list.filter(u => ((u.name || u.display_name || "") + " " + (u.email || "")).toLowerCase().includes(q));
+    }
+    return list;
+  }, [usersList, userRoleFilter, userSearch]);
+  const filteredRecipes = useMemo(() => {
+    let list = [...recipesList];
+    if (recipeFilterStatus !== "all") {
+      list = list.filter(r => r.status === recipeFilterStatus);
+    }
+    if (recipeSearch.trim()) {
+      const q = recipeSearch.trim().toLowerCase();
+      list = list.filter(r => ((r.title || "") + " " + (r.author_name || "") + " " + (r.category || "")).toLowerCase().includes(q));
+    }
+    return list;
+  }, [recipesList, recipeFilterStatus, recipeSearch]);
+  const categoryStats = useMemo(() => {
+    const counts = {};
+    recipesList.forEach(r => {
+      const cat = (r.category || r.meal_type || "other").toLowerCase();
+      counts[cat] = (counts[cat] || 0) + 1;
+    });
+    return counts;
+  }, [recipesList]);
+  const topRatedRecipes = useMemo(() => {
+    return [...recipesList].sort((a, b) => (b.average_rating || 5) - (a.average_rating || 5)).slice(0, 5);
+  }, [recipesList]);
+  const handleCreateUser = e => {
+    e.preventDefault();
+    if (!newUserName.trim() || !newUserEmail.trim()) {
+      if (showToast) showToast("Name and email are required", "error");
+      return;
+    }
+    try {
+      if (window.store) {
+        window.store.addUser({
+          name: newUserName.trim(),
+          display_name: newUserName.trim(),
+          email: newUserEmail.trim().toLowerCase(),
+          password: newUserPassword || "password123",
+          role: newUserRole
+        });
+      }
+      if (showToast) showToast("User account created successfully!", "success");
+      setNewUserName("");
+      setNewUserEmail("");
+      setNewUserPassword("password123");
+      setNewUserRole("user");
+      setIsAddUserModalOpen(false);
+    } catch (err) {
+      if (showToast) showToast("Failed to create user account", "error");
+    }
+  };
+  const handleStartEditUser = u => {
+    setEditingUser(u);
+    setEditUserName(u.name || u.display_name || "");
+    setEditUserEmail(u.email || "");
+    setEditUserRole(u.role || "user");
+  };
+  const handleSaveEditUser = e => {
+    e.preventDefault();
+    if (!editingUser) return;
+    try {
+      if (window.store) {
+        window.store.updateUser(editingUser.id || editingUser.uid, {
+          name: editUserName.trim(),
+          display_name: editUserName.trim(),
+          email: editUserEmail.trim().toLowerCase(),
+          role: editUserRole
+        });
+      }
+      if (showToast) showToast("User details and role updated successfully!", "success");
+      setEditingUser(null);
+    } catch (err) {
+      if (showToast) showToast("Failed to update user", "error");
+    }
+  };
+  const handleConfirmDeleteUser = () => {
+    if (!deletingUser) return;
+    try {
+      if (window.store) {
+        window.store.deleteUser(deletingUser.id || deletingUser.uid);
+      }
+      if (showToast) showToast("User account removed from platform.", "success");
+    } catch (err) {
+      if (showToast) showToast("Failed to delete user", "error");
+    } finally {
+      setDeletingUser(null);
+    }
+  };
+  const handleApproveRecipe = r => {
+    try {
+      if (window.store) {
+        window.store.updateRecipe(r.id || r.recipe_id, {
+          status: "approved",
+          rejection_reason: null
+        });
+        window.store.addActivity(currentUser ? currentUser.id || currentUser.uid : "usr-1", "Administrator approved recipe '" + r.title + "'");
+      }
+      if (showToast) showToast("Recipe approved and published to public gallery!", "success");
+    } catch (err) {
+      if (showToast) showToast("Failed to approve recipe", "error");
+    }
+  };
+  const handleOpenRejectModal = r => {
+    setRejectingRecipe(r);
+    setRejectionReasonText("");
+  };
+  const handleConfirmRejectRecipe = () => {
+    if (!rejectingRecipe) return;
+    const reason = rejectionReasonText.trim() || "Incomplete instructions or inaccurate culinary measurements.";
+    try {
+      if (window.store) {
+        window.store.updateRecipe(rejectingRecipe.id || rejectingRecipe.recipe_id, {
+          status: "rejected",
+          rejection_reason: reason
+        });
+        window.store.addActivity(currentUser ? currentUser.id || currentUser.uid : "usr-1", "Administrator rejected recipe '" + rejectingRecipe.title + "'");
+      }
+      if (showToast) showToast("Recipe rejected and author notified with feedback.", "info");
+    } catch (err) {
+      if (showToast) showToast("Failed to reject recipe", "error");
+    } finally {
+      setRejectingRecipe(null);
+      setRejectionReasonText("");
+    }
+  };
+  const handleConfirmDeleteRecipe = () => {
+    if (!deletingRecipe) return;
+    try {
+      if (window.store) {
+        window.store.deleteRecipe(deletingRecipe.id || deletingRecipe.recipe_id);
+      }
+      if (showToast) showToast("Recipe removed permanently from platform.", "success");
+    } catch (err) {
+      if (showToast) showToast("Failed to delete recipe", "error");
+    } finally {
+      setDeletingRecipe(null);
+    }
+  };
+  const handleSaveSettings = e => {
+    e.preventDefault();
+    try {
+      if (window.store) {
+        window.store.updateSettings({
+          platformName: platformName.trim(),
+          contactEmail: contactEmail.trim(),
+          maxPhotosPerRecipe: Number(maxPhotos) || 5,
+          maintenanceMode: Boolean(maintenanceMode),
+          autoApproveVerified: Boolean(autoApprove),
+          allowPhotoUploads: Boolean(allowUploads),
+          contentModeration: Boolean(contentMod)
+        });
+      }
+      if (showToast) showToast("System settings updated and saved successfully!", "success");
+    } catch (err) {
+      if (showToast) showToast("Failed to save settings", "error");
+    }
+  };
+  const handleResetDatabase = () => {
+    try {
+      if (window.store) {
+        window.store.resetAllData();
+      }
+      if (showToast) showToast("Platform reset to default clean initial state.", "success");
+    } catch (err) {
+      if (showToast) showToast("Failed to reset database", "error");
+    } finally {
+      setIsResetModalOpen(false);
+    }
+  };
+  return React.createElement("div", {
+    className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-28 md:pb-16 space-y-8 text-left animate-fade-in"
+  }, React.createElement("div", {
+    className: "flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-[#E5E7EB] dark:border-[#2F2F2F] pb-6"
+  }, React.createElement("div", null, React.createElement("div", {
+    className: "flex items-center space-x-2"
+  }, React.createElement("span", {
+    className: "px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 uppercase tracking-wider"
+  }, "Administrator Console"), React.createElement("span", {
+    className: "text-xs text-[#6B7280] dark:text-[#A1A1AA]"
+  }, "\u2022"), React.createElement("span", {
+    className: "text-xs text-[#6B7280] dark:text-[#A1A1AA]"
+  }, "Full Platform Control")), React.createElement("h1", {
+    className: "text-2xl sm:text-3xl font-extrabold text-[#1F2937] dark:text-[#F9FAFB] tracking-tight font-heading mt-1"
+  }, "Platform Administration"), React.createElement("p", {
+    className: "text-xs sm:text-sm text-[#6B7280] dark:text-[#A1A1AA] pt-1"
+  }, "Oversee user accounts, moderate submitted recipes with instant approve/reject actions, tune system settings, and inspect live activity.")), React.createElement("div", {
+    className: "flex items-center space-x-3"
+  }, onSwitchToUser && React.createElement("button", {
+    type: "button",
+    onClick: onSwitchToUser,
+    className: "px-3.5 py-2 rounded-2xl text-xs font-bold bg-gray-100 dark:bg-[#2A2A2A] text-[#1F2937] dark:text-[#F9FAFB] hover:border-cyan-400 border border-[#E5E7EB] dark:border-[#2F2F2F] shadow-xs transition-all cursor-pointer flex items-center space-x-1.5",
+    title: "Test User Dashboard"
+  }, React.createElement("span", null, "\uD83D\uDC68\u200D\uD83C\uDF73"), React.createElement("span", null, "Switch to User Mode")), React.createElement("button", {
+    type: "button",
+    onClick: () => setIsAddUserModalOpen(true),
+    className: "px-4 py-2 rounded-2xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20 transition-all cursor-pointer flex items-center space-x-1.5"
+  }, React.createElement("span", null, "+"), React.createElement("span", null, "Add New User")))), React.createElement("div", {
+    className: "flex border-b border-[#E5E7EB] dark:border-[#2F2F2F] space-x-2 sm:space-x-6 overflow-x-auto scrollbar-none"
+  }, [{
+    id: "users",
+    label: "User Management",
+    count: usersList.length,
+    icon: "👥"
+  }, {
+    id: "recipes",
+    label: "Recipe Moderation",
+    count: pendingRecipes.length > 0 ? pendingRecipes.length + " pending" : recipesList.length,
+    icon: "⚖️",
+    alertBadge: pendingRecipes.length > 0
+  }, {
+    id: "settings",
+    label: "System Settings",
+    icon: "⚙️"
+  }, {
+    id: "stats",
+    label: "Recipe Statistics",
+    icon: "📊"
+  }, {
+    id: "activity",
+    label: "User Activity Monitoring",
+    count: activitiesList.length,
+    icon: "📡"
+  }].map(tab => {
+    const isActive = activeAdminTab === tab.id;
+    return React.createElement("button", {
+      key: tab.id,
+      type: "button",
+      onClick: () => setActiveAdminTab(tab.id),
+      className: `pb-3 px-2 text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap flex items-center space-x-2 border-b-2 ${isActive ? "border-amber-500 text-amber-600 dark:text-amber-400" : "border-transparent text-[#6B7280] dark:text-[#A1A1AA] hover:text-[#1F2937] dark:hover:text-[#F9FAFB]"}`
+    }, React.createElement("span", null, tab.icon), React.createElement("span", null, tab.label), tab.count !== undefined && React.createElement("span", {
+      className: `px-2 py-0.5 rounded-full text-[10px] font-bold ${tab.alertBadge ? "bg-amber-500 text-white animate-pulse" : isActive ? "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300" : "bg-gray-100 dark:bg-[#242424] text-[#6B7280] dark:text-[#A1A1AA]"}`
+    }, tab.count));
+  })), activeAdminTab === "users" && React.createElement("div", {
+    className: "space-y-6"
+  }, React.createElement("div", {
+    className: "flex flex-col sm:flex-row items-center justify-between gap-4"
+  }, React.createElement("div", {
+    className: "flex items-center space-x-2 overflow-x-auto w-full sm:w-auto"
+  }, ["all", "admin", "user"].map(role => React.createElement("button", {
+    key: role,
+    type: "button",
+    onClick: () => setUserRoleFilter(role),
+    className: `px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer capitalize ${userRoleFilter === role ? "bg-amber-500 text-white shadow-xs" : "bg-white dark:bg-[#1C1C1C] border border-[#E5E7EB] dark:border-[#2F2F2F] text-[#6B7280] dark:text-[#A1A1AA] hover:text-[#1F2937] dark:hover:text-[#F9FAFB]"}`
+  }, role === "all" ? "All Users" : role + "s"))), React.createElement("div", {
+    className: "relative w-full sm:w-64"
+  }, React.createElement("span", {
+    className: "absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[#6B7280]"
+  }, "\uD83D\uDD0D"), React.createElement("input", {
+    type: "text",
+    value: userSearch,
+    onChange: e => setUserSearch(e.target.value),
+    placeholder: "Search user name or email...",
+    className: "w-full pl-8 pr-3 py-2 rounded-xl bg-white dark:bg-[#1C1C1C] border border-[#E5E7EB] dark:border-[#2F2F2F] text-xs text-[#1F2937] dark:text-[#F9FAFB] focus:outline-none focus:border-amber-400"
+  }))), React.createElement("div", {
+    className: "bg-white dark:bg-[#1C1C1C] rounded-3xl border border-[#E5E7EB] dark:border-[#2F2F2F] overflow-hidden shadow-xs"
+  }, React.createElement("div", {
+    className: "overflow-x-auto"
+  }, React.createElement("table", {
+    className: "w-full text-left text-xs"
+  }, React.createElement("thead", {
+    className: "bg-gray-50 dark:bg-[#242424] text-[#6B7280] dark:text-[#A1A1AA] font-bold uppercase tracking-wider border-b border-[#E5E7EB] dark:border-[#2F2F2F]"
+  }, React.createElement("tr", null, React.createElement("th", {
+    className: "px-5 py-3.5"
+  }, "User Identity"), React.createElement("th", {
+    className: "px-4 py-3.5"
+  }, "Email Address"), React.createElement("th", {
+    className: "px-4 py-3.5"
+  }, "Assigned Role"), React.createElement("th", {
+    className: "px-4 py-3.5"
+  }, "Join Date"), React.createElement("th", {
+    className: "px-5 py-3.5 text-right"
+  }, "Actions"))), React.createElement("tbody", {
+    className: "divide-y divide-[#E5E7EB] dark:divide-[#2F2F2F]"
+  }, filteredUsers.map(u => {
+    const avatar = u.avatar || u.avatar_url || "/uploads/avatars/sachin.svg";
+    const isAdmin = u.role === "admin";
+    const isSelf = currentUser && (currentUser.id || currentUser.uid) === (u.id || u.uid);
+    return React.createElement("tr", {
+      key: u.id || u.uid,
+      className: "hover:bg-gray-50/50 dark:hover:bg-[#222222] transition-colors"
+    }, React.createElement("td", {
+      className: "px-5 py-3.5"
+    }, React.createElement("div", {
+      className: "flex items-center space-x-3"
+    }, React.createElement("img", {
+      src: avatar,
+      alt: u.name || u.display_name,
+      onError: e => {
+        e.currentTarget.src = "/uploads/avatars/sachin.svg";
+      },
+      className: "w-10 h-10 rounded-full object-cover flex-shrink-0 bg-gray-100 dark:bg-[#242424] ring-2 ring-gray-200 dark:ring-gray-800"
+    }), React.createElement("div", null, React.createElement("div", {
+      className: "flex items-center space-x-1.5"
+    }, React.createElement("h4", {
+      className: "font-bold text-[#1F2937] dark:text-[#F9FAFB] text-xs"
+    }, u.name || u.display_name || "User"), isSelf && React.createElement("span", {
+      className: "px-1.5 py-0.2 rounded-md bg-gray-100 dark:bg-[#2A2A2A] text-[9px] font-bold text-[#6B7280] dark:text-[#A1A1AA]"
+    }, "You")), React.createElement("span", {
+      className: "text-[11px] text-[#6B7280] dark:text-[#A1A1AA]"
+    }, "@", u.username || "chef")))), React.createElement("td", {
+      className: "px-4 py-3.5 font-mono text-[#6B7280] dark:text-[#A1A1AA]"
+    }, u.email), React.createElement("td", {
+      className: "px-4 py-3.5"
+    }, React.createElement("span", {
+      className: `inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${isAdmin ? "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border-amber-300" : "bg-cyan-100 text-cyan-800 dark:bg-cyan-950/60 dark:text-cyan-300 border-cyan-300"}`
+    }, u.role || "user")), React.createElement("td", {
+      className: "px-4 py-3.5 text-[#6B7280] dark:text-[#A1A1AA]"
+    }, u.created_at ? new Date(u.created_at).toLocaleDateString() : "Active"), React.createElement("td", {
+      className: "px-5 py-3.5 text-right whitespace-nowrap"
+    }, React.createElement("div", {
+      className: "flex items-center justify-end space-x-2"
+    }, React.createElement("button", {
+      type: "button",
+      onClick: () => handleStartEditUser(u),
+      className: "px-2.5 py-1 rounded-lg border border-[#E5E7EB] dark:border-[#2F2F2F] text-[#6B7280] dark:text-[#A1A1AA] hover:text-amber-500 hover:border-amber-400 text-xs font-semibold cursor-pointer"
+    }, "Edit Role"), !isSelf && React.createElement("button", {
+      type: "button",
+      onClick: () => setDeletingUser(u),
+      className: "px-2.5 py-1 rounded-lg border border-[#E5E7EB] dark:border-[#2F2F2F] text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 text-xs font-semibold cursor-pointer"
+    }, "Delete"))));
+  })))))), activeAdminTab === "recipes" && React.createElement("div", {
+    className: "space-y-6"
+  }, React.createElement("div", {
+    className: "flex flex-col sm:flex-row items-center justify-between gap-4"
+  }, React.createElement("div", {
+    className: "flex items-center space-x-2 overflow-x-auto w-full sm:w-auto pb-1"
+  }, [{
+    id: "all",
+    label: "All Recipes"
+  }, {
+    id: "pending",
+    label: "Pending Moderation"
+  }, {
+    id: "approved",
+    label: "Approved"
+  }, {
+    id: "rejected",
+    label: "Rejected"
+  }].map(btn => React.createElement("button", {
+    key: btn.id,
+    type: "button",
+    onClick: () => setRecipeFilterStatus(btn.id),
+    className: `px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${recipeFilterStatus === btn.id ? "bg-amber-500 text-white shadow-xs" : "bg-white dark:bg-[#1C1C1C] border border-[#E5E7EB] dark:border-[#2F2F2F] text-[#6B7280] dark:text-[#A1A1AA] hover:text-[#1F2937] dark:hover:text-[#F9FAFB]"}`
+  }, btn.label))), React.createElement("div", {
+    className: "relative w-full sm:w-64"
+  }, React.createElement("span", {
+    className: "absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[#6B7280]"
+  }, "\uD83D\uDD0D"), React.createElement("input", {
+    type: "text",
+    value: recipeSearch,
+    onChange: e => setRecipeSearch(e.target.value),
+    placeholder: "Search recipe or author...",
+    className: "w-full pl-8 pr-3 py-2 rounded-xl bg-white dark:bg-[#1C1C1C] border border-[#E5E7EB] dark:border-[#2F2F2F] text-xs text-[#1F2937] dark:text-[#F9FAFB] focus:outline-none focus:border-amber-400"
+  }))), React.createElement("div", {
+    className: "bg-white dark:bg-[#1C1C1C] rounded-3xl border border-[#E5E7EB] dark:border-[#2F2F2F] overflow-hidden shadow-xs"
+  }, React.createElement("div", {
+    className: "overflow-x-auto"
+  }, React.createElement("table", {
+    className: "w-full text-left text-xs"
+  }, React.createElement("thead", {
+    className: "bg-gray-50 dark:bg-[#242424] text-[#6B7280] dark:text-[#A1A1AA] font-bold uppercase tracking-wider border-b border-[#E5E7EB] dark:border-[#2F2F2F]"
+  }, React.createElement("tr", null, React.createElement("th", {
+    className: "px-5 py-3.5"
+  }, "Recipe Details"), React.createElement("th", {
+    className: "px-4 py-3.5"
+  }, "Submitted By"), React.createElement("th", {
+    className: "px-4 py-3.5"
+  }, "Category & Cook Time"), React.createElement("th", {
+    className: "px-4 py-3.5"
+  }, "Status"), React.createElement("th", {
+    className: "px-4 py-3.5"
+  }, "Submission Date"), React.createElement("th", {
+    className: "px-5 py-3.5 text-right"
+  }, "Moderation Actions"))), React.createElement("tbody", {
+    className: "divide-y divide-[#E5E7EB] dark:divide-[#2F2F2F]"
+  }, filteredRecipes.map(r => {
+    const img = r.image_url || r.mediaUrl || "/uploads/pizza_1789972478_1.jpg";
+    const isPending = r.status === "pending";
+    const isApproved = r.status === "approved";
+    const isRejected = r.status === "rejected";
+    return React.createElement("tr", {
+      key: r.id || r.recipe_id,
+      className: "hover:bg-gray-50/50 dark:hover:bg-[#222222] transition-colors"
+    }, React.createElement("td", {
+      className: "px-5 py-3.5"
+    }, React.createElement("div", {
+      className: "flex items-center space-x-3"
+    }, React.createElement("img", {
+      src: img,
+      alt: r.title,
+      onError: e => {
+        e.currentTarget.src = "/uploads/dish_1790010828136_7926.jpg";
+      },
+      className: "w-12 h-12 rounded-xl object-cover flex-shrink-0 bg-gray-100 dark:bg-[#242424]"
+    }), React.createElement("div", null, React.createElement("h4", {
+      className: "font-bold text-[#1F2937] dark:text-[#F9FAFB] text-xs leading-tight line-clamp-1"
+    }, r.title), React.createElement("span", {
+      className: "text-[11px] text-[#6B7280] dark:text-[#A1A1AA] line-clamp-1"
+    }, r.description || "Community submitted recipe")))), React.createElement("td", {
+      className: "px-4 py-3.5 font-medium text-[#1F2937] dark:text-[#F9FAFB]"
+    }, r.author_name || r.username || "Chef"), React.createElement("td", {
+      className: "px-4 py-3.5 text-[#6B7280] dark:text-[#A1A1AA] capitalize"
+    }, r.category || r.meal_type || "Dinner", " \u2022 ", r.cooking_time || r.cookTime || "25m"), React.createElement("td", {
+      className: "px-4 py-3.5"
+    }, isApproved && React.createElement("span", {
+      className: "inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300"
+    }, "\u2713 Approved"), isPending && React.createElement("span", {
+      className: "inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 animate-pulse"
+    }, "\u23F3 Pending Moderation"), isRejected && React.createElement("div", {
+      className: "space-y-0.5"
+    }, React.createElement("span", {
+      className: "inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-300"
+    }, "\u2715 Rejected"), r.rejection_reason && React.createElement("p", {
+      className: "text-[10px] text-rose-600 dark:text-rose-400 font-medium max-w-xs truncate"
+    }, r.rejection_reason))), React.createElement("td", {
+      className: "px-4 py-3.5 text-[#6B7280] dark:text-[#A1A1AA] whitespace-nowrap"
+    }, r.created_at ? new Date(r.created_at).toLocaleDateString() : "Recent"), React.createElement("td", {
+      className: "px-5 py-3.5 text-right whitespace-nowrap"
+    }, React.createElement("div", {
+      className: "flex items-center justify-end space-x-1.5"
+    }, isPending && React.createElement(React.Fragment, null, React.createElement("button", {
+      type: "button",
+      onClick: () => handleApproveRecipe(r),
+      className: "px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold shadow-xs transition-colors cursor-pointer",
+      title: "Approve Recipe"
+    }, "\u2713 Approve"), React.createElement("button", {
+      type: "button",
+      onClick: () => handleOpenRejectModal(r),
+      className: "px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-bold shadow-xs transition-colors cursor-pointer",
+      title: "Reject Recipe"
+    }, "\u2715 Reject")), isRejected && React.createElement("button", {
+      type: "button",
+      onClick: () => handleApproveRecipe(r),
+      className: "px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold shadow-xs transition-colors cursor-pointer",
+      title: "Re-approve Recipe"
+    }, "Re-approve"), isApproved && React.createElement("button", {
+      type: "button",
+      onClick: () => handleOpenRejectModal(r),
+      className: "px-2.5 py-1 rounded-lg border border-rose-300 text-rose-600 dark:text-rose-400 hover:bg-rose-50 text-[11px] font-bold cursor-pointer",
+      title: "Revoke Approval"
+    }, "Revoke"), React.createElement("button", {
+      type: "button",
+      onClick: () => onOpenRecipe && onOpenRecipe(r),
+      className: "p-1 rounded-lg border border-[#E5E7EB] dark:border-[#2F2F2F] text-[#6B7280] dark:text-[#A1A1AA] hover:text-cyan-500 cursor-pointer text-xs",
+      title: "Preview"
+    }, "\uD83D\uDC41\uFE0F"), React.createElement("button", {
+      type: "button",
+      onClick: () => setDeletingRecipe(r),
+      className: "p-1 rounded-lg border border-[#E5E7EB] dark:border-[#2F2F2F] text-[#6B7280] dark:text-[#A1A1AA] hover:text-rose-500 cursor-pointer text-xs",
+      title: "Delete"
+    }, "\uD83D\uDDD1\uFE0F"))));
+  })))))), activeAdminTab === "settings" && React.createElement("div", {
+    className: "bg-white dark:bg-[#1C1C1C] rounded-3xl border border-[#E5E7EB] dark:border-[#2F2F2F] p-6 sm:p-8 space-y-6 max-w-3xl"
+  }, React.createElement("div", {
+    className: "border-b border-[#E5E7EB] dark:border-[#2F2F2F] pb-4"
+  }, React.createElement("h2", {
+    className: "text-xl font-bold text-[#1F2937] dark:text-[#F9FAFB] font-heading"
+  }, "Platform & System Configuration"), React.createElement("p", {
+    className: "text-xs text-[#6B7280] dark:text-[#A1A1AA] pt-0.5"
+  }, "Customize platform behavior, toggle maintenance mode, moderation workflows, and platform-wide defaults.")), React.createElement("form", {
+    onSubmit: handleSaveSettings,
+    className: "space-y-5"
+  }, React.createElement("div", {
+    className: "grid grid-cols-1 sm:grid-cols-2 gap-4"
+  }, React.createElement("div", {
+    className: "space-y-1.5"
+  }, React.createElement("label", {
+    className: "text-xs font-bold text-[#1F2937] dark:text-[#F9FAFB] uppercase tracking-wider"
+  }, "Platform Name"), React.createElement("input", {
+    type: "text",
+    value: platformName,
+    onChange: e => setPlatformName(e.target.value),
+    className: "w-full px-3.5 py-2.5 rounded-xl bg-gray-50/50 dark:bg-[#242424] border border-[#E5E7EB] dark:border-[#2F2F2F] text-xs sm:text-sm text-[#1F2937] dark:text-[#F9FAFB] focus:outline-none focus:border-amber-400"
+  })), React.createElement("div", {
+    className: "space-y-1.5"
+  }, React.createElement("label", {
+    className: "text-xs font-bold text-[#1F2937] dark:text-[#F9FAFB] uppercase tracking-wider"
+  }, "Administrator Contact Email"), React.createElement("input", {
+    type: "email",
+    value: contactEmail,
+    onChange: e => setContactEmail(e.target.value),
+    className: "w-full px-3.5 py-2.5 rounded-xl bg-gray-50/50 dark:bg-[#242424] border border-[#E5E7EB] dark:border-[#2F2F2F] text-xs sm:text-sm text-[#1F2937] dark:text-[#F9FAFB] focus:outline-none focus:border-amber-400"
+  }))), React.createElement("div", {
+    className: "space-y-1.5"
+  }, React.createElement("label", {
+    className: "text-xs font-bold text-[#1F2937] dark:text-[#F9FAFB] uppercase tracking-wider"
+  }, "Max Photo Uploads Per Recipe"), React.createElement("input", {
+    type: "number",
+    min: 1,
+    max: 10,
+    value: maxPhotos,
+    onChange: e => setMaxPhotos(e.target.value),
+    className: "w-full sm:w-48 px-3.5 py-2.5 rounded-xl bg-gray-50/50 dark:bg-[#242424] border border-[#E5E7EB] dark:border-[#2F2F2F] text-xs sm:text-sm text-[#1F2937] dark:text-[#F9FAFB] focus:outline-none focus:border-amber-400"
+  })), React.createElement("div", {
+    className: "space-y-3 pt-3 border-t border-[#E5E7EB] dark:border-[#2F2F2F]"
+  }, React.createElement("div", {
+    className: "flex items-center justify-between p-3.5 rounded-2xl bg-gray-50/50 dark:bg-[#242424] border border-[#E5E7EB] dark:border-[#2F2F2F]"
+  }, React.createElement("div", null, React.createElement("h4", {
+    className: "text-xs sm:text-sm font-bold text-[#1F2937] dark:text-[#F9FAFB]"
+  }, "Maintenance Mode"), React.createElement("p", {
+    className: "text-[11px] text-[#6B7280] dark:text-[#A1A1AA]"
+  }, "Displays maintenance banner informing visitors of scheduled platform updates.")), React.createElement("input", {
+    type: "checkbox",
+    checked: maintenanceMode,
+    onChange: e => setMaintenanceMode(e.target.checked),
+    className: "w-5 h-5 rounded text-amber-500 focus:ring-amber-400 cursor-pointer"
+  })), React.createElement("div", {
+    className: "flex items-center justify-between p-3.5 rounded-2xl bg-gray-50/50 dark:bg-[#242424] border border-[#E5E7EB] dark:border-[#2F2F2F]"
+  }, React.createElement("div", null, React.createElement("h4", {
+    className: "text-xs sm:text-sm font-bold text-[#1F2937] dark:text-[#F9FAFB]"
+  }, "Auto-Approve Verified Chefs"), React.createElement("p", {
+    className: "text-[11px] text-[#6B7280] dark:text-[#A1A1AA]"
+  }, "Automatically publish recipes without requiring manual admin approval for verified users.")), React.createElement("input", {
+    type: "checkbox",
+    checked: autoApprove,
+    onChange: e => setAutoApprove(e.target.checked),
+    className: "w-5 h-5 rounded text-amber-500 focus:ring-amber-400 cursor-pointer"
+  })), React.createElement("div", {
+    className: "flex items-center justify-between p-3.5 rounded-2xl bg-gray-50/50 dark:bg-[#242424] border border-[#E5E7EB] dark:border-[#2F2F2F]"
+  }, React.createElement("div", null, React.createElement("h4", {
+    className: "text-xs sm:text-sm font-bold text-[#1F2937] dark:text-[#F9FAFB]"
+  }, "Allow Community Photo Uploads"), React.createElement("p", {
+    className: "text-[11px] text-[#6B7280] dark:text-[#A1A1AA]"
+  }, "Enable chefs to attach authentic food photographs with their recipes.")), React.createElement("input", {
+    type: "checkbox",
+    checked: allowUploads,
+    onChange: e => setAllowUploads(e.target.checked),
+    className: "w-5 h-5 rounded text-amber-500 focus:ring-amber-400 cursor-pointer"
+  })), React.createElement("div", {
+    className: "flex items-center justify-between p-3.5 rounded-2xl bg-gray-50/50 dark:bg-[#242424] border border-[#E5E7EB] dark:border-[#2F2F2F]"
+  }, React.createElement("div", null, React.createElement("h4", {
+    className: "text-xs sm:text-sm font-bold text-[#1F2937] dark:text-[#F9FAFB]"
+  }, "Content Moderation Queue"), React.createElement("p", {
+    className: "text-[11px] text-[#6B7280] dark:text-[#A1A1AA]"
+  }, "Route incoming recipes to the moderation queue before showing on the public feed.")), React.createElement("input", {
+    type: "checkbox",
+    checked: contentMod,
+    onChange: e => setContentMod(e.target.checked),
+    className: "w-5 h-5 rounded text-amber-500 focus:ring-amber-400 cursor-pointer"
+  }))), React.createElement("div", {
+    className: "pt-4 border-t border-[#E5E7EB] dark:border-[#2F2F2F] flex items-center justify-between"
+  }, React.createElement("button", {
+    type: "button",
+    onClick: () => setIsResetModalOpen(true),
+    className: "px-4 py-2 rounded-xl border border-rose-300 dark:border-rose-800 text-rose-600 dark:text-rose-400 hover:bg-rose-50 text-xs font-bold cursor-pointer"
+  }, "Reset Database to Clean Defaults"), React.createElement("button", {
+    type: "submit",
+    className: "px-6 py-2.5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs sm:text-sm shadow-md shadow-amber-500/25 transition-all cursor-pointer"
+  }, "Save System Settings")))), activeAdminTab === "stats" && React.createElement("div", {
+    className: "space-y-6"
+  }, React.createElement("div", {
+    className: "grid grid-cols-2 sm:grid-cols-5 gap-3.5"
+  }, React.createElement("div", {
+    className: "p-4 rounded-3xl bg-white dark:bg-[#1C1C1C] border border-[#E5E7EB] dark:border-[#2F2F2F] shadow-xs"
+  }, React.createElement("span", {
+    className: "text-[10px] font-bold text-[#6B7280] dark:text-[#A1A1AA] uppercase tracking-wider block"
+  }, "Total Recipes"), React.createElement("span", {
+    className: "text-2xl font-black text-[#1F2937] dark:text-[#F9FAFB] mt-0.5 block"
+  }, recipesList.length), React.createElement("span", {
+    className: "text-[10px] text-cyan-600 font-semibold block"
+  }, "Platform catalog")), React.createElement("div", {
+    className: "p-4 rounded-3xl bg-white dark:bg-[#1C1C1C] border border-[#E5E7EB] dark:border-[#2F2F2F] shadow-xs"
+  }, React.createElement("span", {
+    className: "text-[10px] font-bold text-[#6B7280] dark:text-[#A1A1AA] uppercase tracking-wider block"
+  }, "Approved"), React.createElement("span", {
+    className: "text-2xl font-black text-emerald-600 font-semibold mt-0.5 block"
+  }, approvedRecipes.length), React.createElement("span", {
+    className: "text-[10px] text-emerald-600 font-semibold block"
+  }, "Active gallery")), React.createElement("div", {
+    className: "p-4 rounded-3xl bg-white dark:bg-[#1C1C1C] border border-[#E5E7EB] dark:border-[#2F2F2F] shadow-xs"
+  }, React.createElement("span", {
+    className: "text-[10px] font-bold text-[#6B7280] dark:text-[#A1A1AA] uppercase tracking-wider block"
+  }, "Pending"), React.createElement("span", {
+    className: "text-2xl font-black text-amber-600 mt-0.5 block"
+  }, pendingRecipes.length), React.createElement("span", {
+    className: "text-[10px] text-amber-600 font-semibold block"
+  }, "Moderation")), React.createElement("div", {
+    className: "p-4 rounded-3xl bg-white dark:bg-[#1C1C1C] border border-[#E5E7EB] dark:border-[#2F2F2F] shadow-xs"
+  }, React.createElement("span", {
+    className: "text-[10px] font-bold text-[#6B7280] dark:text-[#A1A1AA] uppercase tracking-wider block"
+  }, "Total Users"), React.createElement("span", {
+    className: "text-2xl font-black text-violet-600 mt-0.5 block"
+  }, usersList.length), React.createElement("span", {
+    className: "text-[10px] text-violet-600 font-semibold block"
+  }, "Registered chefs")), React.createElement("div", {
+    className: "p-4 rounded-3xl bg-white dark:bg-[#1C1C1C] border border-[#E5E7EB] dark:border-[#2F2F2F] shadow-xs col-span-2 sm:col-span-1"
+  }, React.createElement("span", {
+    className: "text-[10px] font-bold text-[#6B7280] dark:text-[#A1A1AA] uppercase tracking-wider block"
+  }, "Total Reviews"), React.createElement("span", {
+    className: "text-2xl font-black text-rose-600 mt-0.5 block"
+  }, reviewsList.length), React.createElement("span", {
+    className: "text-[10px] text-rose-600 font-semibold block"
+  }, "Community notes"))), React.createElement("div", {
+    className: "grid grid-cols-1 md:grid-cols-2 gap-6"
+  }, React.createElement("div", {
+    className: "p-6 rounded-3xl bg-white dark:bg-[#1C1C1C] border border-[#E5E7EB] dark:border-[#2F2F2F] shadow-xs space-y-4"
+  }, React.createElement("div", {
+    className: "flex items-center justify-between border-b border-[#E5E7EB] dark:border-[#2F2F2F] pb-3"
+  }, React.createElement("h3", {
+    className: "text-sm font-bold text-[#1F2937] dark:text-[#F9FAFB] flex items-center space-x-2"
+  }, React.createElement("span", null, "\uD83D\uDCCA"), React.createElement("span", null, "Recipe Submissions by Category")), React.createElement("span", {
+    className: "text-xs text-[#6B7280]"
+  }, Object.keys(categoryStats).length, " categories")), React.createElement("div", {
+    className: "space-y-3"
+  }, Object.entries(categoryStats).map(([cat, count]) => {
+    const pct = Math.round(count / Math.max(recipesList.length, 1) * 100);
+    return React.createElement("div", {
+      key: cat,
+      className: "space-y-1"
+    }, React.createElement("div", {
+      className: "flex items-center justify-between text-xs font-semibold capitalize"
+    }, React.createElement("span", {
+      className: "text-[#1F2937] dark:text-[#F9FAFB]"
+    }, cat), React.createElement("span", {
+      className: "text-[#6B7280] dark:text-[#A1A1AA]"
+    }, count, " recipes (", pct, "%)")), React.createElement("div", {
+      className: "w-full h-2.5 bg-gray-100 dark:bg-[#262626] rounded-full overflow-hidden"
+    }, React.createElement("div", {
+      className: "h-full bg-gradient-to-r from-amber-500 to-rose-500 rounded-full transition-all duration-500",
+      style: {
+        width: `${pct}%`
+      }
+    })));
+  }))), React.createElement("div", {
+    className: "p-6 rounded-3xl bg-white dark:bg-[#1C1C1C] border border-[#E5E7EB] dark:border-[#2F2F2F] shadow-xs space-y-4"
+  }, React.createElement("div", {
+    className: "flex items-center justify-between border-b border-[#E5E7EB] dark:border-[#2F2F2F] pb-3"
+  }, React.createElement("h3", {
+    className: "text-sm font-bold text-[#1F2937] dark:text-[#F9FAFB] flex items-center space-x-2"
+  }, React.createElement("span", null, "\u2B50"), React.createElement("span", null, "Top-Rated Recipes Leaderboard")), React.createElement("span", {
+    className: "text-xs text-[#6B7280]"
+  }, "By Star Rating")), React.createElement("div", {
+    className: "space-y-3"
+  }, topRatedRecipes.map((r, i) => React.createElement("div", {
+    key: r.id || r.recipe_id,
+    className: "flex items-center justify-between p-2.5 rounded-xl bg-gray-50/50 dark:bg-[#242424] text-xs"
+  }, React.createElement("div", {
+    className: "flex items-center space-x-3"
+  }, React.createElement("span", {
+    className: "w-5 text-center font-bold text-amber-500"
+  }, "#", i + 1), React.createElement("img", {
+    src: r.image_url || r.mediaUrl || "/uploads/pizza_1789972478_1.jpg",
+    alt: r.title,
+    className: "w-8 h-8 rounded-lg object-cover"
+  }), React.createElement("div", null, React.createElement("h4", {
+    className: "font-bold text-[#1F2937] dark:text-[#F9FAFB] line-clamp-1"
+  }, r.title), React.createElement("span", {
+    className: "text-[10px] text-[#6B7280] dark:text-[#A1A1AA]"
+  }, r.author_name || r.username))), React.createElement("div", {
+    className: "flex items-center space-x-1.5 font-bold text-amber-600"
+  }, React.createElement("span", null, "\u2605"), React.createElement("span", null, r.average_rating || 5.0), React.createElement("span", {
+    className: "text-[10px] text-[#6B7280] dark:text-[#A1A1AA] font-normal"
+  }, "(", r.review_count || 0, ")")))))))), activeAdminTab === "activity" && React.createElement("div", {
+    className: "bg-white dark:bg-[#1C1C1C] rounded-3xl border border-[#E5E7EB] dark:border-[#2F2F2F] p-6 sm:p-8 space-y-4"
+  }, React.createElement("div", {
+    className: "flex items-center justify-between border-b border-[#E5E7EB] dark:border-[#2F2F2F] pb-3"
+  }, React.createElement("div", null, React.createElement("h3", {
+    className: "text-base font-bold text-[#1F2937] dark:text-[#F9FAFB] font-heading"
+  }, "Real-Time User Activity Monitoring"), React.createElement("p", {
+    className: "text-xs text-[#6B7280] dark:text-[#A1A1AA] pt-0.5"
+  }, "Live stream of registrations, recipe submissions, reviews, ratings, and administrator moderation events.")), React.createElement("div", {
+    className: "flex items-center space-x-2"
+  }, React.createElement("span", {
+    className: "w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"
+  }), React.createElement("span", {
+    className: "text-xs font-bold text-emerald-600 dark:text-emerald-400"
+  }, "Live Feed"))), React.createElement("div", {
+    className: "space-y-3 max-h-96 overflow-y-auto pr-1"
+  }, activitiesList.map(act => {
+    return React.createElement("div", {
+      key: act.id,
+      className: "p-3.5 rounded-2xl bg-gray-50/50 dark:bg-[#242424] border border-[#E5E7EB] dark:border-[#2F2F2F] flex items-center justify-between text-xs"
+    }, React.createElement("div", {
+      className: "flex items-center space-x-3"
+    }, React.createElement("span", {
+      className: "text-base"
+    }, "\uD83D\uDD14"), React.createElement("span", {
+      className: "text-[#1F2937] dark:text-[#F9FAFB] font-medium leading-relaxed"
+    }, act.action_description)), React.createElement("span", {
+      className: "text-[10px] text-[#6B7280] dark:text-[#A1A1AA] whitespace-nowrap pl-3"
+    }, act.timestamp ? formatTimeAgo(new Date(act.timestamp).getTime()) : "Recent"));
+  }))), isAddUserModalOpen && React.createElement("div", {
+    className: "fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
+  }, React.createElement("div", {
+    className: "bg-white dark:bg-[#1C1C1C] rounded-3xl border border-[#E5E7EB] dark:border-[#2F2F2F] max-w-md w-full p-6 space-y-4 shadow-2xl"
+  }, React.createElement("div", {
+    className: "flex items-center justify-between border-b border-[#E5E7EB] dark:border-[#2F2F2F] pb-3"
+  }, React.createElement("h3", {
+    className: "text-base font-bold text-[#1F2937] dark:text-[#F9FAFB]"
+  }, "Add New User Account"), React.createElement("button", {
+    type: "button",
+    onClick: () => setIsAddUserModalOpen(false),
+    className: "text-sm text-[#6B7280] hover:text-[#1F2937]"
+  }, "\u2715")), React.createElement("form", {
+    onSubmit: handleCreateUser,
+    className: "space-y-3.5"
+  }, React.createElement("div", {
+    className: "space-y-1"
+  }, React.createElement("label", {
+    className: "text-[11px] font-bold text-[#1F2937] dark:text-[#F9FAFB] uppercase"
+  }, "Full Name *"), React.createElement("input", {
+    type: "text",
+    required: true,
+    value: newUserName,
+    onChange: e => setNewUserName(e.target.value),
+    placeholder: "e.g. Maya Krishnan",
+    className: "w-full px-3 py-2 rounded-xl bg-gray-50 dark:bg-[#242424] border border-[#E5E7EB] dark:border-[#2F2F2F] text-xs text-[#1F2937] dark:text-[#F9FAFB] focus:outline-none focus:border-amber-400"
+  })), React.createElement("div", {
+    className: "space-y-1"
+  }, React.createElement("label", {
+    className: "text-[11px] font-bold text-[#1F2937] dark:text-[#F9FAFB] uppercase"
+  }, "Email Address *"), React.createElement("input", {
+    type: "email",
+    required: true,
+    value: newUserEmail,
+    onChange: e => setNewUserEmail(e.target.value),
+    placeholder: "e.g. maya@recipes.com",
+    className: "w-full px-3 py-2 rounded-xl bg-gray-50 dark:bg-[#242424] border border-[#E5E7EB] dark:border-[#2F2F2F] text-xs text-[#1F2937] dark:text-[#F9FAFB] focus:outline-none focus:border-amber-400"
+  })), React.createElement("div", {
+    className: "space-y-1"
+  }, React.createElement("label", {
+    className: "text-[11px] font-bold text-[#1F2937] dark:text-[#F9FAFB] uppercase"
+  }, "Initial Password"), React.createElement("input", {
+    type: "password",
+    value: newUserPassword,
+    onChange: e => setNewUserPassword(e.target.value),
+    className: "w-full px-3 py-2 rounded-xl bg-gray-50 dark:bg-[#242424] border border-[#E5E7EB] dark:border-[#2F2F2F] text-xs text-[#1F2937] dark:text-[#F9FAFB] focus:outline-none focus:border-amber-400"
+  })), React.createElement("div", {
+    className: "space-y-1"
+  }, React.createElement("label", {
+    className: "text-[11px] font-bold text-[#1F2937] dark:text-[#F9FAFB] uppercase"
+  }, "Role Assignment"), React.createElement("select", {
+    value: newUserRole,
+    onChange: e => setNewUserRole(e.target.value),
+    className: "w-full px-3 py-2 rounded-xl bg-gray-50 dark:bg-[#242424] border border-[#E5E7EB] dark:border-[#2F2F2F] text-xs text-[#1F2937] dark:text-[#F9FAFB] focus:outline-none focus:border-amber-400"
+  }, React.createElement("option", {
+    value: "user"
+  }, "User (Chef & Discoverer)"), React.createElement("option", {
+    value: "admin"
+  }, "Admin (Full Control)"))), React.createElement("div", {
+    className: "flex items-center justify-end space-x-2 pt-2"
+  }, React.createElement("button", {
+    type: "button",
+    onClick: () => setIsAddUserModalOpen(false),
+    className: "px-4 py-2 rounded-xl border border-[#E5E7EB] dark:border-[#2F2F2F] text-xs font-semibold text-[#6B7280]"
+  }, "Cancel"), React.createElement("button", {
+    type: "submit",
+    className: "px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md cursor-pointer"
+  }, "Create User"))))), editingUser && React.createElement("div", {
+    className: "fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
+  }, React.createElement("div", {
+    className: "bg-white dark:bg-[#1C1C1C] rounded-3xl border border-[#E5E7EB] dark:border-[#2F2F2F] max-w-md w-full p-6 space-y-4 shadow-2xl"
+  }, React.createElement("div", {
+    className: "flex items-center justify-between border-b border-[#E5E7EB] dark:border-[#2F2F2F] pb-3"
+  }, React.createElement("h3", {
+    className: "text-base font-bold text-[#1F2937] dark:text-[#F9FAFB]"
+  }, "Edit User Account & Role"), React.createElement("button", {
+    type: "button",
+    onClick: () => setEditingUser(null),
+    className: "text-sm text-[#6B7280] hover:text-[#1F2937]"
+  }, "\u2715")), React.createElement("form", {
+    onSubmit: handleSaveEditUser,
+    className: "space-y-3.5"
+  }, React.createElement("div", {
+    className: "space-y-1"
+  }, React.createElement("label", {
+    className: "text-[11px] font-bold text-[#1F2937] dark:text-[#F9FAFB] uppercase"
+  }, "Full Name"), React.createElement("input", {
+    type: "text",
+    required: true,
+    value: editUserName,
+    onChange: e => setEditUserName(e.target.value),
+    className: "w-full px-3 py-2 rounded-xl bg-gray-50 dark:bg-[#242424] border border-[#E5E7EB] dark:border-[#2F2F2F] text-xs text-[#1F2937] dark:text-[#F9FAFB] focus:outline-none focus:border-amber-400"
+  })), React.createElement("div", {
+    className: "space-y-1"
+  }, React.createElement("label", {
+    className: "text-[11px] font-bold text-[#1F2937] dark:text-[#F9FAFB] uppercase"
+  }, "Email Address"), React.createElement("input", {
+    type: "email",
+    required: true,
+    value: editUserEmail,
+    onChange: e => setEditUserEmail(e.target.value),
+    className: "w-full px-3 py-2 rounded-xl bg-gray-50 dark:bg-[#242424] border border-[#E5E7EB] dark:border-[#2F2F2F] text-xs text-[#1F2937] dark:text-[#F9FAFB] focus:outline-none focus:border-amber-400"
+  })), React.createElement("div", {
+    className: "space-y-1"
+  }, React.createElement("label", {
+    className: "text-[11px] font-bold text-[#1F2937] dark:text-[#F9FAFB] uppercase"
+  }, "Assigned Role"), React.createElement("select", {
+    value: editUserRole,
+    onChange: e => setEditUserRole(e.target.value),
+    className: "w-full px-3 py-2 rounded-xl bg-gray-50 dark:bg-[#242424] border border-[#E5E7EB] dark:border-[#2F2F2F] text-xs text-[#1F2937] dark:text-[#F9FAFB] focus:outline-none focus:border-amber-400"
+  }, React.createElement("option", {
+    value: "user"
+  }, "User"), React.createElement("option", {
+    value: "admin"
+  }, "Admin"))), React.createElement("div", {
+    className: "flex items-center justify-end space-x-2 pt-2"
+  }, React.createElement("button", {
+    type: "button",
+    onClick: () => setEditingUser(null),
+    className: "px-4 py-2 rounded-xl border border-[#E5E7EB] dark:border-[#2F2F2F] text-xs font-semibold text-[#6B7280]"
+  }, "Cancel"), React.createElement("button", {
+    type: "submit",
+    className: "px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold shadow-md cursor-pointer"
+  }, "Save Changes"))))), deletingUser && React.createElement("div", {
+    className: "fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
+  }, React.createElement("div", {
+    className: "bg-white dark:bg-[#1C1C1C] rounded-3xl border border-[#E5E7EB] dark:border-[#2F2F2F] max-w-sm w-full p-6 text-center space-y-4 shadow-2xl"
+  }, React.createElement("div", {
+    className: "w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-950/40 text-rose-500 flex items-center justify-center text-xl mx-auto"
+  }, "\uD83D\uDC64"), React.createElement("h3", {
+    className: "text-base font-bold text-[#1F2937] dark:text-[#F9FAFB]"
+  }, "Delete User Account?"), React.createElement("p", {
+    className: "text-xs text-[#6B7280] dark:text-[#A1A1AA]"
+  }, "Are you sure you want to remove ", React.createElement("span", {
+    className: "font-bold text-[#1F2937] dark:text-[#F9FAFB]"
+  }, deletingUser.name || deletingUser.email), " from the platform?"), React.createElement("div", {
+    className: "flex items-center justify-center space-x-3 pt-2"
+  }, React.createElement("button", {
+    type: "button",
+    onClick: () => setDeletingUser(null),
+    className: "px-4 py-2 rounded-xl border border-[#E5E7EB] dark:border-[#2F2F2F] text-xs font-semibold text-[#6B7280] cursor-pointer"
+  }, "Cancel"), React.createElement("button", {
+    type: "button",
+    onClick: handleConfirmDeleteUser,
+    className: "px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-md cursor-pointer"
+  }, "Confirm Delete")))), rejectingRecipe && React.createElement("div", {
+    className: "fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
+  }, React.createElement("div", {
+    className: "bg-white dark:bg-[#1C1C1C] rounded-3xl border border-[#E5E7EB] dark:border-[#2F2F2F] max-w-md w-full p-6 space-y-4 shadow-2xl"
+  }, React.createElement("div", {
+    className: "flex items-center justify-between border-b border-[#E5E7EB] dark:border-[#2F2F2F] pb-3"
+  }, React.createElement("h3", {
+    className: "text-base font-bold text-[#1F2937] dark:text-[#F9FAFB]"
+  }, "Reject Recipe & Provide Feedback"), React.createElement("button", {
+    type: "button",
+    onClick: () => setRejectingRecipe(null),
+    className: "text-sm text-[#6B7280] hover:text-[#1F2937]"
+  }, "\u2715")), React.createElement("div", {
+    className: "space-y-3"
+  }, React.createElement("p", {
+    className: "text-xs text-[#6B7280] dark:text-[#A1A1AA]"
+  }, "Rejecting ", React.createElement("span", {
+    className: "font-bold text-[#1F2937] dark:text-[#F9FAFB]"
+  }, "\"", rejectingRecipe.title, "\""), ". Please provide constructive feedback so the chef can revise and resubmit."), React.createElement("textarea", {
+    rows: 3,
+    value: rejectionReasonText,
+    onChange: e => setRejectionReasonText(e.target.value),
+    placeholder: "e.g. Please provide accurate cooking time and ingredient measurements rather than instant commercial packaged foods.",
+    className: "w-full px-3 py-2 rounded-xl bg-gray-50 dark:bg-[#242424] border border-[#E5E7EB] dark:border-[#2F2F2F] text-xs text-[#1F2937] dark:text-[#F9FAFB] focus:outline-none focus:border-rose-400"
+  }), React.createElement("div", {
+    className: "flex items-center justify-end space-x-2 pt-2"
+  }, React.createElement("button", {
+    type: "button",
+    onClick: () => setRejectingRecipe(null),
+    className: "px-4 py-2 rounded-xl border border-[#E5E7EB] dark:border-[#2F2F2F] text-xs font-semibold text-[#6B7280]"
+  }, "Cancel"), React.createElement("button", {
+    type: "button",
+    onClick: handleConfirmRejectRecipe,
+    className: "px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-md cursor-pointer"
+  }, "Confirm Rejection"))))), deletingRecipe && React.createElement("div", {
+    className: "fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
+  }, React.createElement("div", {
+    className: "bg-white dark:bg-[#1C1C1C] rounded-3xl border border-[#E5E7EB] dark:border-[#2F2F2F] max-w-sm w-full p-6 text-center space-y-4 shadow-2xl"
+  }, React.createElement("div", {
+    className: "w-12 h-12 rounded-2xl bg-rose-50 dark:bg-rose-950/40 text-rose-500 flex items-center justify-center text-xl mx-auto"
+  }, "\uD83D\uDDD1\uFE0F"), React.createElement("h3", {
+    className: "text-base font-bold text-[#1F2937] dark:text-[#F9FAFB]"
+  }, "Permanently Delete Recipe?"), React.createElement("p", {
+    className: "text-xs text-[#6B7280] dark:text-[#A1A1AA]"
+  }, "Are you sure you want to remove ", React.createElement("span", {
+    className: "font-bold text-[#1F2937] dark:text-[#F9FAFB]"
+  }, "\"", deletingRecipe.title, "\""), "?"), React.createElement("div", {
+    className: "flex items-center justify-center space-x-3 pt-2"
+  }, React.createElement("button", {
+    type: "button",
+    onClick: () => setDeletingRecipe(null),
+    className: "px-4 py-2 rounded-xl border border-[#E5E7EB] dark:border-[#2F2F2F] text-xs font-semibold text-[#6B7280]"
+  }, "Cancel"), React.createElement("button", {
+    type: "button",
+    onClick: handleConfirmDeleteRecipe,
+    className: "px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-md cursor-pointer"
+  }, "Confirm Delete")))), isResetModalOpen && React.createElement("div", {
+    className: "fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
+  }, React.createElement("div", {
+    className: "bg-white dark:bg-[#1C1C1C] rounded-3xl border border-[#E5E7EB] dark:border-[#2F2F2F] max-w-sm w-full p-6 text-center space-y-4 shadow-2xl"
+  }, React.createElement("div", {
+    className: "w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/40 text-amber-500 flex items-center justify-center text-xl mx-auto"
+  }, "\u26A0\uFE0F"), React.createElement("h3", {
+    className: "text-base font-bold text-[#1F2937] dark:text-[#F9FAFB]"
+  }, "Reset All Platform Data?"), React.createElement("p", {
+    className: "text-xs text-[#6B7280] dark:text-[#A1A1AA]"
+  }, "This will restore all users, recipes, reviews, and settings to the clean default test catalog."), React.createElement("div", {
+    className: "flex items-center justify-center space-x-3 pt-2"
+  }, React.createElement("button", {
+    type: "button",
+    onClick: () => setIsResetModalOpen(false),
+    className: "px-4 py-2 rounded-xl border border-[#E5E7EB] dark:border-[#2F2F2F] text-xs font-semibold text-[#6B7280]"
+  }, "Cancel"), React.createElement("button", {
+    type: "button",
+    onClick: handleResetDatabase,
+    className: "px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shadow-md cursor-pointer"
+  }, "Confirm Reset")))));
+}
 function RecipeDetailModal({
   recipe,
   isOpen,
   onClose,
   currentUser,
+  showToast,
   isLiked,
   likeCount,
   onLike,
@@ -1759,6 +3535,7 @@ function RecipeDetailModal({
 }) {
   if (!isOpen || !recipe) return null;
   const [commentText, setCommentText] = useState("");
+  const [userRating, setUserRating] = useState(5);
   const [checkedIngredients, setCheckedIngredients] = useState({});
   const [completedSteps, setCompletedSteps] = useState({});
   useEffect(() => {
@@ -1827,7 +3604,12 @@ function RecipeDetailModal({
     const clean = commentText.trim();
     if (!clean) return;
     onAddComment(recipe.id, clean);
+    const authorUid = currentUser ? currentUser.id || currentUser.uid : "usr-2";
+    if (window.store && window.store.addReview) {
+      window.store.addReview(recipe.id, authorUid, userRating, clean);
+    }
     setCommentText("");
+    if (showToast) showToast("Rating & review submitted successfully!", "success");
   };
   const isOwner = currentUser && recipe.userId === (currentUser.id || currentUser.uid);
   return React.createElement("div", {
@@ -2003,7 +3785,21 @@ function RecipeDetailModal({
     className: "text-rose-600 dark:text-rose-400 mr-2"
   }, "@", c.author || c.username), React.createElement("span", {
     className: "text-[#4B5563] dark:text-[#D1D5DB]"
-  }, c.text)))), React.createElement("form", {
+  }, c.text)))), React.createElement("div", {
+    className: "flex items-center space-x-2 pt-2 pb-1"
+  }, React.createElement("span", {
+    className: "text-xs font-bold text-[#1F2937] dark:text-[#F9FAFB]"
+  }, "Rate Recipe:"), React.createElement("div", {
+    className: "flex items-center space-x-1"
+  }, [1, 2, 3, 4, 5].map(star => React.createElement("button", {
+    key: star,
+    type: "button",
+    onClick: () => setUserRating(star),
+    className: `text-base cursor-pointer transition-transform hover:scale-125 ${star <= userRating ? "text-amber-400" : "text-gray-300 dark:text-[#444444]"}`,
+    title: `${star} Star${star > 1 ? "s" : ""}`
+  }, "\u2605"))), React.createElement("span", {
+    className: "text-xs font-bold text-amber-500"
+  }, userRating, " / 5")), React.createElement("form", {
     onSubmit: handleCommentSubmit,
     className: "pt-1 flex items-center space-x-2"
   }, React.createElement("input", {
@@ -2534,7 +4330,17 @@ function App() {
         if (parsed && parsed.user) return parsed.user;
       }
     } catch (e) {}
-    return null;
+    return {
+      id: "usr-1",
+      uid: "usr-1",
+      name: "Sachin Bhandari (Admin)",
+      display_name: "Sachin Bhandari (Admin)",
+      username: "sachin",
+      email: "admin@recipes.com",
+      role: "admin",
+      avatar: "/uploads/avatars/sachin.svg",
+      streak: 7
+    };
   });
   const [activeTab, setActiveTab] = useState(() => {
     try {
@@ -2543,6 +4349,70 @@ function App() {
       return "home";
     }
   });
+  const [allRecipes, setAllRecipes] = useState(() => typeof window !== "undefined" && window.store ? window.store.getRecipes() : []);
+  const [allUsers, setAllUsers] = useState(() => typeof window !== "undefined" && window.store ? window.store.getUsers() : []);
+  const [allReviews, setAllReviews] = useState(() => typeof window !== "undefined" && window.store ? window.store.getReviews() : []);
+  const [allActivities, setAllActivities] = useState(() => typeof window !== "undefined" && window.store ? window.store.getActivities() : []);
+  const [allSettings, setAllSettings] = useState(() => typeof window !== "undefined" && window.store ? window.store.getSettings() : null);
+  useEffect(() => {
+    const handleStoreUpdate = () => {
+      if (window.store) {
+        setAllRecipes(window.store.getRecipes());
+        setAllUsers(window.store.getUsers());
+        setAllReviews(window.store.getReviews());
+        setAllActivities(window.store.getActivities());
+        setAllSettings(window.store.getSettings());
+      }
+    };
+    handleStoreUpdate();
+    if (window.store && window.store.subscribe) {
+      const unsub = window.store.subscribe(handleStoreUpdate);
+      return unsub;
+    }
+  }, []);
+  const handleSwitchRole = targetRole => {
+    if (targetRole === "admin") {
+      const adminUser = (allUsers || []).find(u => u.role === "admin" || u.email === "admin@recipes.com") || {
+        id: "usr-1",
+        uid: "usr-1",
+        name: "Sachin Bhandari (Admin)",
+        display_name: "Sachin Bhandari (Admin)",
+        username: "sachin",
+        email: "admin@recipes.com",
+        role: "admin",
+        avatar: "/uploads/avatars/sachin.svg",
+        streak: 7
+      };
+      setCurrentUser(adminUser);
+      try {
+        localStorage.setItem("foodbite_session", JSON.stringify({
+          user: adminUser
+        }));
+      } catch (e) {}
+      setActiveTab("admin");
+      showToast("Switched to Administrator Console: Sachin Bhandari", "success");
+    } else {
+      const normalUser = (allUsers || []).find(u => u.role === "user" || u.email === "aarav@recipes.com") || {
+        id: "usr-2",
+        uid: "usr-2",
+        name: "Aarav Sharma",
+        display_name: "Aarav Sharma",
+        username: "aarav",
+        email: "aarav@recipes.com",
+        role: "user",
+        avatar: "/uploads/avatars/anant.svg",
+        streak: 5
+      };
+      setCurrentUser(normalUser);
+      try {
+        localStorage.setItem("foodbite_session", JSON.stringify({
+          user: normalUser
+        }));
+      } catch (e) {}
+      setActiveTab("myrecipes");
+      showToast("Switched to User Dashboard: Aarav Sharma", "success");
+    }
+  };
   const [stories, setStories] = useState([]);
   const [isLoadingFeed, setIsLoadingFeed] = useState(true);
   const [feedError, setFeedError] = useState(null);
@@ -3087,7 +4957,8 @@ function App() {
     onTriggerBroadcast: () => setShowBroadcastModal(true),
     announcement: announcement,
     theme: theme,
-    onToggleTheme: handleToggleTheme
+    onToggleTheme: handleToggleTheme,
+    onSwitchRole: handleSwitchRole
   }), React.createElement(MobileTopBar, {
     streak: streakCount,
     onLogoClick: () => {
@@ -3102,7 +4973,8 @@ function App() {
     announcement: announcement,
     currentUser: currentUser,
     theme: theme,
-    onToggleTheme: handleToggleTheme
+    onToggleTheme: handleToggleTheme,
+    onSwitchRole: handleSwitchRole
   }), React.createElement("main", {
     className: "flex-1 w-full"
   }, activeTab === "home" && React.createElement("div", {
@@ -3181,6 +5053,7 @@ function App() {
     onDeletePost: handleDeletePost
   }))))), activeTab === "explore" && React.createElement(ExploreView, {
     stories: stories,
+    allRecipes: allRecipes,
     onOpenRecipe: r => setSelectedRecipe(r),
     onTriggerUpload: () => setStoryModalOpen(true),
     onToggleFollow: handleToggleFollow,
@@ -3197,6 +5070,27 @@ function App() {
       likes: lks
     }),
     onDeletePost: handleDeletePost
+  }), activeTab === "myrecipes" && React.createElement(UserDashboardView, {
+    currentUser: currentUser,
+    allRecipes: allRecipes,
+    allReviews: allReviews,
+    allActivities: allActivities,
+    onOpenRecipe: r => setSelectedRecipe(r),
+    onTriggerUpload: () => setStoryModalOpen(true),
+    showToast: showToast,
+    onSwitchToAdmin: () => handleSwitchRole("admin"),
+    activeTab: activeTab,
+    setActiveTab: setActiveTab
+  }), activeTab === "admin" && React.createElement(AdminDashboardView, {
+    currentUser: currentUser,
+    allUsers: allUsers,
+    allRecipes: allRecipes,
+    allReviews: allReviews,
+    allActivities: allActivities,
+    allSettings: allSettings,
+    onOpenRecipe: r => setSelectedRecipe(r),
+    showToast: showToast,
+    onSwitchToUser: () => handleSwitchRole("user")
   }), activeTab === "saved" && React.createElement(SavedView, {
     stories: stories,
     savedPosts: savedPosts,
@@ -3226,7 +5120,8 @@ function App() {
     onShare: handleSharePost,
     onAddComment: handleAddComment,
     followingList: followingList,
-    onToggleFollow: handleToggleFollow
+    onToggleFollow: handleToggleFollow,
+    onSwitchRole: handleSwitchRole
   })), React.createElement(FloatingCreateButton, {
     onTriggerUpload: () => setStoryModalOpen(true)
   }), React.createElement("footer", {
@@ -3265,9 +5160,11 @@ function App() {
     activeTab: activeTab,
     setActiveTab: setActiveTab,
     onTriggerUpload: () => setStoryModalOpen(true),
-    onRefreshFeed: () => fetchStories(true)
+    onRefreshFeed: () => fetchStories(true),
+    currentUser: currentUser
   }), React.createElement(RecipeDetailModal, {
     recipe: selectedRecipe,
+    showToast: showToast,
     isOpen: Boolean(selectedRecipe),
     onClose: () => setSelectedRecipe(null),
     currentUser: currentUser,

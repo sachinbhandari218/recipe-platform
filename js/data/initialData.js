@@ -5,11 +5,13 @@ export const initialUsers = [
     email: "admin@recipes.com",
     display_name: "Sachin Bhandari (Admin)",
     name: "Sachin Bhandari (Admin)",
+    username: "sachin",
     password: "admin",
     role: "admin",
-    avatar_url: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80",
-    avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80",
-    created_at: "2026-09-01T08:00:00Z"
+    avatar_url: "/uploads/avatars/sachin.svg",
+    avatar: "/uploads/avatars/sachin.svg",
+    created_at: "2026-09-01T08:00:00Z",
+    streak: 7
   },
   {
     uid: "usr-2",
@@ -17,11 +19,13 @@ export const initialUsers = [
     email: "aarav@recipes.com",
     display_name: "Aarav Sharma",
     name: "Aarav Sharma",
+    username: "aarav",
     password: "password123",
     role: "user",
-    avatar_url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80",
-    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80",
-    created_at: "2026-09-02T09:30:00Z"
+    avatar_url: "/uploads/avatars/anant.svg",
+    avatar: "/uploads/avatars/anant.svg",
+    created_at: "2026-09-02T09:30:00Z",
+    streak: 5
   },
   {
     uid: "usr-3",
@@ -29,11 +33,13 @@ export const initialUsers = [
     email: "priya@recipes.com",
     display_name: "Priya Patel",
     name: "Priya Patel",
+    username: "priya",
     password: "password123",
     role: "user",
-    avatar_url: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80",
-    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80",
-    created_at: "2026-09-03T11:15:00Z"
+    avatar_url: "/uploads/avatars/a1.svg",
+    avatar: "/uploads/avatars/a1.svg",
+    created_at: "2026-09-03T11:15:00Z",
+    streak: 3
   },
   {
     uid: "usr-4",
@@ -41,11 +47,13 @@ export const initialUsers = [
     email: "rohan@recipes.com",
     display_name: "Rohan Kulkarni",
     name: "Rohan Kulkarni",
+    username: "rohan",
     password: "password123",
     role: "user",
-    avatar_url: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80",
-    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80",
-    created_at: "2026-09-04T14:45:00Z"
+    avatar_url: "/uploads/avatars/adi.svg",
+    avatar: "/uploads/avatars/adi.svg",
+    created_at: "2026-09-04T14:45:00Z",
+    streak: 2
   },
   {
     uid: "usr-5",
@@ -53,21 +61,292 @@ export const initialUsers = [
     email: "ananya@recipes.com",
     display_name: "Ananya Verma",
     name: "Ananya Verma",
+    username: "ananya",
     password: "password123",
     role: "user",
-    avatar_url: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=200&q=80",
-    avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=200&q=80",
-    created_at: "2026-09-05T16:20:00Z"
+    avatar_url: "/uploads/avatars/prakash.svg",
+    avatar: "/uploads/avatars/prakash.svg",
+    created_at: "2026-09-05T16:20:00Z",
+    streak: 4
   }
 ];
 
-export const initialRecipes = [];
+export const initialRecipes = [
+  {
+    recipe_id: "rec-1",
+    id: "rec-1",
+    author_uid: "usr-2",
+    author_id: "usr-2",
+    author_name: "Aarav Sharma",
+    username: "aarav",
+    title: "Authentic Shahi Paneer with Saffron Cream",
+    description: "Royal cottage cheese cubes simmered in a velvety gravy of cashews, tomatoes, and aromatic Indian spices.",
+    prep_time: 15,
+    cooking_time: "25 mins",
+    cookTime: "25 mins",
+    servings: 4,
+    difficulty: "Medium",
+    meal_type: "Dinner",
+    category: "dinner",
+    dietary: ["Vegetarian", "Gluten-Free"],
+    image_url: "/uploads/dish_1790010828136_7926.jpg",
+    photos: ["/uploads/dish_1790010828136_7926.jpg"],
+    status: "approved",
+    average_rating: 4.9,
+    review_count: 6,
+    ingredients: [
+      "300g Fresh soft paneer cubes",
+      "2 Large red tomatoes, finely pureed",
+      "15 Raw cashews, soaked in warm milk",
+      "2 Green cardamoms & 1 bay leaf",
+      "1 tsp Kashmiri red chili powder",
+      "1/2 tsp Garam masala powder",
+      "3 tbsp Fresh malai (cream)",
+      "1 tbsp Kasuri methi (crushed)",
+      "2 tbsp Ghee or butter"
+    ],
+    instructions: "1. Soak cashews in warm milk for 15 minutes and grind into a silky smooth paste.\n2. Heat ghee in a deep pan, add green cardamom and bay leaf until aromatic.\n3. Add tomato puree and saute until the ghee separates from the masala.\n4. Stir in the cashew cream paste and cook gently on low flame.\n5. Gently slide in the soft paneer cubes and simmer for 5 minutes.\n6. Finish with crushed kasuri methi and fresh cream before serving.",
+    created_at: "2026-09-20T10:00:00Z"
+  },
+  {
+    recipe_id: "rec-2",
+    id: "rec-2",
+    author_uid: "usr-1",
+    author_id: "usr-1",
+    author_name: "Sachin Bhandari (Admin)",
+    username: "sachin",
+    title: "Classic Wood-Fired Margherita Pizza",
+    description: "Crispy 48-hour fermented sourdough crust topped with San Marzano tomatoes, fresh buffalo mozzarella, and basil.",
+    prep_time: 20,
+    cooking_time: "12 mins",
+    cookTime: "12 mins",
+    servings: 2,
+    difficulty: "Easy",
+    meal_type: "Dinner",
+    category: "dinner",
+    dietary: ["Vegetarian"],
+    image_url: "/uploads/pizza_1789972478_1.jpg",
+    photos: ["/uploads/pizza_1789972478_1.jpg"],
+    status: "approved",
+    average_rating: 5.0,
+    review_count: 8,
+    ingredients: [
+      "250g Fermented pizza dough ball",
+      "100g San Marzano tomato sauce",
+      "120g Fresh buffalo mozzarella",
+      "Handful of fresh Genovese basil leaves",
+      "2 tbsp Extra virgin cold-pressed olive oil",
+      "Flaky sea salt"
+    ],
+    instructions: "1. Stretch out the fermented dough on a semolina-dusted counter by hand.\n2. Spread tomato sauce evenly leaving a 1-inch crust perimeter.\n3. Tear fresh buffalo mozzarella and distribute across the pie.\n4. Bake in a blistering 450C oven for 6 to 8 minutes until blistered.\n5. Garnish with torn fresh basil and a generous drizzle of olive oil.",
+    created_at: "2026-09-21T12:00:00Z"
+  },
+  {
+    recipe_id: "rec-3",
+    id: "rec-3",
+    author_uid: "usr-3",
+    author_id: "usr-3",
+    author_name: "Priya Patel",
+    username: "priya",
+    title: "Fiery Garlic Sesame Chili Noodles",
+    description: "Springy hand-pulled noodles tossed with scorching hot chili oil, scallions, toasted sesame, and soy.",
+    prep_time: 10,
+    cooking_time: "15 mins",
+    cookTime: "15 mins",
+    servings: 2,
+    difficulty: "Easy",
+    meal_type: "Quick",
+    category: "quick",
+    dietary: ["Vegan", "Dairy-Free"],
+    image_url: "/uploads/chillinoodles_1789972478_0.jpg",
+    photos: ["/uploads/chillinoodles_1789972478_0.jpg"],
+    status: "approved",
+    average_rating: 4.7,
+    review_count: 4,
+    ingredients: [
+      "200g Wheat noodles",
+      "4 Cloves garlic, finely minced",
+      "2 Scallions, chopped",
+      "1.5 tbsp Gochugaru chili flakes",
+      "1 tbsp Toasted sesame seeds",
+      "2 tbsp Light soy sauce",
+      "1 tbsp Black rice vinegar",
+      "3 tbsp Smoking hot neutral oil"
+    ],
+    instructions: "1. Boil noodles until al dente, rinse in cold water and drain thoroughly.\n2. In a heat-safe bowl, combine minced garlic, scallions, chili flakes, and sesame seeds.\n3. Pour scorching hot oil directly over the aromatics to bloom the flavors.\n4. Add soy sauce and vinegar, then toss the noodles until fully coated.",
+    created_at: "2026-09-22T08:30:00Z"
+  },
+  {
+    recipe_id: "rec-4",
+    id: "rec-4",
+    author_uid: "usr-2",
+    author_id: "usr-2",
+    author_name: "Aarav Sharma",
+    username: "aarav",
+    title: "Crispy Golden Masala Dosa with Chutney",
+    description: "Paper-thin fermented rice-lentil crepe stuffed with spiced mashed potatoes and served with coconut chutney.",
+    prep_time: 20,
+    cooking_time: "20 mins",
+    cookTime: "20 mins",
+    servings: 4,
+    difficulty: "Medium",
+    meal_type: "Breakfast",
+    category: "breakfast",
+    dietary: ["Vegetarian", "Gluten-Free"],
+    image_url: "/uploads/dish_1789998754631_4331.jpg",
+    photos: ["/uploads/dish_1789998754631_4331.jpg"],
+    status: "pending",
+    average_rating: 5.0,
+    review_count: 0,
+    ingredients: [
+      "3 cups Fermented dosa batter",
+      "4 Boiled potatoes, lightly crushed",
+      "1 Onion, thinly sliced",
+      "1 tsp Mustard seeds & curry leaves",
+      "1/2 tsp Turmeric powder",
+      "Ghee for roasting"
+    ],
+    instructions: "1. Prepare potato masala with tempered mustard seeds, onions, and turmeric.\n2. Spread batter in concentric circles on a hot cast iron tawa.\n3. Drizzle ghee along the edges until crisp and golden brown.\n4. Place spiced potato filling in center, roll neatly, and serve immediately.",
+    created_at: "2026-09-23T14:10:00Z"
+  },
+  {
+    recipe_id: "rec-5",
+    id: "rec-5",
+    author_uid: "usr-4",
+    author_id: "usr-4",
+    author_name: "Rohan Kulkarni",
+    username: "rohan",
+    title: "Charred Tandoori Paneer Tikka Skewers",
+    description: "Thick paneer cubes marinated in spiced hung yogurt, fenugreek, and mustard oil, roasted to smoky perfection.",
+    prep_time: 30,
+    cooking_time: "20 mins",
+    cookTime: "20 mins",
+    servings: 3,
+    difficulty: "Medium",
+    meal_type: "Snacks",
+    category: "snacks",
+    dietary: ["Vegetarian", "Gluten-Free"],
+    image_url: "/uploads/dish_1790000052225_4905.jpg",
+    photos: ["/uploads/dish_1790000052225_4905.jpg"],
+    status: "pending",
+    average_rating: 5.0,
+    review_count: 0,
+    ingredients: [
+      "350g Paneer, cut into 1.5-inch cubes",
+      "1/2 cup Hung curd (thick yogurt)",
+      "1 tbsp Mustard oil",
+      "1 tbsp Ginger-garlic paste",
+      "1 tsp Roasted cumin powder & chaat masala",
+      "Diced bell peppers and onions"
+    ],
+    instructions: "1. Whisk hung curd with spices and mustard oil into a thick marinade.\n2. Coat paneer cubes and veggies, letting them rest for 30 minutes.\n3. Thread onto skewers and grill at high heat until char marks develop.\n4. Sprinkle chaat masala and lemon juice before serving.",
+    created_at: "2026-09-23T16:45:00Z"
+  },
+  {
+    recipe_id: "rec-6",
+    id: "rec-6",
+    author_uid: "usr-3",
+    author_id: "usr-3",
+    author_name: "Priya Patel",
+    username: "priya",
+    title: "Instant 2-Minute Cup Ramen Noodles",
+    description: "Packaged instant ramen microwaved with water and pre-made powder seasoning.",
+    prep_time: 2,
+    cooking_time: "3 mins",
+    cookTime: "3 mins",
+    servings: 1,
+    difficulty: "Easy",
+    meal_type: "Quick",
+    category: "quick",
+    dietary: [],
+    image_url: "/uploads/dish_hhuvui_starbucks.jpg",
+    photos: ["/uploads/dish_hhuvui_starbucks.jpg"],
+    status: "rejected",
+    rejection_reason: "Please provide homemade culinary preparation steps and authentic ingredient measurements rather than instant commercial packaged foods.",
+    average_rating: 3.0,
+    review_count: 1,
+    ingredients: [
+      "1 Pack instant noodles",
+      "Boiling water"
+    ],
+    instructions: "1. Pour boiling water into cup.\n2. Wait 2 minutes and stir.",
+    created_at: "2026-09-23T18:00:00Z"
+  }
+];
 
-export const initialReviews = [];
+export const initialReviews = [
+  {
+    id: "rev-1",
+    recipe_id: "rec-1",
+    author_uid: "usr-3",
+    author_name: "Priya Patel",
+    rating: 5,
+    comment: "The cashew paste and saffron make this gravy restaurant-grade! Everyone at home loved it.",
+    created_at: "2026-09-21T11:00:00Z"
+  },
+  {
+    id: "rev-2",
+    recipe_id: "rec-1",
+    author_uid: "usr-1",
+    author_name: "Sachin Bhandari (Admin)",
+    rating: 5,
+    comment: "Exceptional flavor balance. The kasuri methi finish is spot on.",
+    created_at: "2026-09-21T14:30:00Z"
+  },
+  {
+    id: "rev-3",
+    recipe_id: "rec-2",
+    author_uid: "usr-2",
+    author_name: "Aarav Sharma",
+    rating: 5,
+    comment: "That 48-hour fermented crust creates the best airy bubbles! Super delicious.",
+    created_at: "2026-09-22T15:00:00Z"
+  },
+  {
+    id: "rev-4",
+    recipe_id: "rec-3",
+    author_uid: "usr-4",
+    author_name: "Rohan Kulkarni",
+    rating: 5,
+    comment: "Quick, fiery, and deeply comforting! Added some chili crisp on top.",
+    created_at: "2026-09-22T19:20:00Z"
+  }
+];
 
 export const initialInteractions = [];
 
-export const initialActivities = [];
+export const initialActivities = [
+  {
+    id: "act-1",
+    user_id: "usr-4",
+    action_description: "Rohan Kulkarni submitted recipe 'Charred Tandoori Paneer Tikka Skewers' for review",
+    timestamp: "2026-09-23T16:45:00Z"
+  },
+  {
+    id: "act-2",
+    user_id: "usr-2",
+    action_description: "Aarav Sharma submitted recipe 'Crispy Golden Masala Dosa' for review",
+    timestamp: "2026-09-23T14:10:00Z"
+  },
+  {
+    id: "act-3",
+    user_id: "usr-1",
+    action_description: "Administrator approved recipe 'Authentic Shahi Paneer'",
+    timestamp: "2026-09-21T10:15:00Z"
+  },
+  {
+    id: "act-4",
+    user_id: "usr-3",
+    action_description: "Priya Patel rated 'Authentic Shahi Paneer' 5 stars",
+    timestamp: "2026-09-21T11:00:00Z"
+  },
+  {
+    id: "act-5",
+    user_id: "usr-5",
+    action_description: "Chef registered: Ananya Verma (user)",
+    timestamp: "2026-09-05T16:20:00Z"
+  }
+];
 
 export const initialSettings = {
   platformName: "Online Recipe Sharing Platform",
