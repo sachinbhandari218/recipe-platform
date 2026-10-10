@@ -1,10 +1,11 @@
-[{
+[
+  {
     "id": "rec-1",
     "userId": "usr-2",
     "username": "aarav",
     "userAvatar": "/uploads/avatars/aarav.svg",
-    "mediaUrl": "/uploads/dish_1790010828136_7926.jpg",
-    "mediaPath": "uploads/dish_1790010828136_7926.jpg",
+    "mediaUrl": "/uploads/dish_shahipaneer_authentic.jpg",
+    "mediaPath": "uploads/dish_shahipaneer_authentic.jpg",
     "mediaType": "image",
     "mediaBase64": "",
     "category": "dinner",
@@ -12,7 +13,8 @@
     "duration": 0.0,
     "createdAt": 1790504605064,
     "expiresAt": 1791714205064
-  },{
+  },
+  {
     "id": "rec-2",
     "userId": "usr-1",
     "username": "sachin",
@@ -26,7 +28,8 @@
     "duration": 0.0,
     "createdAt": 1790504605064,
     "expiresAt": 1791714205064
-  },{
+  },
+  {
     "id": "rec-3",
     "userId": "usr-3",
     "username": "priya",
@@ -40,4 +43,5 @@
     "duration": 0.0,
     "createdAt": 1790504605064,
     "expiresAt": 1791714205064
-  }]
+  }
+]

@@ -1,5 +1,4 @@
 @echo off
-javac Server.java
-if %ERRORLEVEL% equ 0 (
-    java Server
-)
+echo Starting FoodBite with Apache Tomcat and MySQL...
+java -jar target/recipe-platform-2.0.0.jar
+pause
