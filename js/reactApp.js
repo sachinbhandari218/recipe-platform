@@ -4460,26 +4460,28 @@ function App() {
     if (!silent) setIsLoadingFeed(true);
     setFeedError(null);
     try {
+      const isBlocked = p => !p || p.id === 'rec-1' || p.recipe_id === 'rec-1' || ((p.mediaUrl || '') + (p.mediaPath || '') + (p.imageUrl || '')).includes('1790010828136');
       let localCached = [];
       try {
         const rawLocal = localStorage.getItem("foodbite_saved_stories");
         if (rawLocal) {
           const parsed = JSON.parse(rawLocal);
           const curTime = Date.now();
-          localCached = Array.isArray(parsed) ? parsed.filter(p => !p.expiresAt || p.expiresAt > curTime) : [];
+          localCached = Array.isArray(parsed) ? parsed.filter(p => !isBlocked(p) && (!p.expiresAt || p.expiresAt > curTime)) : [];
+          localStorage.setItem("foodbite_saved_stories", JSON.stringify(localCached));
         }
       } catch (e) {}
       if (localCached.length > 0) {
-        setStories(prev => prev && prev.length > 0 ? prev : localCached);
+        setStories(prev => prev && prev.length > 0 ? prev.filter(p => !isBlocked(p)) : localCached);
       }
       const res = await fetch("/api/feed?_t=" + Date.now(), {
         cache: "no-store"
       });
       const data = await res.json();
       if (data && data.success) {
-        const serverPosts = Array.isArray(data.posts) ? data.posts : [];
+        const serverPosts = (Array.isArray(data.posts) ? data.posts : []).filter(p => !isBlocked(p));
         const serverIds = new Set(serverPosts.map(p => p.id));
-        const missingOnServer = localCached.filter(p => !serverIds.has(p.id));
+        const missingOnServer = localCached.filter(p => !isBlocked(p) && !serverIds.has(p.id));
         if (missingOnServer.length > 0) {
           fetch("/api/posts", {
             method: "POST",
@@ -4494,7 +4496,7 @@ function App() {
         }
         const mergedMap = new Map();
         [...localCached, ...serverPosts].forEach(p => {
-          if (p && p.id) {
+          if (p && p.id && !isBlocked(p)) {
             if (!mergedMap.has(p.id)) {
               mergedMap.set(p.id, p);
             } else {
@@ -4505,7 +4507,7 @@ function App() {
             }
           }
         });
-        const posts = Array.from(mergedMap.values());
+        const posts = Array.from(mergedMap.values()).filter(p => !isBlocked(p));
         setStories(posts);
         try {
           localStorage.setItem("foodbite_saved_stories", JSON.stringify(posts.slice(0, 30)));

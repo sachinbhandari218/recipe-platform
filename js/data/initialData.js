@@ -73,42 +73,6 @@ export const initialUsers = [
 
 export const initialRecipes = [
   {
-    recipe_id: "rec-1",
-    id: "rec-1",
-    author_uid: "usr-2",
-    author_id: "usr-2",
-    author_name: "Aarav Sharma",
-    username: "aarav",
-    title: "Authentic Shahi Paneer with Saffron Cream",
-    description: "Royal cottage cheese cubes simmered in a velvety gravy of cashews, tomatoes, and aromatic Indian spices.",
-    prep_time: 15,
-    cooking_time: "25 mins",
-    cookTime: "25 mins",
-    servings: 4,
-    difficulty: "Medium",
-    meal_type: "Dinner",
-    category: "dinner",
-    dietary: ["Vegetarian", "Gluten-Free"],
-    image_url: "/uploads/dish_shahipaneer_authentic.jpg",
-    photos: ["/uploads/dish_shahipaneer_authentic.jpg"],
-    status: "approved",
-    average_rating: 4.9,
-    review_count: 6,
-    ingredients: [
-      "300g Fresh soft paneer cubes",
-      "2 Large red tomatoes, finely pureed",
-      "15 Raw cashews, soaked in warm milk",
-      "2 Green cardamoms & 1 bay leaf",
-      "1 tsp Kashmiri red chili powder",
-      "1/2 tsp Garam masala powder",
-      "3 tbsp Fresh malai (cream)",
-      "1 tbsp Kasuri methi (crushed)",
-      "2 tbsp Ghee or butter"
-    ],
-    instructions: "1. Soak cashews in warm milk for 15 minutes and grind into a silky smooth paste.\n2. Heat ghee in a deep pan, add green cardamom and bay leaf until aromatic.\n3. Add tomato puree and saute until the ghee separates from the masala.\n4. Stir in the cashew cream paste and cook gently on low flame.\n5. Gently slide in the soft paneer cubes and simmer for 5 minutes.\n6. Finish with crushed kasuri methi and fresh cream before serving.",
-    created_at: "2026-09-20T10:00:00Z"
-  },
-  {
     recipe_id: "rec-2",
     id: "rec-2",
     author_uid: "usr-1",

@@ -27,6 +27,16 @@
         } else {
           document.documentElement.classList.remove('dark');
         }
+
+        var s = localStorage.getItem('foodbite_saved_stories');
+        if (s && (s.indexOf('1790010828136') !== -1 || s.indexOf('rec-1') !== -1)) {
+          var arr = JSON.parse(s);
+          var filtered = arr.filter(function(x) {
+            var str = JSON.stringify(x);
+            return str.indexOf('1790010828136') === -1 && str.indexOf('rec-1') === -1;
+          });
+          localStorage.setItem('foodbite_saved_stories', JSON.stringify(filtered));
+        }
       } catch (e) {}
     })();
   </script>

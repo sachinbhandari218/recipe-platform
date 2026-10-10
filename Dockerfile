@@ -1,5 +1,6 @@
 FROM maven:3.9-eclipse-temurin-17-alpine AS build
 WORKDIR /app
+ENV MAVEN_OPTS="-Xmx384m -XX:+UseSerialGC"
 COPY pom.xml .
 COPY src ./src
 COPY data ./data
@@ -24,4 +25,4 @@ COPY index.html ./
 COPY manifest.json ./
 COPY sw.js ./
 EXPOSE 8080 10000
-CMD ["java", "-jar", "app.jar"]
+CMD ["java", "-Xmx384m", "-XX:+UseSerialGC", "-jar", "app.jar"]

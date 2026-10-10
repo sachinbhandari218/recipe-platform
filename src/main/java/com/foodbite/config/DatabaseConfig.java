@@ -69,7 +69,7 @@ public class DatabaseConfig {
             config.setMaximumPoolSize(10);
             config.setMinimumIdle(2);
             config.setIdleTimeout(30000);
-            config.setConnectionTimeout(20000);
+            config.setConnectionTimeout(5000);
             config.setPoolName("FoodBiteHikariPool");
 
             dataSource = new HikariDataSource(config);
@@ -77,6 +77,27 @@ public class DatabaseConfig {
             runMigrationScriptIfPresent("/schema.sql");
             runMigrationScriptIfPresent("/seed.sql");
         } catch (Exception e) {
+            if (DEFAULT_URL.equals(jdbcUrl)) {
+                System.out.println("Local MySQL unreachable, initializing embedded relational JDBC (H2 in MySQL mode)...");
+                try {
+                    Class.forName("org.h2.Driver");
+                    HikariConfig h2Config = new HikariConfig();
+                    h2Config.setJdbcUrl("jdbc:h2:./data/foodbite_db;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1");
+                    h2Config.setUsername("sa");
+                    h2Config.setPassword("");
+                    h2Config.setDriverClassName("org.h2.Driver");
+                    h2Config.setMaximumPoolSize(5);
+                    h2Config.setPoolName("FoodBiteEmbeddedH2Pool");
+
+                    dataSource = new HikariDataSource(h2Config);
+                    runMigrationScriptIfPresent("/schema.sql");
+                    runMigrationScriptIfPresent("/seed.sql");
+                    System.out.println("Embedded relational JDBC database successfully initialized.");
+                    return;
+                } catch (Exception h2Ex) {
+                    throw new DatabaseException("Failed to initialize database connection pool with URL: " + jdbcUrl, h2Ex);
+                }
+            }
             throw new DatabaseException("Failed to initialize database connection pool with URL: " + jdbcUrl, e);
         }
     }

@@ -826,6 +826,10 @@ public class Server {
                                 int curEnd = findMatchingBrace(body, cur);
                                 if (curEnd == -1) break;
                                 String pJson = body.substring(cur, curEnd + 1);
+                                if (pJson.contains("1790010828136") || pJson.contains("\"rec-1\"")) {
+                                    cur = curEnd + 1;
+                                    continue;
+                                }
                                 String mPath = extractJsonString(pJson, "mediaPath", "");
                                 String mB64 = extractJsonString(pJson, "mediaBase64", "");
                                 if (!mPath.isEmpty() && !mB64.isEmpty()) {
@@ -1330,6 +1334,10 @@ public class Server {
                 if (end == -1) break;
                 String postJson = data.substring(idx, end + 1);
                 String postId = extractJsonString(postJson, "id", "");
+                if ("rec-1".equals(postId) || postJson.contains("1790010828136")) {
+                    idx = end + 1;
+                    continue;
+                }
                 String mediaPath = extractJsonString(postJson, "mediaPath", "");
                 String mediaBase64 = extractJsonString(postJson, "mediaBase64", "");
                 if (!mediaPath.isEmpty() && !mediaBase64.isEmpty()) {
@@ -1678,8 +1686,10 @@ public class Server {
                 byte[] bytes = Files.readAllBytes(file.toPath());
                 data = new String(bytes, StandardCharsets.UTF_8).trim();
             }
-            if (!data.startsWith("[")) data = "[]";
             String postId = extractJsonString(postJson, "id", "");
+            if ("rec-1".equals(postId) || postJson.contains("1790010828136")) {
+                return;
+            }
             if (!postId.isEmpty() && data.contains("\"" + postId + "\"")) {
                 return;
             }
